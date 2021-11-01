@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.10.10] - 2021-11-01
+### Updated
+- HyperTrack SDK 5.4.4
+
 ## [0.10.9] - 2021-10-26
 ### Fixed
 - Crash on Summary tab
