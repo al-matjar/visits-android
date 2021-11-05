@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.10.11] - 2021-11-05
+### Updated
+- HyperTrack SDK 5.4.4
+
 ## [0.10.10] - 2021-11-01
 ### Updated
 - HyperTrack SDK 5.4.4
