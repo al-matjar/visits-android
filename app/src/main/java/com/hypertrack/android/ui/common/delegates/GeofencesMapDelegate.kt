@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.util.Log
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.hypertrack.android.interactors.PlacesInteractor
@@ -197,7 +196,7 @@ class GeofenceClusterItem(
     companion object {
         fun createClusterIcon(osUtilsProvider: OsUtilsProvider): BitmapDescriptor {
             return BitmapDescriptorFactory.fromBitmap(
-                osUtilsProvider.bitmapFormResource(
+                osUtilsProvider.bitmapFromResource(
                     R.drawable.ic_cluster
                 )
             )

@@ -1,7 +1,6 @@
 package com.hypertrack.android.utils
 
 import android.content.Context
-import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.hypertrack.android.api.*
@@ -17,7 +16,6 @@ import com.hypertrack.android.utils.formatters.*
 import com.hypertrack.logistics.android.github.R
 import com.hypertrack.sdk.HyperTrack
 import com.hypertrack.sdk.ServiceNotificationConfig
-import com.hypertrack.sdk.views.HyperTrackViews
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.recipes.RuntimeJsonAdapterFactory
 import com.squareup.moshi.recipes.ZonedDateTimeJsonAdapter
@@ -26,7 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import javax.inject.Provider
 
 
 class ServiceLocator(val crashReportsProvider: CrashReportsProvider) {
@@ -56,26 +53,40 @@ object Injector {
 
     val crashReportsProvider: CrashReportsProvider by lazy { FirebaseCrashReportsProvider() }
 
-    private val appScope: AppScope by lazy { createAppScope() }
+    private val appScope: AppScope by lazy { createAppScope(MyApplication.context) }
     private var userScope: UserScope? = null
     var tripCreationScope: TripCreationScope? = null
 
-    val deeplinkProcessor: DeeplinkProcessor = BranchIoDeepLinkProcessor(crashReportsProvider)
+    val deeplinkProcessor by lazy { appScope.deeplinkProcessor }
 
     private val serviceLocator = ServiceLocator(crashReportsProvider)
 
     val batteryLevelMonitor = BatteryLevelMonitor(crashReportsProvider)
 
-    private fun createAppScope(): AppScope {
-        val context = MyApplication.context
+    private fun createAppScope(context: Context): AppScope {
         val crashReportsProvider = this.crashReportsProvider
         val osUtilsProvider = OsUtilsProvider(context, crashReportsProvider)
+        val driverRepository = getDriverRepo()
+        val accountRepository = getAccountRepo(context)
+        val moshi = getMoshi()
         return AppScope(
+            DeeplinkInteractor(
+                driverRepository,
+                accountRepository,
+                crashReportsProvider,
+                moshi
+            ),
             crashReportsProvider,
             osUtilsProvider,
             DateTimeFormatterImpl(),
             LocalizedDistanceFormatter(osUtilsProvider),
-            TimeFormatterImpl(osUtilsProvider)
+            TimeFormatterImpl(osUtilsProvider),
+            BranchIoDeepLinkProcessor(
+                Injector.crashReportsProvider,
+                osUtilsProvider,
+                BranchWrapper()
+            ),
+            moshi
         )
     }
 
@@ -93,13 +104,14 @@ object Injector {
 
     fun provideViewModelFactory(context: Context): ViewModelFactory {
         return ViewModelFactory(
+            appScope,
+            getPermissionInteractor(),
+            getLoginInteractor(),
             getAccountRepo(context),
             getDriverRepo(),
             crashReportsProvider,
-            getPermissionInteractor(),
-            getLoginInteractor(),
             getOsUtilsProvider(MyApplication.context),
-            getMoshi()
+            appScope.moshi
         )
     }
 
@@ -111,7 +123,7 @@ object Injector {
             { getUserScope() },
             getOsUtilsProvider(MyApplication.context),
             getAccountRepo(MyApplication.context),
-            getMoshi(),
+            appScope.moshi,
             crashReportsProvider,
             getDeviceLocationProvider()
         )
@@ -140,6 +152,7 @@ object Injector {
 
     private fun createUserScope(
         publishableKey: String,
+        appScope: AppScope,
         accountRepository: AccountRepository,
         accessTokenRepository: BasicAuthAccessTokenRepository,
         driverRepository: DriverRepository,
@@ -295,14 +308,15 @@ object Injector {
 
             userScope = createUserScope(
                 publishableKey,
+                appScope,
                 getAccountRepo(MyApplication.context),
                 accessTokenRepository(MyApplication.context),
                 getDriverRepo(),
                 getPermissionInteractor(),
                 getDeviceLocationProvider(),
                 getOsUtilsProvider(MyApplication.context),
-                crashReportsProvider,
-                getMoshi(),
+                appScope.crashReportsProvider,
+                appScope.moshi,
                 getMyPreferences(MyApplication.context),
                 getFileRepository(),
                 getImageDecoder()
@@ -419,11 +433,14 @@ class UserScope(
 
 //todo move app scope dependencies here
 class AppScope(
+    val deeplinkInteractor: DeeplinkInteractor,
     val crashReportsProvider: CrashReportsProvider,
     val osUtilsProvider: OsUtilsProvider,
     val datetimeFormatter: DatetimeFormatter,
     val distanceFormatter: DistanceFormatter,
     val timeFormatter: TimeFormatter,
+    val deeplinkProcessor: DeeplinkProcessor,
+    val moshi: Moshi,
 )
 
 fun interface Factory<A, T> {

@@ -40,7 +40,7 @@ class ApiClient(
 
     private val remoteApi: ApiInterface = Retrofit.Builder()
         .baseUrl(baseUrl)
-        .addConverterFactory(MoshiConverterFactory.create(Injector.getMoshi()))
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
         .addConverterFactory(ScalarsConverterFactory.create())
         .client(
             OkHttpClient.Builder()

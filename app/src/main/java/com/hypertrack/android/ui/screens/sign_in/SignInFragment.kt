@@ -4,14 +4,22 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
+import com.hypertrack.android.ui.common.util.*
+import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
+import com.hypertrack.android.utils.DeeplinkResult
+import com.hypertrack.android.utils.DeeplinkResultListener
+import com.hypertrack.android.utils.Injector
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_signin.*
+import kotlinx.android.synthetic.main.inflate_paste_deeplink.*
+import kotlinx.android.synthetic.main.inflate_paste_deeplink.view.*
 
 class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
 
@@ -21,9 +29,15 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
         MyApplication.injector.provideViewModelFactory(MyApplication.context)
     }
 
+    private var showPasteDeeplink: Boolean = false
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setUpSignIn()
+        setUpDeeplink(view)
+    }
 
+    private fun setUpSignIn() {
         email_address.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {}
 
@@ -48,10 +62,6 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
             email_address.setText(it)
         }
 
-//        sign_up.setOnClickListener {
-//            vm.onSignUpClick()
-//        }
-
         vm.destination.observe(viewLifecycleOwner) {
             findNavController().navigate(it)
         }
@@ -60,10 +70,9 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
             incorrect.text = it
         })
 
+        sign_in.setOnClickListener { vm.onLoginClick() }
 
-        sign_in.setOnClickListener { vm.onLoginClick(mainActivity()) }
-
-        vm.showProgress.observe(viewLifecycleOwner) { show ->
+        vm.loadingState.observe(viewLifecycleOwner) { show ->
             if (show) showProgress() else dismissProgress()
         }
 
@@ -72,10 +81,42 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
             sign_in.isEnabled = isClickable
             sign_in.isSelected = isClickable
         }
-
     }
 
-    companion object {
-        const val TAG = "AccountLoginAct"
+    private fun setUpDeeplink(view: View) {
+        vm.deeplinkErrorText.observe(viewLifecycleOwner) {
+            tvDeeplinkError.setGoneState(it == null)
+            tvDeeplinkError.text = it
+        }
+
+        bDeeplinkIssues.setOnClickListener {
+            setShowPasteDeeplinkState(true)
+        }
+
+        bClose.setOnClickListener {
+            setShowPasteDeeplinkState(false)
+        }
+
+        lDeeplinkIssues.dim.setOnClickListener {
+            setShowPasteDeeplinkState(false)
+        }
+
+        bDeeplinkLogin.setOnClickListener {
+            vm.handleDeeplink(etDeeplink.textString(), mainActivity())
+        }
+    }
+
+    private fun setShowPasteDeeplinkState(show: Boolean) {
+        showPasteDeeplink = show
+        bDeeplinkIssues.setGoneState(show)
+        if (show) {
+            lDeeplinkIssues.show()
+            lDeeplinkIssues.alpha = 0f
+            lDeeplinkIssues.animate().setDuration(100L).alpha(1f)
+        } else {
+            lDeeplinkIssues.animate().setDuration(100L).withEndAction {
+                lDeeplinkIssues.hide()
+            }.alpha(0f)
+        }
     }
 }

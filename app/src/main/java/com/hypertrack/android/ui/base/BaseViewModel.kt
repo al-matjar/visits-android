@@ -18,6 +18,7 @@ open class BaseViewModel(
 ) : ViewModel() {
     protected val crashReportsProvider = baseDependencies.crashReportsProvider
     protected val osUtilsProvider = baseDependencies.osUtilsProvider
+    protected val resourceProvider = baseDependencies.resourceProvider
 
     val destination = MutableLiveData<Consumable<NavDirections>>()
     val popBackStack = MutableLiveData<Consumable<Boolean>>()
@@ -57,6 +58,7 @@ open class BaseViewModel(
 
 class BaseViewModelDependencies(
     val osUtilsProvider: OsUtilsProvider,
+    val resourceProvider: ResourceProvider,
     val crashReportsProvider: CrashReportsProvider,
 )
 

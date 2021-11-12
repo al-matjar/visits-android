@@ -53,6 +53,7 @@ class UserScopeViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         val baseDependencies = BaseViewModelDependencies(
             osUtilsProvider,
+            osUtilsProvider,
             crashReportsProvider
         )
         return when (modelClass) {

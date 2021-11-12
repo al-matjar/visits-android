@@ -107,6 +107,10 @@
     <string name="splash_screen_no_username">No email or phone_number</string>
     <string name="splash_screen_duplicate_fields">Duplicate fields</string>
 
+    <string name="sign_in_deeplink_issues">Having issues with deeplink?</string>
+    <string name="sign_in_deeplink_hint">Paste the link here</string>
+    <string name="sign_in_deeplink_invalid_format">Invalid deeplink format.\nCorrect format: \n\n <b>https://hypertrack-logistics.app.link/...</b></string>
+
     <string name="permissions_allow_location_access">Please allow Location permissions</string>
     <string name="permission_rationale_1">This app collects activity and location data \n to  manage your work on the move \n even when the app is closed or not in use</string>
     <string name="permission_rationale_2">We use this data to:\n

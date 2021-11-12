@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dim"
+    android:clickable="true"
+    android:focusableInTouchMode="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/dim"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginLeft="32dp"
+        android:layout_marginRight="32dp"
+        android:background="@color/colorWhite"
+        android:elevation="10dp">
+
+        <ImageView
+            android:id="@+id/bClose"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="center"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_cross" />
+
+        <TextView
+            android:id="@+id/tvDeeplinkError"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            tools:text="dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf "
+            android:textColor="#fe4d5f"
+            android:textSize="14sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/bDeeplinkLogin"
+            app:layout_constraintEnd_toEndOf="@+id/etDeeplink"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/etDeeplink"
+            app:layout_constraintTop_toBottomOf="@+id/etDeeplink"
+            tools:visibility="visible" />
+
+        <EditText
+            android:id="@+id/etDeeplink"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="32dp"
+            android:ems="10"
+            android:hint="@string/sign_in_deeplink_hint"
+            android:inputType="textPersonName"
+            app:layout_constraintEnd_toStartOf="@+id/bClose"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/bDeeplinkLogin"
+            style="@style/ActionButtonStyle"
+            android:layout_width="231dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="32dp"
+            android:text="@string/log_in"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvDeeplinkError" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+</FrameLayout>

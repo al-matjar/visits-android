@@ -39,34 +39,30 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.*
 
+interface ResourceProvider {
+    fun getString(resId: Int): String
+    fun getQuantityString(@PluralsRes res: Int, number: Int): String
+    fun stringFromResource(@StringRes res: Int, vararg formatArgs: Any): String
+    fun stringFromResource(@StringRes res: Int): String
+    fun colorFromResource(@ColorRes res: Int): Int
+    fun bitmapFromResource(@DrawableRes resource: Int): Bitmap
+    fun bitmapDescriptorFromResource(@DrawableRes res: Int): BitmapDescriptor
+    fun bitmapDescriptorFromVectorResource(
+        @DrawableRes res: Int,
+        @ColorRes color: Int
+    ): BitmapDescriptor
+}
 
 public class OsUtilsProvider(
     private val context: Context,
     private val crashReportsProvider: CrashReportsProvider
-) {
+) : ResourceProvider {
 
     val screenDensity: Float
         get() = Resources.getSystem().displayMetrics.density
 
     val cacheDir: File
         get() = MyApplication.context.cacheDir
-
-    fun getCurrentTimestamp(): String {
-        val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH)
-        df.timeZone = TimeZone.getTimeZone("UTC")
-        return df.format(Date())
-    }
-
-    fun getFineDateTimeString(): String {
-        val df = SimpleDateFormat("MMM d, h:mm", Locale.ENGLISH)
-        df.timeZone = TimeZone.getDefault()
-
-        val postfixFmt = SimpleDateFormat("a", Locale.ENGLISH)
-        postfixFmt.timeZone = TimeZone.getDefault()
-
-        val now = Date()
-        return "${df.format(now)}${postfixFmt.format(now).toLowerCase(Locale.ENGLISH)}"
-    }
 
     fun getPlaceFromCoordinates(latitude: Double?, longitude: Double?): android.location.Address? {
         if (latitude == null || longitude == null) {
@@ -95,14 +91,7 @@ public class OsUtilsProvider(
         return str.isEmail()
     }
 
-    fun getLocalDate(): LocalDate = LocalDate.now()
-
     fun getTimeZoneId(): ZoneId = ZoneId.systemDefault()
-
-    private fun stubStreet(latitude: Double, longitude: Double) =
-        context.getString(R.string.unknown_location_at) + "($latitude, $longitude)"
-
-    fun getString(resId: Int): String = context.getString(resId)
 
     fun getClipboardContents(): String? {
         val manager =
@@ -121,22 +110,23 @@ public class OsUtilsProvider(
         ClipboardUtil.copyToClipboard(str)
     }
 
-    fun stringFromResource(@StringRes res: Int): String {
+    override fun getString(resId: Int): String = context.getString(resId)
+
+    override fun stringFromResource(@StringRes res: Int): String {
         return MyApplication.context.getString(res)
     }
 
-    fun stringFromResource(@StringRes res: Int, vararg formatArgs: Any): String {
+    override fun stringFromResource(@StringRes res: Int, vararg formatArgs: Any): String {
         return MyApplication.context.getString(res, *formatArgs)
     }
 
-    fun colorFromResource(@ColorRes res: Int): Int {
+    override fun colorFromResource(@ColorRes res: Int): Int {
         return ContextCompat.getColor(context, res)
     }
 
-    fun bitmapFormResource(@DrawableRes resource: Int): Bitmap {
+    override fun bitmapFromResource(@DrawableRes resource: Int): Bitmap {
         return ResourcesCompat.getDrawable(context.resources, resource, context.theme)!!.toBitmap()
     }
-
 
     @Throws(IOException::class)
     fun createTakePictureIntent(context: Context, file: File): Intent {
@@ -192,11 +182,11 @@ public class OsUtilsProvider(
         return context.resources.displayMetrics
     }
 
-    fun bitmapDescriptorFromResource(@DrawableRes res: Int): BitmapDescriptor {
+    override fun bitmapDescriptorFromResource(@DrawableRes res: Int): BitmapDescriptor {
         return BitmapDescriptorFactory.fromResource(res)
     }
 
-    fun bitmapDescriptorFromVectorResource(
+    override fun bitmapDescriptorFromVectorResource(
         @DrawableRes res: Int,
         @ColorRes color: Int
     ): BitmapDescriptor {
@@ -261,8 +251,12 @@ public class OsUtilsProvider(
         }
     }
 
-    fun getQuantityString(@PluralsRes res: Int, number: Int): String {
+    override fun getQuantityString(@PluralsRes res: Int, number: Int): String {
         return context.resources.getQuantityString(res, number)
+    }
+
+    fun parseUri(link: String): Uri {
+        return Uri.parse(link)
     }
 
     companion object {

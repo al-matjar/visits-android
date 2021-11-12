@@ -29,6 +29,7 @@
     <color name="colorTrackingStopped">#A0A0A0</color>
     <color name="colorGeofence">@color/colorHyperTrackGreen</color>
     <color name="colorGeofenceFill">#3300ce5b</color>
+    <color name="dim">#11000000</color>
 
     <!--    History Polyline theme -->
     <color name="colorHistorySelectedSegmentStop">#921828</color>

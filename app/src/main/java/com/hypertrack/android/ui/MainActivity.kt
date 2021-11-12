@@ -10,9 +10,7 @@ import com.hypertrack.android.ui.base.NavActivity
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragment
-import com.hypertrack.android.utils.DeeplinkResultListener
-import com.hypertrack.android.utils.Injector
-import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.*
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.activity_main.*
@@ -46,13 +44,13 @@ class MainActivity : NavActivity(), DeeplinkResultListener {
                 findNavController(R.id.root).navigate(NavGraphDirections.actionGlobalVisitManagementFragment())
             }
         } else {
-            deepLinkProcessor.activityOnNewIntent(this, intent, this)
+            deepLinkProcessor.activityOnNewIntent(this, this)
         }
     }
 
     override fun onStart() {
         super.onStart()
-        deepLinkProcessor.activityOnStart(this, intent, this)
+        deepLinkProcessor.activityOnStart(this, this)
     }
 
     override fun onResume() {
@@ -67,8 +65,8 @@ class MainActivity : NavActivity(), DeeplinkResultListener {
         super.onPause()
     }
 
-    override fun onDeeplinkResult(parameters: Map<String, Any>) {
-        splashScreenViewModel.handleDeeplink(parameters, this)
+    override fun onDeeplinkResult(result: DeeplinkResult) {
+        splashScreenViewModel.handleDeeplink(result, this)
     }
 
     override fun onDestinationChanged(destination: NavDestination) {

@@ -2,7 +2,6 @@ package com.hypertrack.android.ui.common
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.util.Log
 import android.util.TypedValue
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -11,11 +10,8 @@ import com.hypertrack.android.models.History
 import com.hypertrack.android.models.local.LocalGeofence
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
-import com.hypertrack.android.ui.common.select_destination.reducer.UserLocation
-import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryStyle
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.Intersect
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +44,7 @@ class HypertrackMapWrapper(
 
     val geofenceMarkerIcon: BitmapDescriptor by lazy {
         BitmapDescriptorFactory.fromBitmap(
-            osUtilsProvider.bitmapFormResource(
+            osUtilsProvider.bitmapFromResource(
                 R.drawable.ic_ht_departure_active
             )
         )

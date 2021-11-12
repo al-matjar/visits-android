@@ -3,12 +3,10 @@ package com.hypertrack.android.utils
 import androidx.test.platform.app.InstrumentationRegistry
 import com.hypertrack.android.interactors.PhotoForUpload
 import com.hypertrack.android.interactors.PhotoUploadingState
-import com.hypertrack.android.models.Visit
-import com.hypertrack.android.models.VisitStatus
-import com.hypertrack.android.models.VisitType
 import com.hypertrack.android.repository.BasicAuthAccessTokenRepository
 import com.hypertrack.android.repository.Driver
 import com.hypertrack.android.repository.MyPreferences
+import com.hypertrack.android.ui.screens.visits_management.tabs.places.Visit
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -71,31 +69,6 @@ class MyPreferencesTest {
         myPreferences.clearPreferences()
     }
 
-    @Test
-    fun itShouldReturnEmptyListIfNoVisitsSaved() {
-        val visits = myPreferences.restoreVisits()
-        assertTrue(visits.isEmpty())
-    }
-
-    @Test
-    fun crudVisits() {
-        val visitsExpected = listOf(
-            Visit(
-                _id = "42",
-                visitType = VisitType.LOCAL,
-                _state = VisitStatus.VISITED
-            ),
-            Visit(
-                _id = "24",
-                completedAt = "2020-02-02T20:20:02.020Z",
-                visitType = VisitType.TRIP,
-                _state = VisitStatus.COMPLETED
-            )
-        )
-        myPreferences.saveVisits(visitsExpected)
-        val visitsGot = myPreferences.restoreVisits()
-        assertEquals(visitsExpected, visitsGot)
-    }
 
     @Test
     fun crudPhotoUploadQueue() {
