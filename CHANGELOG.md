@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.11.0] - 2021-11-16
+### Added
+- Login by pasting deeplink
+
 ## [0.10.11] - 2021-11-05
 ### Updated
 - HyperTrack SDK 5.4.5
