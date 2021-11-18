@@ -108,7 +108,7 @@
     <string name="splash_screen_duplicate_fields">Duplicate fields</string>
 
     <string name="sign_in_deeplink_issues">Having issues with deeplink?</string>
-    <string name="sign_in_deeplink_hint">Paste the link here</string>
+    <string name="sign_in_deeplink_hint">Paste the deeplink or login token here</string>
     <string name="sign_in_deeplink_invalid_format">Invalid deeplink format.\nCorrect format: \n\n <b>https://hypertrack-logistics.app.link/...</b></string>
 
     <string name="permissions_allow_location_access">Please allow Location permissions</string>

@@ -4,17 +4,12 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.*
-import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
-import com.hypertrack.android.utils.DeeplinkResult
-import com.hypertrack.android.utils.DeeplinkResultListener
-import com.hypertrack.android.utils.Injector
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_signin.*
@@ -28,8 +23,6 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
     private val vm: SignInViewModel by viewModels {
         MyApplication.injector.provideViewModelFactory(MyApplication.context)
     }
-
-    private var showPasteDeeplink: Boolean = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -66,7 +59,7 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
             findNavController().navigate(it)
         }
 
-        vm.errorTextState.observe(viewLifecycleOwner, {
+        vm.loginErrorText.observe(viewLifecycleOwner, {
             incorrect.text = it
         })
 
@@ -89,34 +82,39 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
             tvDeeplinkError.text = it
         }
 
+        vm.clearDeeplinkTextAction.observe(viewLifecycleOwner) {
+            etDeeplink.setText("")
+        }
+
+        vm.showPasteDeeplink.observe(viewLifecycleOwner) { show ->
+            bDeeplinkIssues.setGoneState(show)
+            if (show) {
+                lDeeplinkIssues.show()
+                lDeeplinkIssues.alpha = 0f
+                lDeeplinkIssues.animate().setDuration(100L).alpha(1f)
+            } else {
+                lDeeplinkIssues.animate().setDuration(100L).withEndAction {
+                    lDeeplinkIssues.hide()
+                }.alpha(0f)
+            }
+        }
+
         bDeeplinkIssues.setOnClickListener {
-            setShowPasteDeeplinkState(true)
+            vm.onDeeplinkIssuesClick()
         }
 
         bClose.setOnClickListener {
-            setShowPasteDeeplinkState(false)
+            vm.onCloseClick()
         }
 
         lDeeplinkIssues.dim.setOnClickListener {
-            setShowPasteDeeplinkState(false)
+            vm.onCloseClick()
         }
 
         bDeeplinkLogin.setOnClickListener {
-            vm.handleDeeplink(etDeeplink.textString(), mainActivity())
+            vm.handleDeeplinkOrToken(etDeeplink.textString(), mainActivity())
         }
     }
 
-    private fun setShowPasteDeeplinkState(show: Boolean) {
-        showPasteDeeplink = show
-        bDeeplinkIssues.setGoneState(show)
-        if (show) {
-            lDeeplinkIssues.show()
-            lDeeplinkIssues.alpha = 0f
-            lDeeplinkIssues.animate().setDuration(100L).alpha(1f)
-        } else {
-            lDeeplinkIssues.animate().setDuration(100L).withEndAction {
-                lDeeplinkIssues.hide()
-            }.alpha(0f)
-        }
-    }
+
 }

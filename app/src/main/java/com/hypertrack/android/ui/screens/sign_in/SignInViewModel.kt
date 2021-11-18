@@ -5,30 +5,33 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.delegates.DeeplinkResultDelegate
 import com.hypertrack.android.interactors.*
-import com.hypertrack.android.ui.base.BaseViewModel
-import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.utils.*
 import com.hypertrack.logistics.android.github.R
+import com.squareup.moshi.Moshi
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class SignInViewModel(
+open class SignInViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val loginInteractor: LoginInteractor,
     private val permissionsInteractor: PermissionsInteractor,
     private val deeplinkInteractor: DeeplinkInteractor,
     private val deeplinkProcessor: DeeplinkProcessor,
+    private val moshi: Moshi,
 ) : BaseViewModel(baseDependencies) {
 
     private var login = ""
     private var password = ""
 
-    val errorTextState = MutableLiveData<String>()
     val isLoginButtonClickable = MutableLiveData(false)
+    val loginErrorText = MutableLiveData<String>()
 
     val deeplinkErrorText = MutableLiveData<String?>()
+    val clearDeeplinkTextAction = MutableLiveData<Consumable<Boolean>>()
+    val showPasteDeeplink = MutableLiveData<Boolean>(false)
+
 
     private val deeplinkDelegate = object : DeeplinkResultDelegate(
         deeplinkInteractor,
@@ -59,7 +62,7 @@ class SignInViewModel(
     }
 
     fun onLoginClick() {
-        errorTextState.postValue("")
+        loginErrorText.postValue("")
         isLoginButtonClickable.postValue(false)
         loadingState.postValue(true)
 
@@ -75,10 +78,10 @@ class SignInViewModel(
                     loadingState.postValue(false)
                     when (res) {
                         is NoSuchUser -> {
-                            errorTextState.postValue(osUtilsProvider.stringFromResource(R.string.user_does_not_exist))
+                            loginErrorText.postValue(osUtilsProvider.stringFromResource(R.string.user_does_not_exist))
                         }
                         is InvalidLoginOrPassword -> {
-                            errorTextState.postValue(osUtilsProvider.stringFromResource(R.string.incorrect_username_or_pass))
+                            loginErrorText.postValue(osUtilsProvider.stringFromResource(R.string.incorrect_username_or_pass))
                         }
                         is EmailConfirmationRequired -> {
                             destination.postValue(
@@ -88,7 +91,7 @@ class SignInViewModel(
                             )
                         }
                         is LoginError -> {
-                            errorTextState.postValue(MyApplication.context.getString(R.string.unknown_error))
+                            loginErrorText.postValue(MyApplication.context.getString(R.string.unknown_error))
                         }
                         is PublishableKey -> throw IllegalStateException()
                     }
@@ -97,8 +100,66 @@ class SignInViewModel(
         }
     }
 
-    fun handleDeeplink(link: String, activity: Activity) {
+    fun handleDeeplinkOrToken(text: String, activity: Activity) {
         deeplinkErrorText.postValue(null)
+        with(DeeplinkProcessor.DEEPLINK_REGEX.matcher(text)) {
+            if (matches()) {
+                handleDeeplink(text, activity)
+            } else {
+                handleLoginToken(text, activity)
+            }
+        }
+    }
+
+    fun onDeeplinkIssuesClick() {
+        showPasteDeeplink.postValue(true)
+        clearDeeplinkTextAction.postValue(true.toConsumable())
+        deeplinkErrorText.postValue(null)
+    }
+
+    fun onCloseClick() {
+        showPasteDeeplink.postValue(false)
+    }
+
+    private fun handleLoginToken(loginToken: String, activity: Activity) {
+        try {
+            osUtilsProvider.decodeBase64(
+                if (loginToken.contains("?")) {
+                    loginToken.split("?")[0]
+                } else {
+                    loginToken
+                }
+            ).let { json ->
+                moshi.createAnyMapAdapter().fromJson(json)!!.let {
+                    loadingState.postValue(true)
+                    onDeeplinkParamsReceived(
+                        DeeplinkParams(it["data"] as Map<String, Any>),
+                        activity
+                    )
+                }
+            }
+
+        } catch (e: Exception) {
+            crashReportsProvider.logException(e, mapOf("loginToken" to loginToken))
+            val message =
+                resourceProvider.stringFromResource(R.string.sign_in_deeplink_invalid_format)
+            deeplinkErrorText.postValue("$message\n\n${e.format()}")
+        }
+    }
+
+    protected open fun onDeeplinkParamsReceived(
+        deeplinkResult: DeeplinkResult,
+        activity: Activity
+    ) {
+        viewModelScope.launch {
+            deeplinkDelegate.handleDeeplink(
+                deeplinkResult,
+                activity
+            )
+        }
+    }
+
+    private fun handleDeeplink(link: String, activity: Activity) {
         loadingState.postValue(true)
         viewModelScope.launch {
             val result = suspendCoroutine<DeeplinkResult> {
@@ -108,7 +169,7 @@ class SignInViewModel(
                     }
                 })
             }
-            deeplinkDelegate.handleDeeplink(result, activity)
+            onDeeplinkParamsReceived(result, activity)
             loadingState.postValue(false)
         }
     }

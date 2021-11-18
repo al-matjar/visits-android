@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import kotlinx.coroutines.delay
 import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
 
 
 val pass: Unit = Unit
@@ -24,18 +25,20 @@ fun Bitmap.toBase64(): String {
     val outputStream = ByteArrayOutputStream()
     this.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
     val result = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
-    // Log.v(TAG, "Encoded image $result")
     return result
 }
 
 fun String.toBase64(): String {
     val result = Base64.encodeToString(toByteArray(), Base64.NO_WRAP)
-    // Log.v(TAG, "Encoded image $result")
     return result.orEmpty()
 }
 
+fun String.decodeBase64(): String {
+    val decodedBytes = Base64.decode(this, Base64.NO_WRAP)
+    return String(decodedBytes, StandardCharsets.UTF_8)
+}
+
 fun String.decodeBase64Bitmap(): Bitmap {
-    // Log.v(TAG, "decoding image $this")
     val decodedBytes = Base64.decode(this, Base64.NO_WRAP)
     return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
 }

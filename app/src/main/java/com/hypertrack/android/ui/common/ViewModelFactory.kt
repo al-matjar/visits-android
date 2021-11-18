@@ -47,7 +47,8 @@ class ViewModelFactory(
                 loginInteractor,
                 permissionsInteractor,
                 appScope.deeplinkInteractor,
-                appScope.deeplinkProcessor
+                appScope.deeplinkProcessor,
+                appScope.moshi
             ) as T
             SignUpViewModel::class.java -> SignUpViewModel(
                 baseDependencies,

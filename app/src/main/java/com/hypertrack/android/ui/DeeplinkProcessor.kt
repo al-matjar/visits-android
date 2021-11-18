@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import com.hypertrack.android.utils.DeeplinkProcessor.Companion.DEEPLINK_REGEX
 import io.branch.referral.Branch
 import io.branch.referral.BranchError
 import java.util.regex.Matcher
@@ -18,6 +19,11 @@ interface DeeplinkProcessor {
     )
 
     fun onLinkRetrieved(activity: Activity, link: String, resultListener: DeeplinkResultListener)
+
+    companion object {
+        val DEEPLINK_REGEX = Pattern
+            .compile("https:\\/\\/hypertrack-logistics\\.app\\.link\\/(.+)(\\?.*)?")
+    }
 }
 
 interface DeeplinkResultListener {
@@ -38,8 +44,6 @@ class BranchIoDeepLinkProcessor(
     private val osUtilsProvider: OsUtilsProvider,
     private val branch: BranchWrapper,
 ) : DeeplinkProcessor {
-
-    private val linkRegex = Pattern.compile("https:\\/\\/hypertrack-logistics\\.app\\.link\\/.{11}")
 
     override fun appOnCreate(application: Application) {
         branch.getAutoInstance(application)
@@ -64,7 +68,7 @@ class BranchIoDeepLinkProcessor(
         link: String,
         resultListener: DeeplinkResultListener
     ) {
-        with(linkRegex.matcher(link)) {
+        with(DEEPLINK_REGEX.matcher(link)) {
             if (matches()) {
                 handleLink(activity, osUtilsProvider.parseUri(link), resultListener, true)
             } else {

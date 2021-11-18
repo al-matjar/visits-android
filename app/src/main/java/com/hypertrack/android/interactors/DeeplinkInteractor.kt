@@ -1,6 +1,7 @@
 package com.hypertrack.android.interactors
 
 import android.app.Activity
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.repository.DriverRepository
@@ -48,6 +49,7 @@ class DeeplinkInteractor(
         }
     }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     private suspend fun parseDeeplink(
         parameters: Map<String, Any>,
         activity: Activity
@@ -60,12 +62,7 @@ class DeeplinkInteractor(
         val phoneNumber = parameters["phone_number"] as String?
         val metadata: Map<String, Any>? = when (val param = parameters["metadata"]) {
             is String -> {
-                moshi.adapter<Map<String, Any>>(
-                    Types.newParameterizedType(
-                        Map::class.java, String::class.java,
-                        Any::class.java
-                    )
-                ).fromJson(param)
+                moshi.createAnyMapAdapter().fromJson(param)
             }
             is Map<*, *> -> param as Map<String, Any>
             else -> null

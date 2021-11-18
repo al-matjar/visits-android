@@ -163,6 +163,10 @@ public class OsUtilsProvider(
         return base64thumbnail.decodeBase64Bitmap()
     }
 
+    fun decodeBase64(base64: String): String {
+        return base64.decodeBase64()
+    }
+
     fun shareText(text: String, title: String? = null) {
         val sharingTitle: String = context.getString(R.string.share_trip_via)
         val sendIntent = Intent()

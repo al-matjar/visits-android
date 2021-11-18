@@ -3,13 +3,14 @@ package com.hypertrack.android.ui
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import com.hypertrack.android.interactors.DeeplinkInteractor
 import com.hypertrack.android.utils.*
 import io.branch.indexing.BranchUniversalObject
 import io.branch.referral.BranchError
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import junit.framework.Assert.assertEquals
+import junit.framework.Assert.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
@@ -218,6 +219,32 @@ class DeeplinkProcessorTest {
                     }
                 }
             )
+        }
+    }
+
+    @Test
+    fun `it should correctly match deeplink pattern`() {
+        listOf(
+            "https://hypertrack-logistics.app.link/1oF0VcDvYgb",
+            "https://hypertrack-logistics.app.link/1oF0VcDvYgb?",
+            "https://hypertrack-logistics.app.link/1oF0VcDvYgb?ddddddd",
+            "https://hypertrack-logistics.app.link/1oF",
+            "https://hypertrack-logistics.app.link/1oF0VcDvYgddddddddddddddd",
+        ).forEach {
+            DeeplinkProcessor.DEEPLINK_REGEX.matcher(it).matches().let {
+                println(it)
+                assertTrue(it)
+            }
+        }
+
+        listOf(
+            "https://hypertrack-logistics.app.link/",
+            "https://google.com/1oF0VcDvYgddddddddddddddd"
+        ).forEach {
+            DeeplinkProcessor.DEEPLINK_REGEX.matcher(it).matches().let {
+                println(it)
+                assertFalse(it)
+            }
         }
     }
 
