@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.11.1] - 2021-11-18
+### Added
+- Login by login token
+
 ## [0.11.0] - 2021-11-16
 ### Added
 - Login by pasting deeplink
