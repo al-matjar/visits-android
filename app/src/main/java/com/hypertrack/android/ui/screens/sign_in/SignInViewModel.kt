@@ -69,7 +69,7 @@ open class SignInViewModel(
         viewModelScope.launch {
             val res = loginInteractor.signIn(login, password)
             when (res) {
-                is PublishableKey -> {
+                is GotPublishableKey -> {
                     loadingState.postValue(false)
                     proceed()
                 }
@@ -93,7 +93,7 @@ open class SignInViewModel(
                         is LoginError -> {
                             loginErrorText.postValue(MyApplication.context.getString(R.string.unknown_error))
                         }
-                        is PublishableKey -> throw IllegalStateException()
+                        is GotPublishableKey -> throw IllegalStateException()
                     }
                 }
             }

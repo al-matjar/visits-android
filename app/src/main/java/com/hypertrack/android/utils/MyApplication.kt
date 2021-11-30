@@ -68,6 +68,7 @@ class MyApplication : Application() {
         const val CHANNEL_ID = "default_notification_channel"
         const val IMPORTANT_CHANNEL_ID = "important_notification_channel"
         const val SERVICES_API_KEY = BuildConfig.SERVICES_API_KEY
+        const val GRAPHQL_API_KEY = BuildConfig.GRAPHQL_API_KEY
 
         val MOCK_MODE = if (BuildConfig.DEBUG) {
             BuildConfig.MOCK_MODE

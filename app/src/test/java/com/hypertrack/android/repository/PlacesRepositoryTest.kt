@@ -66,13 +66,6 @@ class PlacesRepositoryTest {
                     ), null
                 )
 
-                coEvery { getAllGeofencesVisits(any()) } returns VisitsResponse(
-                    listOf(
-                        MockData.createGeofenceVisit(deviceId = "other_device_id"),
-                        MockData.createGeofenceVisit(deviceId = "device_id")
-                    ), null
-                )
-
                 coEvery { getGeofence(any()) } returns MockData.createGeofence().copy(
                     marker = GeofenceMarkersResponse(
                         listOf(
@@ -90,10 +83,6 @@ class PlacesRepositoryTest {
         runBlocking {
             placesRepository.loadGeofencesPage(null).let {
                 assertEquals(listOf("device_id"), it.items[0].visits.map { it.deviceId })
-            }
-
-            placesRepository.loadAllGeofencesVisitsPage(null).let {
-                assertEquals(listOf("device_id"), it.items.map { it.deviceId })
             }
 
             (placesRepository.getGeofence("id") as GeofenceSuccess).let {

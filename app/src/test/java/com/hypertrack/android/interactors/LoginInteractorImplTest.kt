@@ -95,7 +95,7 @@ class LoginInteractorImplTest {
     fun `sign in success flow`() {
         runBlocking {
             val res = loginInteractor.signIn("login", "password")
-            assertEquals("pk", (res as PublishableKey).key)
+            assertEquals("pk", (res as GotPublishableKey).key)
             verify {
                 driverRepository.setUserData(
                     email = "login"

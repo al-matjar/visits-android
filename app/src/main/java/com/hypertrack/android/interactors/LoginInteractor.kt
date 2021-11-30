@@ -8,7 +8,6 @@ import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.repository.DriverRepository
 import com.hypertrack.android.utils.*
 import java.util.*
-import javax.inject.Provider
 
 interface LoginInteractor {
     suspend fun signIn(email: String, password: String): LoginResult
@@ -46,7 +45,7 @@ class LoginInteractorImpl(
 
     override suspend fun signIn(email: String, password: String): LoginResult {
         when (val res = getPublishableKey(email.toLowerCase(Locale.getDefault()), password)) {
-            is PublishableKey -> {
+            is GotPublishableKey -> {
                 return try {
                     val success = loginWithPublishableKey(res.key, email)
                     if (success) {
@@ -197,7 +196,7 @@ class LoginInteractorImpl(
                     is CognitoToken -> {
                         val pk = getPublishableKeyFromToken(tokenRes.token)
                         // Log.d(TAG, "Got pk $pk")
-                        PublishableKey(pk)
+                        GotPublishableKey(pk)
                     }
                 }
             }
@@ -234,7 +233,7 @@ class LoginInteractorImpl(
 }
 
 sealed class LoginResult
-class PublishableKey(val key: String) : LoginResult()
+class GotPublishableKey(val key: String) : LoginResult()
 object NoSuchUser : LoginResult()
 object EmailConfirmationRequired : LoginResult()
 object InvalidLoginOrPassword : LoginResult()

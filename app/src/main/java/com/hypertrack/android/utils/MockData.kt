@@ -11,11 +11,11 @@ import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.Metadata
 
 object MockData {
 
     private val paloAltoLatLng = LatLng(37.381451, -122.063616)
+    val PALO_ALTO_LAT_LNG = paloAltoLatLng
 
     private val addr = listOf(
         "2875 El Camino Real",
@@ -177,21 +177,23 @@ object MockData {
 
     fun createGeofenceVisit(
         _date: LocalDate? = null,
-        deviceId: String = "device_id"
+        deviceId: String = "device_id",
+        arrival: ZonedDateTime? = null
     ): GeofenceVisit {
+        val mockExitDt = arrival ?: _date?.let {
+            ZonedDateTime.now().withMonth(it.monthValue).withDayOfMonth(it.dayOfMonth)
+                .minusHours(1)
+        } ?: ZonedDateTime.now()
+
+        val mockArrivalDt = arrival ?: mockExitDt.minusHours(1)
+
         val date = _date ?: LocalDate.now()
         return GeofenceVisit(
             "1",
             "1",
             deviceId,
-            Arrival(
-                ZonedDateTime.now().withMonth(date.monthValue).withDayOfMonth(date.dayOfMonth)
-                    .minusHours(1).format(DateTimeFormatter.ISO_INSTANT)
-            ),
-            Exit(
-                ZonedDateTime.now().withMonth(date.monthValue).withDayOfMonth(date.dayOfMonth)
-                    .format(DateTimeFormatter.ISO_INSTANT),
-            ),
+            Arrival(mockArrivalDt.toIso()),
+            Exit(mockExitDt.toIso()),
             Point(1.0, 1.0),
             RouteTo(
                 100,
@@ -201,6 +203,26 @@ object MockData {
             100,
             null,
             null,
+        )
+    }
+
+    fun createGraphQlGeofenceVisit(arrival: ZonedDateTime): GraphQlGeofenceVisit {
+        return GraphQlGeofenceVisit(
+            "1",
+            Arrival(arrival.toIso()),
+            Exit(arrival.plusHours(1).toIso()),
+            RouteTo(
+                100,
+                100,
+                100,
+            ),
+            GraphQlGeofence(
+                "1", "1", "{}", GraphQlPointGeometry(
+                    center = listOf(
+                        PALO_ALTO_LAT_LNG.longitude, PALO_ALTO_LAT_LNG.latitude
+                    ), null
+                ), 100
+            ),
         )
     }
 

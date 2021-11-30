@@ -1,24 +1,16 @@
 package com.hypertrack.android.interactors
 
-import com.hypertrack.android.api.GeofenceVisit
-import com.hypertrack.android.models.local.LocalGeofenceVisit
-import com.hypertrack.android.repository.PlacesRepository
-import com.hypertrack.android.ui.common.DataPage
+import com.hypertrack.android.utils.Result
 
-interface PlacesVisitsInteractor {
-    suspend fun loadPage(pageToken: String?): DataPage<LocalGeofenceVisit>
-    fun invalidateCache()
-}
+class PlacesVisitsInteractor(
+    private val placesVisitsRepository: PlacesVisitsRepository
+) {
 
-class PlacesVisitsInteractorImpl(
-    private val placesRepository: PlacesRepository
-) : PlacesVisitsInteractor {
-
-    override suspend fun loadPage(pageToken: String?): DataPage<LocalGeofenceVisit> {
-        return placesRepository.loadAllGeofencesVisitsPage(pageToken)
+    suspend fun getPlaceVisitsStats(): Result<PlaceVisitsStats> {
+        return placesVisitsRepository.getPlaceVisitsStats()
     }
 
-    override fun invalidateCache() {
-
+    fun invalidateCache() {
+        placesVisitsRepository.invalidateCache()
     }
 }

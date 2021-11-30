@@ -89,6 +89,7 @@ fun ZonedDateTime.prettyFormatDate(): String {
 
 fun ZonedDateTime.toIso(): String {
     return withZoneSameInstant(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_DATE_TIME)
+        .replace("[UTC]", "")
 }
 
 class TimeFormatterImpl(val osUtilsProvider: OsUtilsProvider) : TimeFormatter {

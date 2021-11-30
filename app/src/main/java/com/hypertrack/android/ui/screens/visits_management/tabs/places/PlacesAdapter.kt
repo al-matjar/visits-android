@@ -1,7 +1,7 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.places
 
 import android.view.View
-import com.hypertrack.android.delegates.GeofenceNameDelegate
+import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
 import com.hypertrack.android.models.Location
 import com.hypertrack.android.models.local.LocalGeofence
 import com.hypertrack.android.ui.base.BaseAdapter

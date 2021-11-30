@@ -4,6 +4,7 @@ import android.location.Address
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.model.Place
 import com.hypertrack.android.api.GeofenceVisit
+import com.hypertrack.android.api.GraphQlGeofenceVisit
 import com.hypertrack.android.api.asLocation
 import com.hypertrack.android.models.local.LocalGeofence
 import com.hypertrack.android.models.local.LocalGeofenceVisit
@@ -110,6 +111,20 @@ class GooglePlaceAddressDelegate(
 
     fun strictAddress(place: Place): String? {
         return place.getAddressString(strictMode = true)
+    }
+
+}
+
+class GraphQlGeofenceVisitAddressDelegate(
+    private val osUtilsProvider: OsUtilsProvider
+) {
+
+    fun displayAddress(visit: GraphQlGeofenceVisit): String {
+        return visit.geofence.address
+            ?: visit.geofence.location.let {
+                osUtilsProvider.getPlaceFromCoordinates(it)
+            }?.toAddressString(strictMode = false, short = true, disableCoordinatesFallback = true)
+            ?: osUtilsProvider.stringFromResource(R.string.address_not_available)
     }
 
 }

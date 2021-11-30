@@ -140,7 +140,6 @@ class UserScopeViewModelFactory(
             PlacesVisitsViewModel::class.java -> PlacesVisitsViewModel(
                 baseDependencies,
                 userScopeProvider.get().placesVisitsInteractor,
-                userScopeProvider.get().historyInteractor,
                 appScope.datetimeFormatter,
                 appScope.distanceFormatter,
                 appScope.timeFormatter,

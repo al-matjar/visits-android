@@ -3,10 +3,9 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.places
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.hypertrack.android.delegates.GeofenceNameDelegate
+import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
 import com.hypertrack.android.ui.base.BaseAdapter
 import com.hypertrack.android.ui.common.delegates.GeofenceAddressDelegate
-import com.hypertrack.android.ui.common.util.format
 import com.hypertrack.android.ui.screens.place_details.PlaceVisitsAdapter
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.TimeDistanceFormatter
 import com.hypertrack.android.utils.OsUtilsProvider
@@ -27,6 +26,7 @@ class AllPlacesVisitsAdapter(
     private val timeFormatter: TimeFormatter,
     private val onCopyClickListener: ((String) -> Unit)
 ) : BaseAdapter<VisitItem, BaseAdapter.BaseVh<VisitItem>>() {
+
     private val timeDistanceFormatter = TimeDistanceFormatter(
         datetimeFormatter, distanceFormatter
     )
@@ -35,13 +35,6 @@ class AllPlacesVisitsAdapter(
     private val addressDelegate = GeofenceAddressDelegate(osUtilsProvider)
 
     override val itemLayoutResource: Int = R.layout.item_place_visit_all_places
-
-    private var visitsData: VisitsData = VisitsData(listOf(), mapOf())
-
-    fun updateData(_visitsData: VisitsData) {
-        visitsData = _visitsData
-        updateItems(visitsData.adapterData)
-    }
 
     override fun getItemViewType(position: Int): Int {
         return when (items[position]) {
@@ -79,7 +72,7 @@ class AllPlacesVisitsAdapter(
                 when (item) {
                     is Day -> {
                         containerView.tvTitle.text = datetimeFormatter.formatDate(item.date)
-                        containerView.tvTotal.text = visitsData.dayStats[item.date]?.let {
+                        containerView.tvTotal.text = item.totalDriveDistance.meters.let {
                             timeDistanceFormatter.formatDistance(it)
                         } ?: osUtilsProvider.stringFromResource(R.string.places_visits_loading)
                     }

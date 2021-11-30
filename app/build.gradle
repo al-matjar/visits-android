@@ -35,8 +35,10 @@ android {
         resValue "string", "awsLoginTestUserName", rootProject.properties.awsLoginTestUserName
         resValue "string", "awsLoginTestUserPwd", rootProject.properties.awsLoginTestUserPwd
         resValue "string", "awsLoginTestExpectedPk", rootProject.properties.awsLoginTestExpectedPk
-        if(rootProject.properties.servicesApiKey == null) throw new Exception("SERVICES_API_KEY = null")
+        if(rootProject.properties.servicesApiKey == null) throw new Exception("SERVICES_API_KEY is null")
+        if(rootProject.properties.graphqlApiKey == null) throw new Exception("GRAPHQL_API_KEY is null")
         buildConfigField("String", "SERVICES_API_KEY", "\"${rootProject.properties.servicesApiKey}\"")
+        buildConfigField("String", "GRAPHQL_API_KEY", "\"${rootProject.properties.graphqlApiKey}\"")
         buildConfigField("Boolean", "MOCK_MODE", mockMode.toString())
     }
     signingConfigs {

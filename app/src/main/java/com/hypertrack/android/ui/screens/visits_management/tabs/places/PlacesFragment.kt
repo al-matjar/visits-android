@@ -117,7 +117,6 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
         }
         rvPlaces.addOnScrollListener(object : EndlessScrollListener(object : OnLoadMoreListener {
             override fun onLoadMore(page: Int, totalItemsCount: Int) {
-//                Log.v("hypertrack-verbose", "EndlessScrollListener $page $totalItemsCount")
                 vm.onLoadMore()
             }
         }) {
@@ -142,28 +141,13 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
 
     private fun initVisits() {
         rvVisits.setLinearLayoutManager(requireContext())
-        visitsAdapter = visitsVm.adapter
+        visitsAdapter = visitsVm.createVisitsAdapter()
         rvVisits.adapter = visitsAdapter
-        rvVisits.addOnScrollListener(object : EndlessScrollListener(object : OnLoadMoreListener {
-            override fun onLoadMore(page: Int, totalItemsCount: Int) {
-//                Log.v("hypertrack-verbose", "EndlessScrollListener $page $totalItemsCount")
-                visitsVm.onLoadMore()
-            }
-        }) {
-            override val visibleThreshold = 1
-        })
 
-        visitsVm.visitsPage.observe(viewLifecycleOwner, {
-            if (it != null) {
-                it.consume {
-//                    Log.v("hypertrack-verbose", "-- page ${it.map { it.geofence.name }}")
-                    lVisitsPlaceholder.setGoneState(visitsAdapter.itemCount != 0)
-                    rvVisits.setGoneState(visitsAdapter.itemCount == 0)
-                }
-            } else {
-                lVisitsPlaceholder.hide()
-                rvVisits.show()
-            }
+        visitsVm.visitsStats.observe(viewLifecycleOwner, {
+            visitsAdapter.updateItems(it)
+            lVisitsPlaceholder.setGoneState(it.isNotEmpty())
+            rvVisits.setGoneState(it.isEmpty())
         })
     }
 

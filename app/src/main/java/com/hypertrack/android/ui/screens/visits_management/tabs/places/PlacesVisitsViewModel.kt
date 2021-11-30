@@ -1,50 +1,32 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.places
 
-import androidx.lifecycle.asLiveData
-import com.hypertrack.android.interactors.HistoryInteractor
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import com.hypertrack.android.interactors.PlaceVisitsStats
 import com.hypertrack.android.interactors.PlacesVisitsInteractor
-import com.hypertrack.android.models.History
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.base.*
-import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
+import com.hypertrack.android.utils.Failure
+import com.hypertrack.android.utils.Meters
+import com.hypertrack.android.utils.Success
 
-import com.hypertrack.android.utils.applyAddAll
 import com.hypertrack.android.utils.formatters.DatetimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.android.utils.formatters.TimeFormatter
 import com.hypertrack.android.utils.formatters.prettyFormat
 import kotlinx.coroutines.*
 import java.time.LocalDate
-import java.time.Month
 
 class PlacesVisitsViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val placesVisitsInteractor: PlacesVisitsInteractor,
-    private val historyInteractor: HistoryInteractor,
     private val datetimeFormatter: DatetimeFormatter,
     private val distanceFormatter: DistanceFormatter,
     private val timeFormatter: TimeFormatter,
 ) : BaseViewModel(baseDependencies) {
 
-    val adapter = createVisitsAdapter()
-    private var adapterData = VisitsData(listOf(), mapOf())
-
-    private var nextPageToken: String? = null
-    private var updateJob: Job? = null
-
-    val visitsPage = SingleLiveEvent<Consumable<List<LocalGeofenceVisit>>?>()
-
-    init {
-        historyInteractor.errorFlow.asLiveData().observeManaged {
-            errorHandler.postConsumable(it)
-        }
-
-        historyInteractor.history.observeManaged {
-            adapterData = adapterData.newInstanceWithHistory(it)
-            adapter.updateData(adapterData)
-        }
-    }
+    val visitsStats = MutableLiveData<List<VisitItem>>()
 
     fun refresh() {
         placesVisitsInteractor.invalidateCache()
@@ -52,14 +34,16 @@ class PlacesVisitsViewModel(
     }
 
     fun init() {
-        loadingState.value = false
-        loadingState.postValue(false)
-        updateJob?.cancel()
-        nextPageToken = null
-        adapter.updateItems(listOf())
-        visitsPage.value = null
-        visitsPage.postValue(null)
-        onLoadMore()
+        loadingState.postValue(true)
+        viewModelScope.launch {
+            placesVisitsInteractor.getPlaceVisitsStats().let {
+                loadingState.postValue(false)
+                when (it) {
+                    is Success -> visitsStats.postValue(mapListData(it.result))
+                    is Failure -> errorHandler.postException(it.exception)
+                }
+            }
+        }
     }
 
     private fun onVisitClick(visit: LocalGeofenceVisit) {
@@ -70,50 +54,7 @@ class PlacesVisitsViewModel(
         )
     }
 
-    fun onLoadMore() {
-        if (loadingState.value == null || loadingState.value == false) {
-            //todo change to viewModelScope (viewModelScope cause bug when launch is not called after geofence creation)
-            updateJob = GlobalScope.launch {
-                try {
-                    if (nextPageToken != null || visitsPage.value == null) {
-//                        Log.v("hypertrack-verbose", "** loading ${nextPageToken.hashCode()}")
-                        loadingState.postValue(true)
-                        val res = placesVisitsInteractor.loadPage(nextPageToken)
-                        nextPageToken = res.paginationToken
-//                        Log.v("hypertrack-verbose", "nextPageToken = ${nextPageToken.hashCode()}")
-
-                        adapterData = adapterData.newInstanceWithNewVisits(res.items)
-                        withContext(Dispatchers.Main) {
-                            adapter.updateData(adapterData)
-                        }
-
-                        visitsPage.postValue(Consumable(res.items))
-                        triggerHistoryUpdates()
-                        loadingState.postValue(false)
-                    }
-                } catch (e: Exception) {
-                    if (e !is CancellationException) {
-                        errorHandler.postException(e)
-                        loadingState.postValue(false)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun triggerHistoryUpdates() {
-        val history = historyInteractor.history.requireValue()
-        for (item in adapter.items.filterIsInstance<Day>()) {
-            if (!history.containsKey(item.date)) {
-                historyInteractor.loadHistory(item.date)
-            }
-        }
-//        for (item in adapter.items.filterIsInstance<MonthItem>()) {
-//            historyInteractor.loadMonthSummary(item.month)
-//        }
-    }
-
-    private fun createVisitsAdapter(): AllPlacesVisitsAdapter {
+    fun createVisitsAdapter(): AllPlacesVisitsAdapter {
         return AllPlacesVisitsAdapter(
             osUtilsProvider,
             datetimeFormatter,
@@ -130,73 +71,18 @@ class PlacesVisitsViewModel(
         }
     }
 
-}
-
-data class VisitsData(
-    val visits: List<LocalGeofenceVisit>,
-    val dayStats: Map<LocalDate, Int>,
-) {
-    val adapterData: List<VisitItem>
-
-    val monthStats: Map<Month, Int>
-
-    init {
-        val res = mutableListOf<VisitItem>()
-        val monthStats = mutableMapOf<Month, Int>()
-        val visits = visits.sortedByDescending { it.getDay() }
-        if (visits.isNotEmpty()) {
-            var currentDay: LocalDate? = null
-//            var currentMonth: Month? = null
-            val monthPack = mutableListOf<VisitItem>()
-
-            fun submitCurrentMonth() {
-                res.addAll(monthPack)
-
-//                if (monthPack.filterIsInstance<Day>().all { dayStats[it.date] != null }) {
-//                    monthStats[currentMonth!!] =
-//                        monthPack.filterIsInstance<Day>().map { dayStats[it.date]!! }.sum()
-//                }
-
-                monthPack.clear()
-            }
-
-            for (visit in visits) {
-                //new month
-//                if (visit.getDay().month != currentMonth) {
-//                    //if not first submit previous month
-//                    currentMonth?.let {
-//                        submitCurrentMonth()
-//                    }
-//
-//                    currentMonth = visit.getDay().month
-//                    monthPack.add(MonthItem(currentMonth))
-//                }
-                //new day
-                if (visit.getDay() != currentDay) {
-                    currentDay = visit.getDay()
-                    monthPack.add(Day(currentDay))
+    private fun mapListData(visitsStats: PlaceVisitsStats): List<VisitItem> {
+        val stats = visitsStats.data
+        return mutableListOf<VisitItem>().apply {
+            stats.forEach { (k, v) ->
+                add(Day(k, v.totalDriveDistance))
+                v.visits.forEach {
+                    add(Visit(it))
                 }
-                monthPack.add(Visit(visit))
             }
-            submitCurrentMonth()
-        }
-        adapterData = res
-        this.monthStats = monthStats
-    }
-
-    fun newInstanceWithNewVisits(newVisits: List<LocalGeofenceVisit>): VisitsData {
-        return VisitsData(visits.applyAddAll(newVisits), dayStats)
-    }
-
-    fun newInstanceWithHistory(history: Map<LocalDate, History>): VisitsData {
-        return VisitsData(visits, history.mapValues { it.value.summary.totalDriveDistance }).also {
-//            Log.v(
-//                "hypertrack-verbose",
-//                it.dayStats.keys.sortedByDescending { it }.map { "${it.dayOfMonth} ${it.month}"  }.toString()
-//            )
-//            Log.v("hypertrack-verbose", it.monthStats.keys.map { it }.toString())
         }
     }
+
 }
 
 sealed class VisitItem
@@ -206,7 +92,7 @@ class Visit(val visit: LocalGeofenceVisit) : VisitItem() {
     }
 }
 
-class Day(val date: LocalDate) : VisitItem() {
+class Day(val date: LocalDate, val totalDriveDistance: Meters) : VisitItem() {
     override fun toString(): String {
         return date.prettyFormat()
     }

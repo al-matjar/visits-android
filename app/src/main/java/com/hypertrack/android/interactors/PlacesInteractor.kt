@@ -1,11 +1,10 @@
 package com.hypertrack.android.interactors
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.fonfon.kgeohash.GeoHash
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.delegates.GeofenceNameDelegate
+import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.models.local.LocalGeofence
 import com.hypertrack.android.repository.*

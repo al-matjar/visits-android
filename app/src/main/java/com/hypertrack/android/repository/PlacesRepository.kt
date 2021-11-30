@@ -23,7 +23,6 @@ interface PlacesRepository {
     suspend fun loadGeofencesPage(pageToken: String?): DataPage<LocalGeofence>
     suspend fun loadGeofencesPageForMap(gh: GeoHash, pageToken: String?): DataPage<LocalGeofence>
 
-    suspend fun loadAllGeofencesVisitsPage(pageToken: String?): DataPage<LocalGeofenceVisit>
     suspend fun createGeofence(
         latitude: Double,
         longitude: Double,
@@ -72,19 +71,6 @@ class PlacesRepositoryImpl(
             DataPage(
                 localGeofences,
                 res.paginationToken
-            )
-        }
-    }
-
-    override suspend fun loadAllGeofencesVisitsPage(
-        pageToken: String?,
-    ): DataPage<LocalGeofenceVisit> {
-        return apiClient.getAllGeofencesVisits(pageToken).let {
-            DataPage(
-                it.visits.filter { visit ->
-                    visit.deviceId == deviceId
-                }.map { LocalGeofenceVisit.fromVisit(it) },
-                it.paginationToken
             )
         }
     }

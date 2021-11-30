@@ -133,25 +133,6 @@ class ApiClient(
         )
     }
 
-    suspend fun getAllGeofencesVisits(
-        paginationToken: String?,
-    ): VisitsResponse {
-        try {
-            val response = api.getAllGeofencesVisits(
-                deviceId = deviceId,
-                paginationToken = paginationToken,
-            )
-            if (response.isSuccessful) {
-                return response.body()!!
-            } else {
-                throw HttpException(response)
-            }
-        } catch (e: Exception) {
-            throw e
-        }
-    }
-
-
     suspend fun getTrips(page: String = ""): List<Trip> {
         try {
             val response = api.getTrips(deviceId, page)

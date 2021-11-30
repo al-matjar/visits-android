@@ -2,12 +2,14 @@ package com.hypertrack.android.models
 
 import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.repository.AuthCallResponse
+import com.hypertrack.android.utils.CrashReportsProvider
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import dalvik.annotation.TestTarget
 import org.jetbrains.annotations.TestOnly
+import java.lang.ClassCastException
 
 @JsonClass(generateAdapter = true)
 data class Metadata(
@@ -150,10 +152,54 @@ class GeofenceMetadata(
             .toJsonValue(this) as Map<String, Any>
     }
 
+
     companion object {
         const val KEY_ADDRESS = "address"
         const val KEY_NAME = "name"
         const val KEY_INTEGRATION = "integration"
+        const val KEY_DESCRIPTION = "description"
+
+        //todo refactor
+        fun fromMap(
+            map: Map<String, Any>,
+            crashReportsProvider: CrashReportsProvider
+        ): GeofenceMetadata {
+
+            fun handleException(e: Exception) {
+                if (e !is ClassCastException) {
+                    crashReportsProvider.logException(e)
+                }
+            }
+
+            //todo fix integration (should be parsed from map)
+            return GeofenceMetadata(
+                integration = null,
+//                integration = try {
+//                    map[KEY_INTEGRATION] as Integration?
+//                } catch (e: Exception) {
+//                    handleException(e)
+//                    null
+//                },
+                name = try {
+                    map[KEY_NAME] as String?
+                } catch (e: Exception) {
+                    handleException(e)
+                    null
+                },
+                address = try {
+                    map[KEY_ADDRESS] as String?
+                } catch (e: Exception) {
+                    handleException(e)
+                    null
+                },
+                description = try {
+                    map[KEY_DESCRIPTION] as String?
+                } catch (e: Exception) {
+                    handleException(e)
+                    null
+                },
+            )
+        }
     }
 }
 

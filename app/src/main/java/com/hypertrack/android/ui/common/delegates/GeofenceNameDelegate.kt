@@ -1,4 +1,4 @@
-package com.hypertrack.android.delegates
+package com.hypertrack.android.ui.common.delegates
 
 import com.hypertrack.android.api.GeofenceVisit
 import com.hypertrack.android.models.local.LocalGeofence
@@ -29,5 +29,4 @@ class GeofenceNameDelegate(
             ?: visit.address
             ?: visit.geofenceId
     }
-
 }

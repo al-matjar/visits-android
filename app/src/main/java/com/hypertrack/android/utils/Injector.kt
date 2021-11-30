@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.time.ZoneId
 
 
 class ServiceLocator(val crashReportsProvider: CrashReportsProvider) {
@@ -241,8 +242,22 @@ object Injector {
             crashReportsProvider
         )
 
-        val placesVisitsInteractor = PlacesVisitsInteractorImpl(
-            placesRepository
+        val placesVisitsRepository = PlacesVisitsRepository(
+            DeviceId(deviceId),
+            GraphQlApiClient(
+                GRAPHQL_API_URL,
+                PublishableKey(publishableKey),
+                DeviceId(deviceId),
+                moshi,
+                crashReportsProvider
+            ),
+            osUtilsProvider,
+            crashReportsProvider,
+            moshi
+        )
+
+        val placesVisitsInteractor = PlacesVisitsInteractor(
+            placesVisitsRepository
         )
 
         val historyInteractor = HistoryInteractorImpl(
@@ -454,9 +469,14 @@ interface AccountPreferencesProvider {
     var shouldStartTracking: Boolean
 }
 
+data class DeviceId(val value: String)
+data class PublishableKey(val value: String)
+
 const val BASE_URL = "https://live-app-backend.htprod.hypertrack.com/"
 const val LIVE_API_URL_BASE = "https://live-api.htprod.hypertrack.com/"
 const val AUTH_URL = LIVE_API_URL_BASE + "authenticate"
+const val GRAPHQL_API_URL =
+    "https://s6a3q7vbqzfalfhqi2vr32ugee.appsync-api.us-west-2.amazonaws.com/"
 const val MAX_IMAGE_SIDE_LENGTH_PX = 1024
 
 const val LIVE_ACCOUNT_URL_BASE = "https://live-account.htprod.hypertrack.com"
