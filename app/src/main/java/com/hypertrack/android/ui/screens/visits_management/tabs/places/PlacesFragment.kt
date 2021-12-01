@@ -2,6 +2,7 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.places
 
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -29,23 +30,12 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
         initVisits()
 
         vm.loadingState.observe(viewLifecycleOwner, {
-            srlPlaces.isRefreshing = (vm.loadingState.value == true
-                    || visitsVm.loadingState.value == true)
-                    && when (state) {
-                State.PLACES -> adapter.itemCount == 0
-                State.VISITS -> visitsAdapter.itemCount == 0
-            }
-            paginationProgressbar.setGoneState(!it || adapter.itemCount == 0)
+            paginationProgressbar.setGoneState(!it)
         })
 
         visitsVm.loadingState.observe(viewLifecycleOwner, {
-            srlPlaces.isRefreshing = (vm.loadingState.value == true
-                    || visitsVm.loadingState.value == true)
-                    && when (state) {
-                State.PLACES -> adapter.itemCount == 0
-                State.VISITS -> visitsAdapter.itemCount == 0
-            }
-            paginationProgressbar.setGoneState(!it || adapter.itemCount == 0)
+            lVisitsPlaceholder.hide()
+            visitsProgressbar.setGoneState(!it)
         })
 
         vm.destination.observe(viewLifecycleOwner, {
@@ -65,8 +55,13 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
         })
 
         srlPlaces.setOnRefreshListener {
-            vm.refresh()
-            visitsVm.refresh()
+            when (state) {
+                State.PLACES -> vm.refresh()
+                State.VISITS -> {
+                    visitsVm.onPullToRefresh()
+                }
+            }
+            srlPlaces.isRefreshing = false
         }
 
         fbAddPlace.setOnClickListener {
@@ -82,8 +77,14 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
         }
 
         vm.init()
-        visitsVm.init()
         displayState(State.PLACES)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (state == State.VISITS) {
+            visitsVm.onResume()
+        }
     }
 
     private fun displayState(state: State) {
@@ -104,6 +105,7 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
                 bVisits.setTypeface(null, Typeface.BOLD)
                 lPlaces.setGoneState(true)
                 lVisits.setGoneState(false)
+                visitsVm.onStateChangedToVisits()
             }
         }
     }
@@ -145,6 +147,7 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
         rvVisits.adapter = visitsAdapter
 
         visitsVm.visitsStats.observe(viewLifecycleOwner, {
+            Log.v("hypertrack-verbose", it.toString())
             visitsAdapter.updateItems(it)
             lVisitsPlaceholder.setGoneState(it.isNotEmpty())
             rvVisits.setGoneState(it.isEmpty())

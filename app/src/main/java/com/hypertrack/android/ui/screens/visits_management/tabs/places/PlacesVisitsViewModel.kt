@@ -28,12 +28,33 @@ class PlacesVisitsViewModel(
 
     val visitsStats = MutableLiveData<List<VisitItem>>()
 
-    fun refresh() {
+    fun onPullToRefresh() {
         placesVisitsInteractor.invalidateCache()
         init()
     }
 
-    fun init() {
+    fun onResume() {
+        init()
+    }
+
+    fun createVisitsAdapter(): AllPlacesVisitsAdapter {
+        return AllPlacesVisitsAdapter(
+            osUtilsProvider,
+            datetimeFormatter,
+            distanceFormatter,
+            timeFormatter
+        ) {
+            osUtilsProvider.copyToClipboard(it)
+        }.apply {
+            onItemClickListener = {
+                if (it is Visit) {
+                    onVisitClick(it.visit)
+                }
+            }
+        }
+    }
+
+    private fun init() {
         loadingState.postValue(true)
         viewModelScope.launch {
             placesVisitsInteractor.getPlaceVisitsStats().let {
@@ -54,23 +75,6 @@ class PlacesVisitsViewModel(
         )
     }
 
-    fun createVisitsAdapter(): AllPlacesVisitsAdapter {
-        return AllPlacesVisitsAdapter(
-            osUtilsProvider,
-            datetimeFormatter,
-            distanceFormatter,
-            timeFormatter
-        ) {
-            osUtilsProvider.copyToClipboard(it)
-        }.apply {
-            onItemClickListener = {
-                if (it is Visit) {
-                    onVisitClick(it.visit)
-                }
-            }
-        }
-    }
-
     private fun mapListData(visitsStats: PlaceVisitsStats): List<VisitItem> {
         val stats = visitsStats.data
         return mutableListOf<VisitItem>().apply {
@@ -81,6 +85,10 @@ class PlacesVisitsViewModel(
                 }
             }
         }
+    }
+
+    fun onStateChangedToVisits() {
+        onResume()
     }
 
 }
