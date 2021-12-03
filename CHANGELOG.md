@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.11.2] - 2021-12-03
+### Fixed
+- Decreased Places visits tab loading time
+### Added
+- Auto-refresh Places visits on tab opened
+
 ## [0.11.1] - 2021-11-18
 ### Added
 - Login by login token
