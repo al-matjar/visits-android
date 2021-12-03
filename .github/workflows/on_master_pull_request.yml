@@ -1,9 +1,8 @@
-name: Release Build
+name: Build on PR to master
 
 on:
-  push:
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
@@ -60,20 +59,3 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build
-
-      # Should be a reusable workflow (release_artifact)
-      - name: Assemble release APK
-        run: ./gradlew assembleRelease
-
-      - uses: actions/upload-artifact@v1
-        with:
-          name: visits-app-release.apk
-          path: app/build/outputs/apk/release/app-release.apk
-
-      - name: Assemble release AAB
-        run: ./gradlew :app:bundleRelease
-
-      - uses: actions/upload-artifact@v1
-        with:
-          name: visits-app-release.aab
-          path: app/build/outputs/bundle/release/app-release.aab
