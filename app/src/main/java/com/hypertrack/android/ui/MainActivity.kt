@@ -2,7 +2,6 @@ package com.hypertrack.android.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.viewModels
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
@@ -35,17 +34,22 @@ class MainActivity : NavActivity(), DeeplinkResultListener {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        if (intent?.action == Intent.ACTION_SYNC) {
-            val currentFragment = getCurrentFragment()
-            if (currentFragment is VisitsManagementFragment) {
-                //todo test
-                currentFragment.refreshOrders()
+        intent?.let {
+            if (isFromPushMessage(intent)) {
+                val currentFragment = getCurrentFragment()
+                if (currentFragment is VisitsManagementFragment) {
+                    currentFragment.refreshOrders()
+                } else {
+                    findNavController(R.id.root).navigate(NavGraphDirections.actionGlobalVisitManagementFragment())
+                }
             } else {
-                findNavController(R.id.root).navigate(NavGraphDirections.actionGlobalVisitManagementFragment())
+                deepLinkProcessor.activityOnNewIntent(this, this)
             }
-        } else {
-            deepLinkProcessor.activityOnNewIntent(this, this)
         }
+    }
+
+    private fun isFromPushMessage(intent: Intent): Boolean {
+        return intent.action == Intent.ACTION_SYNC
     }
 
     override fun onStart() {

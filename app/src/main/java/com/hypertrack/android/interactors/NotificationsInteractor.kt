@@ -1,4 +1,4 @@
-package com.hypertrack.android.ui.common.util
+package com.hypertrack.android.interactors
 
 import android.app.Notification
 import android.app.NotificationManager
@@ -13,8 +13,7 @@ import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.stringFromResource
 import com.hypertrack.logistics.android.github.R
 
-
-object NotificationUtils {
+class NotificationsInteractor {
 
     private val notificationManager by lazy {
         MyApplication.context.getSystemService(
@@ -22,31 +21,13 @@ object NotificationUtils {
         ) as NotificationManager
     }
 
-    fun showSyncNotification(context: Context) {
-        @Suppress("DEPRECATION", "suggested API isn't available before Oreo")
-        val notification = (
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                    Notification.Builder(context, MyApplication.CHANNEL_ID)
-                else
-                    Notification.Builder(context).setPriority(Notification.PRIORITY_LOW)
-                )
-            //todo string
-            .setContentText("Refreshing Visits")
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .build()
-        notificationManager.notify(ProgressDialogFragment.SYNC_NOTIFICATION_ID, notification)
-    }
-
-
-    fun dismissSyncNotification() {
-        notificationManager.cancel(ProgressDialogFragment.SYNC_NOTIFICATION_ID)
-    }
-
     fun sendNewTripNotification(context: Context) {
         val notificationIntent = Intent(
             MyApplication.context,
             MainActivity::class.java
-        )
+        ).apply {
+            action = Intent.ACTION_SYNC
+        }
 
         notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
 
@@ -54,7 +35,7 @@ object NotificationUtils {
             MyApplication.context,
             ProgressDialogFragment.TRIP_NOTIFICATION_ID,
             notificationIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = (
@@ -66,7 +47,7 @@ object NotificationUtils {
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
             .setContentText(R.string.notification_new_trip.stringFromResource())
-            .setSmallIcon(R.drawable.ic_ht_trip)
+            .setSmallIcon(R.drawable.ic_stat_notification)
             .build()
         notificationManager.notify(ProgressDialogFragment.TRIP_NOTIFICATION_ID, notification)
     }

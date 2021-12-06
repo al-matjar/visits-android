@@ -677,7 +677,7 @@ class SplashScreenViewModelTest {
         }
 
         fun createAccountRepo(loggedIn: Boolean): AccountRepository = mockk(relaxed = true) {
-            every { isVerifiedAccount } returns loggedIn
+            every { isLoggedIn } returns loggedIn
             coEvery { onKeyReceived("key", allAny()) } returns true
             coEvery { onKeyReceived("key1", allAny()) } returns true
             coEvery { onKeyReceived("invalid", allAny()) } returns false

@@ -11,7 +11,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
-import com.hypertrack.android.ui.common.util.NotificationUtils
 import com.hypertrack.android.ui.common.util.SimplePageChangedListener
 import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.Tab
@@ -95,13 +94,6 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
         visitsManagementViewModel.showSpinner.observe(viewLifecycleOwner) { show ->
             if (show) showProgress() else dismissProgress()
         }
-        visitsManagementViewModel.showSync.observe(viewLifecycleOwner) { show ->
-            if (show) {
-                NotificationUtils.showSyncNotification(requireContext())
-            } else {
-                NotificationUtils.dismissSyncNotification()
-            }
-        }
 
         visitsManagementViewModel.isTracking.observe(viewLifecycleOwner) { isTracking ->
             swClockIn.setStateWithoutTriggeringListener(isTracking)
@@ -119,11 +111,6 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
                 visitsManagementViewModel.switchTracking()
             }
         }
-        visitsManagementViewModel.showToast.observe(viewLifecycleOwner) { msg ->
-            if (msg.isNotEmpty()) Toast
-                .makeText(requireContext(), msg, Toast.LENGTH_LONG)
-                .show()
-        }
 
         visitsManagementViewModel.errorHandler.errorText.observe(viewLifecycleOwner, { error ->
             SnackbarUtil.showErrorSnackbar(view, error)
@@ -139,15 +126,6 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
     override fun onResume() {
         super.onResume()
         refreshOrders()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        visitsManagementViewModel.showSync.value?.let {
-            if (it) {
-                NotificationUtils.dismissSyncNotification()
-            }
-        }
     }
 
     fun refreshOrders() {

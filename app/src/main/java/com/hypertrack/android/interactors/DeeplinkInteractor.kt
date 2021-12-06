@@ -1,18 +1,10 @@
 package com.hypertrack.android.interactors
 
 import android.app.Activity
-import android.util.Log
-import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.repository.DriverRepository
-import com.hypertrack.android.ui.base.postValue
-import com.hypertrack.android.ui.screens.splash_screen.SplashScreenFragmentDirections
-import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
 import com.hypertrack.android.utils.*
-import com.hypertrack.logistics.android.github.R
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
-import kotlinx.coroutines.launch
 
 class DeeplinkInteractor(
     private val driverRepository: DriverRepository,
@@ -37,7 +29,7 @@ class DeeplinkInteractor(
                 }
             }
             NoDeeplink -> {
-                if (accountRepository.isVerifiedAccount) {
+                if (accountRepository.isLoggedIn) {
                     AlreadyLoggedIn(null)
                 } else {
                     UserNotLoggedIn(null)
@@ -137,7 +129,7 @@ class DeeplinkInteractor(
     }
 
     private fun proceedWithLoggedInCheck(failure: DeeplinkFailure?): HandleDeeplinkResult {
-        return if (accountRepository.isVerifiedAccount) {
+        return if (accountRepository.isLoggedIn) {
             AlreadyLoggedIn(failure)
         } else {
             UserNotLoggedIn(failure)

@@ -1,5 +1,6 @@
 package com.hypertrack.android.utils
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -36,7 +37,7 @@ class MyApplication : Application() {
 
         injector.batteryLevelMonitor.init(this)
 
-        Log.w("hypertrack-verbose", "app start")
+        Log.w("hypertrack-verbose", "Visits app started")
     }
 
     private fun buildNotificationChannels() {
@@ -80,6 +81,7 @@ class MyApplication : Application() {
 
         val injector: Injector = Injector
 
+        @SuppressLint("StaticFieldLeak")
         lateinit var context: Context
     }
 }

@@ -5,6 +5,7 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.*
+import com.hypertrack.android.messaging.PushReceiver
 import com.hypertrack.android.repository.*
 import com.hypertrack.android.ui.common.ParamViewModelFactory
 import com.hypertrack.android.ui.common.Tab
@@ -49,9 +50,9 @@ class ServiceLocator(val crashReportsProvider: CrashReportsProvider) {
 
 }
 
-
 object Injector {
 
+    //should be static to enable reliable exception reporting in all scopes
     val crashReportsProvider: CrashReportsProvider by lazy { FirebaseCrashReportsProvider() }
 
     private val appScope: AppScope by lazy { createAppScope(MyApplication.context) }
@@ -77,6 +78,7 @@ object Injector {
                 crashReportsProvider,
                 moshi
             ),
+            NotificationsInteractor(),
             crashReportsProvider,
             osUtilsProvider,
             DateTimeFormatterImpl(),
@@ -420,6 +422,16 @@ object Injector {
         return FusedDeviceLocationProvider(MyApplication.context)
     }
 
+    fun getPushReceiver(): PushReceiver {
+        return PushReceiver(
+            getAccountRepo(MyApplication.context),
+            { getUserScope().tripsInteractor },
+            appScope.notificationsInteractor,
+            crashReportsProvider,
+            getMoshi()
+        )
+    }
+
 }
 
 class TripCreationScope(
@@ -449,6 +461,7 @@ class UserScope(
 //todo move app scope dependencies here
 class AppScope(
     val deeplinkInteractor: DeeplinkInteractor,
+    val notificationsInteractor: NotificationsInteractor,
     val crashReportsProvider: CrashReportsProvider,
     val osUtilsProvider: OsUtilsProvider,
     val datetimeFormatter: DatetimeFormatter,

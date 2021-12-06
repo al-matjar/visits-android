@@ -39,19 +39,9 @@ class VisitsManagementViewModel(
         }
     }
 
-    val deviceHistoryWebUrl = accessTokenRepository.deviceHistoryWebViewUrl
-
     private val _showSpinner = MutableLiveData(false)
     val showSpinner: LiveData<Boolean>
         get() = _showSpinner
-
-    private val _showSync = MutableLiveData(false)
-    val showSync: LiveData<Boolean>
-        get() = _showSync
-
-    private val _showToast = MutableLiveData("")
-    val showToast: LiveData<String>
-        get() = _showToast
 
     private val _statusBarColor = MediatorLiveData<Int?>()
 
