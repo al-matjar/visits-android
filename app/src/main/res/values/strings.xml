@@ -160,8 +160,10 @@
     <string name="order_already_canceled">Order is already canceled</string>
     <string name="order_status">Status</string>
     <string name="order_id">Order Id</string>
+    <string name="order_completed_at">Completed at</string>
+    <string name="order_scheduled_at">Scheduled at</string>
     <string name="order_picked_up">Picked up</string>
-    <string name="order_scheduled_at">Order scheduled at %s</string>
+    <string name="order_scheduled_at_template">Order scheduled at %s</string>
     <string name="order_address_not_available">Address for this order is not available</string>
     <string name="order_not_clocked_in">You must be clocked in to complete or cancel an order</string>
 

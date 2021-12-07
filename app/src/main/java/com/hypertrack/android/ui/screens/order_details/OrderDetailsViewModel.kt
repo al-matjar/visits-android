@@ -14,16 +14,17 @@ import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.ui.base.*
+import com.hypertrack.android.ui.common.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.KeyValueItem
+import com.hypertrack.android.ui.common.MapParams
 import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
 import com.hypertrack.android.ui.common.util.format
+import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
-import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.formatters.DatetimeFormatter
 import com.hypertrack.logistics.android.github.R
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.Exception
@@ -45,7 +46,7 @@ class OrderDetailsViewModel(
             baseDependencies.crashReportsProvider,
             tripsInteractor.errorFlow.asLiveData()
         )
-    private val map = MutableLiveData<GoogleMap>()
+    private val map = MutableLiveData<HypertrackMapWrapper>()
 
     private val order = tripsInteractor.getOrderLiveData(orderId)
 
@@ -72,6 +73,18 @@ class OrderDetailsViewModel(
             .toMutableMap().apply {
                 put(osUtilsProvider.stringFromResource(R.string.order_id), orderId)
                 put(osUtilsProvider.stringFromResource(R.string.order_status), order.status.value)
+                order.completedAt?.let {
+                    put(
+                        osUtilsProvider.stringFromResource(R.string.order_completed_at),
+                        datetimeFormatter.formatDatetime(it)
+                    )
+                }
+                order.scheduledAt?.let {
+                    put(
+                        osUtilsProvider.stringFromResource(R.string.order_scheduled_at),
+                        datetimeFormatter.formatDatetime(it)
+                    )
+                }
                 put(
                     osUtilsProvider.stringFromResource(R.string.coordinates),
                     order.destinationLatLng.format()
@@ -109,6 +122,16 @@ class OrderDetailsViewModel(
     }
     val externalMapsIntent = MutableLiveData<Consumable<Intent>>()
 
+    //todo test
+    val showNote = MediatorLiveData<Boolean>().apply {
+        addSource(isNoteEditable) {
+            postValue(shouldShowNote(it, note.value))
+        }
+        addSource(note) {
+            postValue(shouldShowNote(isNoteEditable.value, it))
+        }
+    }
+
     init {
         ZipNotNullableLiveData(order, map).apply {
             //todo check leaks
@@ -122,25 +145,21 @@ class OrderDetailsViewModel(
 
     @SuppressLint("MissingPermission")
     fun onMapReady(googleMap: GoogleMap) {
-        googleMap.uiSettings.apply {
-            isScrollGesturesEnabled = false
-            isMyLocationButtonEnabled = true
-            isZoomControlsEnabled = true
-        }
-        try {
-            googleMap.isMyLocationEnabled = true
-        } catch (_: Exception) {
-        }
-        map.postValue(googleMap)
-
+        map.postValue(
+            HypertrackMapWrapper(
+                googleMap, osUtilsProvider, crashReportsProvider, MapParams(
+                    enableScroll = false,
+                    enableZoomKeys = true,
+                    enableMyLocationButton = false,
+                    enableMyLocationIndicator = true
+                )
+            )
+        )
     }
 
-    private fun displayOrderLocation(order: LocalOrder, googleMap: GoogleMap) {
-        googleMap.addMarker(
-            MarkerOptions().position(order.destinationLatLng)
-                .title(addressDelegate.shortAddress(order))
-        )
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(order.destinationLatLng, 13.0f))
+    private fun displayOrderLocation(order: LocalOrder, mapWrapper: HypertrackMapWrapper) {
+        mapWrapper.addOrder(order, addressDelegate)
+        mapWrapper.moveCamera(order.destinationLatLng, 13.0f)
     }
 
     fun onCancelClicked(note: String? = null) {
@@ -303,6 +322,10 @@ class OrderDetailsViewModel(
                     }
                 }
         )
+    }
+
+    private fun shouldShowNote(isEditable: Boolean?, note: String?): Boolean {
+        return isEditable == true || note.nullIfBlank() != null
     }
 
     companion object {

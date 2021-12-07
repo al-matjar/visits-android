@@ -36,7 +36,7 @@ class OrderAddressDelegate(
         )?.toAddressString(short = true, disableCoordinatesFallback = true)
         ?: order.scheduledAt?.let {
             osUtilsProvider.stringFromResource(
-                R.string.order_scheduled_at,
+                R.string.order_scheduled_at_template,
                 datetimeFormatter.formatDatetime(it)
             )
         }

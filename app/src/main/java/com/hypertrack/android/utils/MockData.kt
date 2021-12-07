@@ -260,6 +260,7 @@ object MockData {
             TripDestination(paloAltoLatLng, "Test Address"),
             status.value,
             ZonedDateTime.now().toIso(),
+            ZonedDateTime.now().toIso(),
             Estimate(ZonedDateTime.now().plusMinutes(29).toIso(), null),
             mapOf(),
         )

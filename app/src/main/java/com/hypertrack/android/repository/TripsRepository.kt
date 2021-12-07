@@ -232,6 +232,7 @@ class TripsRepositoryImpl(
             destination = trip.destination!!,
             _status = OrderStatus.ONGOING.value,
             scheduledAt = null,
+            completedAt = null,
             estimate = trip.estimate,
             _metadata = mapOf(),
         )

@@ -18,6 +18,7 @@ data class Order(
     val destination: TripDestination,
     @field:Json(name = "status") val _status: String,
     @field:Json(name = "scheduled_at") val scheduledAt: String?,
+    @field:Json(name = "completed_at") val completedAt: String?,
     val estimate: Estimate?,
     @field:Json(name = "metadata") val _metadata: Map<String, Any>?,
 ) {

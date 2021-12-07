@@ -8,8 +8,10 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.hypertrack.android.models.History
 import com.hypertrack.android.models.local.LocalGeofence
+import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
+import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryStyle
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.OsUtilsProvider
@@ -312,6 +314,16 @@ class HypertrackMapWrapper(
 
     fun setPadding(left: Int = 0, top: Int = 0, right: Int = 0, bottom: Int = 0) {
         googleMap.setPadding(left, top, right, bottom)
+    }
+
+    fun addOrder(order: LocalOrder, orderAddressDelegate: OrderAddressDelegate) {
+        googleMap.addMarker(
+            MarkerOptions()
+                .icon(geofenceMarkerIcon)
+                .anchor(0.5f, 0.5f)
+                .position(order.destinationLatLng)
+                .title(orderAddressDelegate.shortAddress(order))
+        )
     }
 
     private fun History.asPolylineOptions(): PolylineOptions = this
