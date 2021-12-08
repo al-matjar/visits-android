@@ -102,6 +102,13 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
         vm.tripData.observe(viewLifecycleOwner, {
             lTrip.setGoneState(it == null)
             it?.let { displayTrip(it) }
+            googleMap.setPadding(
+                0, 0, 0,
+                if (it != null) {
+                    requireContext().resources
+                        .getDimension(R.dimen.current_trip_bottom_bar_start_height).toInt()
+                } else 0
+            )
         })
 
         vm.showWhereAreYouGoing.observe(viewLifecycleOwner, {

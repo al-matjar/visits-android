@@ -7,7 +7,6 @@ import androidx.core.graphics.drawable.toBitmap
 import com.hypertrack.android.models.HistoryTileType
 import com.hypertrack.android.models.Status
 import com.hypertrack.logistics.android.github.R
-import java.lang.IllegalArgumentException
 
 interface HistoryStyle {
     val activeColor: Int
@@ -33,8 +32,10 @@ class BaseHistoryStyle(private val context: Context) : HistoryStyle, TimelineSty
     override val outageSelectionColor: Int
         get() = context.resources.getColor(R.color.colorHistoryOutageSegment, context.theme)
     override val mapPadding: Int
-        get() = context.resources.getDimension(R.dimen.map_padding).toInt()
-    override val summaryPeekHeight: Int by lazy { context.resources.getDimension(R.dimen.summary_peek_height).toInt() }
+        get() = context.resources.getDimension(R.dimen.history_map_padding).toInt()
+    override val summaryPeekHeight: Int by lazy {
+        context.resources.getDimension(R.dimen.history_summary_peek_height).toInt()
+    }
 
     override fun colorForStatus(status: Status): Int =
         when (status) {

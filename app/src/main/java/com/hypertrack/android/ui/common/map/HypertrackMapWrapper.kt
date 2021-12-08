@@ -2,6 +2,7 @@ package com.hypertrack.android.ui.common
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.util.Log
 import android.util.TypedValue
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -198,7 +199,7 @@ class HypertrackMapWrapper(
     fun addTrip(trip: LocalTrip) {
         val map = googleMap
         val tripStart =
-            trip.orders.firstOrNull()?.estimate?.route?.polyline?.getPolylinePoints()
+            trip.ongoingOrders.firstOrNull()?.estimate?.route?.polyline?.getPolylinePoints()
                 ?.firstOrNull()
 
         tripStart?.let {

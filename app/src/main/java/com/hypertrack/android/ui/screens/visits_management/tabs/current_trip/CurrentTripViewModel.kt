@@ -247,8 +247,13 @@ class CurrentTripViewModel(
         loadingState.postValue(true)
         viewModelScope.launch {
             tripsInteractor.completeTrip(tripData.value!!.trip.id).let {
-                if (it is JustFailure) {
-                    errorHandler.postException(it.exception)
+                when (it) {
+                    JustSuccess -> {
+                        map.value?.clear()
+                    }
+                    is JustFailure -> {
+                        errorHandler.postException(it.exception)
+                    }
                 }
                 loadingState.postValue(false)
             }
@@ -289,12 +294,6 @@ class CurrentTripViewModel(
             map.clear()
             map.addTrip(it)
             map.animateCameraToTrip(it, userLocation.value)
-        }
-    }
-
-    private fun updateTripEta() {
-        viewModelScope.launch {
-            tripsInteractor.refreshTrips()
         }
     }
 

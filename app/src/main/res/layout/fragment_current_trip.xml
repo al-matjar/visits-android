@@ -10,6 +10,7 @@
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         tools:context=".ui.MainActivity"
         tools:layout="@layout/activity_main" />
 
@@ -113,7 +114,7 @@
             android:orientation="vertical"
             android:visibility="invisible"
             app:behavior_hideable="false"
-            app:behavior_peekHeight="140dp"
+            app:behavior_peekHeight="@dimen/current_trip_bottom_bar_start_height"
             app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
             <include
