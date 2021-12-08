@@ -1,0 +1,92 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_minor_button">
+
+    <ImageView
+        android:id="@+id/bCopy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/guideline"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_copy"
+        app:tint="@color/minor_tint" />
+
+    <ImageView
+        android:id="@+id/bCopyId"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@+id/tvIntegrationId"
+        app:layout_constraintEnd_toStartOf="@+id/bCopy"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/tvIntegrationId"
+        app:layout_constraintTop_toBottomOf="@+id/tvIntegrationName"
+        app:srcCompat="@drawable/ic_copy"
+        app:tint="@color/minor_tint" />
+
+    <TextView
+        android:id="@+id/tvIntegrationTypeHint"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:text="@string/place_integration_integration_type"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tvIntegrationName"
+        app:layout_constraintTop_toBottomOf="@+id/tvIntegrationId" />
+
+    <TextView
+        android:id="@+id/tvIntegrationType"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/tvIntegrationTypeHint"
+        app:layout_constraintEnd_toStartOf="@+id/guideline"
+        app:layout_constraintStart_toEndOf="@+id/tvIntegrationTypeHint"
+        app:layout_constraintTop_toTopOf="@+id/tvIntegrationTypeHint"
+        tools:text="TextView" />
+
+    <TextView
+        android:id="@+id/tvIntegrationName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="14dp"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/guideline"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="TextView" />
+
+    <TextView
+        android:id="@+id/tvIntegrationId"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="TextView"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/tvIntegrationName"
+        app:layout_constraintTop_toBottomOf="@+id/tvIntegrationName"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="56dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintGuide_end="56dp" />
+</androidx.constraintlayout.widget.ConstraintLayout>

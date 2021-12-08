@@ -139,11 +139,11 @@
 
                 <include
                     android:id="@+id/lIntegration"
-                    layout="@layout/inflate_integration"
+                    layout="@layout/inflate_integration_details"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
                     android:layout_marginLeft="16dp"
+                    android:layout_marginTop="16dp"
                     android:layout_marginRight="16dp"
                     android:visibility="gone"
                     tools:visibility="visible" />

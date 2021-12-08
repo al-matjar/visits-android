@@ -148,7 +148,13 @@ class PlaceDetailsViewModel(
         osUtilsProvider.copyToClipboard(str)
     }
 
-    fun onIntegrationCopy() {
+    fun onCopyIntegrationName() {
+        integration.value?.name?.let {
+            osUtilsProvider.copyToClipboard(it)
+        }
+    }
+
+    fun onCopyIntegrationId() {
         integration.value?.let {
             osUtilsProvider.copyToClipboard(it.id)
         }

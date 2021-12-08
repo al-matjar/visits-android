@@ -1,5 +1,6 @@
 package com.hypertrack.android.ui.screens.place_details
 
+import android.graphics.Paint
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.viewModels
@@ -15,6 +16,9 @@ import kotlinx.android.synthetic.main.fragment_place_details.*
 import kotlinx.android.synthetic.main.fragment_place_details.lIntegration
 import kotlinx.android.synthetic.main.inflate_integration.*
 import kotlinx.android.synthetic.main.inflate_integration.view.*
+import kotlinx.android.synthetic.main.inflate_integration.view.bCopy
+import kotlinx.android.synthetic.main.inflate_integration.view.tvIntegrationId
+import kotlinx.android.synthetic.main.inflate_integration_details.view.*
 
 class PlaceDetailsFragment : ProgressDialogFragment(R.layout.fragment_place_details) {
 
@@ -44,9 +48,6 @@ class PlaceDetailsFragment : ProgressDialogFragment(R.layout.fragment_place_deta
 
         rvVisits.setLinearLayoutManager(requireContext())
         rvVisits.adapter = visitsAdapter
-
-        lIntegration.bDeleteIntegration.hide()
-        lIntegration.bCopy.show()
 
         vm.loadingState.observe(viewLifecycleOwner, {
             srlPlaces.isRefreshing = it
@@ -105,7 +106,13 @@ class PlaceDetailsFragment : ProgressDialogFragment(R.layout.fragment_place_deta
         }
 
         lIntegration.bCopy.setOnClickListener {
-            vm.onIntegrationCopy()
+            vm.onCopyIntegrationName()
+        }
+
+        lIntegration.let { listOf(it.bCopyId, it.tvIntegrationId) }.forEach {
+            it.setOnClickListener {
+                vm.onCopyIntegrationId()
+            }
         }
     }
 
