@@ -93,9 +93,9 @@ class AddPlaceInfoFragment : ProgressDialogFragment(R.layout.fragment_add_place_
             lIntegration.setGoneState(it == null)
             it?.let { integration ->
                 integration.name?.toView(tvIntegrationName)
-//                it.id.toView(tvIntegrationId)
+                it.id.toView(tvIntegrationId)
 //                it.type.toView(tvIntegrationType)
-                listOf(tvIntegrationId, tvIntegrationType, tvIntegrationTypeHint).forEach {
+                listOf(tvIntegrationType, tvIntegrationTypeHint).forEach {
                     it.hide()
                 }
             }

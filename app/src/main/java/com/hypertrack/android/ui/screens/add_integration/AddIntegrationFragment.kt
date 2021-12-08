@@ -28,7 +28,7 @@ class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_
             return object : BaseContainerVh<Integration>(view, baseClickListener) {
                 override fun bind(item: Integration) {
                     item.name?.toView(containerView.tvName)
-                    item.type.toView(containerView.tvDescription)
+                    item.id.toView(containerView.tvDescription)
                 }
             }
         }

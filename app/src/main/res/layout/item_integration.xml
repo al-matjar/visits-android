@@ -25,6 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:layout_weight="1"
+        android:textSize="14dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/ivIcon"
         app:layout_constraintStart_toStartOf="@+id/tvName"
