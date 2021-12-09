@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0] - 2021-12-09
+### Fixed
+- Order details marker icon
+- Firebase message icon
+- Trip route polyline starting point
+- Map padding when displaying trip
+- Bug that caused logout on new trip push message click
+### Added
+- "Completed at" and "Scheduled at" fields on Order details screen
+- Hiding empty note for completed order on Order details screen
+- Copy integration name feature on Place details screen
+- Showing integration id on Add integration screen
+
 ## [0.11.2] - 2021-12-03
 ### Fixed
 - Decreased Places visits tab loading time
