@@ -61,12 +61,11 @@ class PlaceDetailsFragment : ProgressDialogFragment(R.layout.fragment_place_deta
             metadataAdapter.updateItems(it)
         })
 
-        vm.integration.observe(viewLifecycleOwner, {
-            lIntegration.setGoneState(it == null)
-            it?.let {
-                it.id.toView(tvIntegrationId)
-                it.name?.toView(tvIntegrationName)
-//                it.type.toView(tvIntegrationType)
+        vm.integration.observe(viewLifecycleOwner, { integrationValue ->
+            lIntegration.setGoneState(integrationValue == null)
+            integrationValue?.let { integration ->
+                integration.id.toView(tvIntegrationId)
+                integration.name?.toView(tvIntegrationName)
                 listOf(tvIntegrationType, tvIntegrationTypeHint).forEach {
                     it.hide()
                 }
