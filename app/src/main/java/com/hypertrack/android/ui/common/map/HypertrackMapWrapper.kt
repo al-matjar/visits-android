@@ -51,35 +51,32 @@ class HypertrackMapWrapper(
             )
         )
     }
-
-    val tripStartIcon = osUtilsProvider.bitmapDescriptorFromResource(
+    private val tripStartIcon = osUtilsProvider.bitmapDescriptorFromResource(
         com.hypertrack.maps.google.R.drawable.starting_position
     )
-    val activeOrderIcon = osUtilsProvider.bitmapDescriptorFromResource(
+    private val activeOrderIcon = osUtilsProvider.bitmapDescriptorFromResource(
         com.hypertrack.maps.google.R.drawable.destination
     )
-    val completedOrderIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
+    private val completedOrderIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
         R.drawable.ic_order_completed, R.color.colorHyperTrackGreen
     )
-    val canceledOrderIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
+    private val canceledOrderIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
         R.drawable.ic_order_canceled, R.color.colorHyperTrackGreen
     )
-
-    private val tripStyleAttrs by lazy {
-        StyleAttrs().let { tripStyleAttrs ->
-            tripStyleAttrs.tripRouteWidth = tripRouteWidth
-            tripStyleAttrs.tripRouteColor =
-                osUtilsProvider.colorFromResource(com.hypertrack.maps.google.R.color.ht_route)
-            tripStyleAttrs
-        }
-    }
-
+    private val userLocationIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
+        R.drawable.ic_user_location
+    )
+    private val tripRouteColor = osUtilsProvider.colorFromResource(R.color.colorHyperTrackGreen)
     private val tripRouteWidth by lazy {
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 3f,
             osUtilsProvider.getDisplayMetrics()
         )
     }
+    private val tripLinePattern = listOf(
+        Dash(tripRouteWidth * 2),
+        Gap(tripRouteWidth)
+    )
 
     fun setOnCameraMovedListener(listener: (LatLng) -> Unit) {
         googleMap.setOnCameraIdleListener { listener.invoke(googleMap.viewportPosition) }
@@ -96,7 +93,7 @@ class HypertrackMapWrapper(
                     .visible(true)
             )
         } else {
-            geofence.radius?.let { radius ->
+            geofence.radius.let { radius ->
                 googleMap.addCircle(
                     CircleOptions()
                         .center(geofence.latLng)
@@ -215,24 +212,14 @@ class HypertrackMapWrapper(
             order.estimate?.route?.polyline?.getPolylinePoints()?.let {
                 val options = if (order.status == OrderStatus.ONGOING) {
                     PolylineOptions()
-                        .width(tripStyleAttrs.tripRouteWidth)
-                        .color(tripStyleAttrs.tripRouteColor)
-                        .pattern(
-                            Arrays.asList(
-                                Dash(tripStyleAttrs.tripRouteWidth * 2),
-                                Gap(tripStyleAttrs.tripRouteWidth)
-                            )
-                        )
+                        .width(tripRouteWidth)
+                        .color(tripRouteColor)
+                        .pattern(tripLinePattern)
                 } else {
                     PolylineOptions()
-                        .width(tripStyleAttrs.tripRouteWidth)
-                        .color(tripStyleAttrs.tripRouteColor)
-                        .pattern(
-                            Arrays.asList(
-                                Dash(tripStyleAttrs.tripRouteWidth * 2),
-                                Gap(tripStyleAttrs.tripRouteWidth)
-                            )
-                        )
+                        .width(tripRouteWidth)
+                        .color(tripRouteColor)
+                        .pattern(tripLinePattern)
                 }
 
                 map.addPolyline(options.addAll(it))
@@ -296,6 +283,12 @@ class HypertrackMapWrapper(
         }
     }
 
+    fun animateCamera(latLng: LatLng, zoom: Float? = null) {
+        GlobalScope.launch(Dispatchers.Main) {
+            googleMap.animateCamera(latLng, zoom)
+        }
+    }
+
     fun setOnMapClickListener(listener: () -> Unit) {
         googleMap.setOnMapClickListener { listener.invoke() }
     }
@@ -342,6 +335,18 @@ class HypertrackMapWrapper(
             options.add(LatLng(point.latitude, point.longitude))
         }
 
+    fun addUserLocation(latLng: LatLng?): Marker? {
+        return latLng?.let {
+            return googleMap.addMarker(
+                MarkerOptions()
+                    .icon(userLocationIcon)
+                    .position(latLng)
+                    .zIndex(Float.MAX_VALUE)
+                    .anchor(0.5f, 0.5f)
+            )
+        }
+    }
+
     companion object {
         const val DEFAULT_ZOOM = 13f
     }
@@ -362,6 +367,15 @@ class MapParams(
 
 fun GoogleMap.moveCamera(latLng: LatLng, zoom: Float?) {
     moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom ?: HypertrackMapWrapper.DEFAULT_ZOOM))
+}
+
+fun GoogleMap.animateCamera(latLng: LatLng, zoom: Float?) {
+    animateCamera(
+        CameraUpdateFactory.newLatLngZoom(
+            latLng,
+            zoom ?: HypertrackMapWrapper.DEFAULT_ZOOM
+        )
+    )
 }
 
 val GoogleMap.viewportPosition: LatLng

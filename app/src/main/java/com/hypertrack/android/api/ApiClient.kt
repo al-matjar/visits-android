@@ -3,6 +3,7 @@ package com.hypertrack.android.api
 import android.graphics.Bitmap
 import android.util.Log
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.mock.MockApi
 import com.hypertrack.android.models.*
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.repository.AccessTokenRepository

@@ -31,17 +31,8 @@ data class LocalGeofence(
 
     val id = geofence.geofence_id
 
-    val latitude: Double
-        get() = geofence.geometry.latitude
-
-    val longitude: Double
-        get() = geofence.geometry.longitude
-
-    val location: Location
-        get() = Location(
-            latitude = latitude,
-            longitude = longitude
-        )
+    val location: LatLng
+        get() = geofence.geometry.let { LatLng(it.latitude, it.longitude) }
 
     val visitsCount: Int by lazy {
         visits.count()

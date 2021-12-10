@@ -104,8 +104,14 @@ class MyApplication : Application() {
         const val SERVICES_API_KEY = BuildConfig.SERVICES_API_KEY
         const val GRAPHQL_API_KEY = BuildConfig.GRAPHQL_API_KEY
 
+        val RECORDING_MODE = if (BuildConfig.DEBUG) {
+            BuildConfig.RECORDING_MODE
+        } else {
+            false
+        }
+
         val MOCK_MODE = if (BuildConfig.DEBUG) {
-            BuildConfig.MOCK_MODE
+            RECORDING_MODE || BuildConfig.MOCK_MODE
         } else {
             false
         }

@@ -9,7 +9,6 @@ import com.hypertrack.android.models.HistoryError
 import com.hypertrack.android.models.MarkerType
 import com.hypertrack.android.repository.AccessTokenRepository
 import com.hypertrack.android.utils.Injector
-import com.hypertrack.android.utils.MockData
 import com.squareup.moshi.JsonDataException
 import io.mockk.every
 import io.mockk.mockk

@@ -88,7 +88,7 @@ class ProfileViewModel(
             }
 
             if (BuildConfig.DEBUG) {
-                add(KeyValueItem("Firebase token", firebaseToken))
+                add(KeyValueItem("Firebase token (debug)", firebaseToken))
 
                 add(
                     KeyValueItem(

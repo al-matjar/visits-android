@@ -30,7 +30,6 @@ class ParamViewModelFactory<T>(
     private val accountRepository: AccountRepository,
     private val moshi: Moshi,
     private val crashReportsProvider: CrashReportsProvider,
-    private val deviceLocationProvider: DeviceLocationProvider,
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -80,7 +79,7 @@ class ParamViewModelFactory<T>(
                 baseDependencies,
                 userScopeProvider.get().placesInteractor,
                 userScopeProvider.get().googlePlacesInteractor,
-                deviceLocationProvider,
+                userScopeProvider.get().deviceLocationProvider,
             ) as T
             else -> throw IllegalArgumentException("Can't instantiate class $modelClass")
         }

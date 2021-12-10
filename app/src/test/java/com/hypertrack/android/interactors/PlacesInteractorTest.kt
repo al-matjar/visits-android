@@ -1,21 +1,13 @@
 package com.hypertrack.android.interactors
 
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
-import com.google.android.gms.maps.model.VisibleRegion
 import com.hypertrack.android.api.ApiClient
-import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.models.GeofenceMetadata
-import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.PlacesRepositoryImpl
 import com.hypertrack.android.utils.Injector
-import com.hypertrack.android.utils.MockData
+import com.hypertrack.android.mock.MockData
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.coVerifyAll
 import io.mockk.mockk
-import junit.framework.Assert
-import junit.framework.TestCase
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking

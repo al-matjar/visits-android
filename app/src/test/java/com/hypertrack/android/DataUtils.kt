@@ -8,7 +8,7 @@ import com.hypertrack.android.models.Estimate
 import com.hypertrack.android.models.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
-import com.hypertrack.android.utils.MockData
+import com.hypertrack.android.mock.MockData
 
 //todo replace with MockData
 fun createBaseOrder(

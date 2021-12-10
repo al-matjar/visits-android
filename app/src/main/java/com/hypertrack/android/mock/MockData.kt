@@ -1,11 +1,21 @@
-package com.hypertrack.android.utils
+package com.hypertrack.android.mock
 
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.*
+import com.hypertrack.android.interactors.PhotoForUpload
+import com.hypertrack.android.interactors.PhotoUploadingState
 import com.hypertrack.android.models.*
+import com.hypertrack.android.models.local.LocalOrder
+import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
+import com.hypertrack.android.repository.TripsRepositoryImpl
+import com.hypertrack.android.ui.common.util.toMap
+import com.hypertrack.android.utils.Constants
+import com.hypertrack.android.utils.Injector
+import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.formatters.toIso
+import com.hypertrack.logistics.android.github.BuildConfig
 import com.hypertrack.logistics.android.github.R
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -279,6 +289,29 @@ object MockData {
             .use { it.readText() }
     }
 
+    val mockTrip: LocalTrip by lazy {
+        Injector.getMoshi().adapter(TripResponse::class.java)
+            .fromJson(MOCK_TRIPS_JSON)!!.trips.first().let { remoteTrip ->
+                LocalTrip(
+                    remoteTrip.id!!,
+                    TripStatus.fromString(remoteTrip.status),
+                    mapOf(),
+                    remoteTrip.orders!!.map { order ->
+                        LocalOrder(
+                            order,
+                            isPickedUp = true,
+                            note = null,
+                            photos = mutableSetOf(),
+                            metadata = null
+                        )
+                    }.toMutableList(),
+                    remoteTrip.views
+                )
+            }
+    }
+
+
+    //todo remove
     val MOCK_TRIP_V1_JSON: String by lazy {
         MyApplication.context.resources.openRawResource(R.raw.mock_trip_v1).bufferedReader()
             .use { it.readText() }

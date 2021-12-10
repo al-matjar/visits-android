@@ -1,22 +1,17 @@
 package com.hypertrack.android.interactors
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.test.platform.app.InstrumentationRegistry
 import com.hypertrack.android.api.MainCoroutineScopeRule
 import com.hypertrack.android.repository.HistoryRepositoryImpl
 import com.hypertrack.android.ui.common.util.requireValue
-import com.hypertrack.android.utils.MockData
-import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.mock.MockData
 import io.mockk.coEvery
 import io.mockk.mockk
 import junit.framework.Assert.assertEquals
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
 import org.junit.Rule
 import org.junit.Test
 import java.lang.Thread.sleep
-import java.security.AccessController.getContext
 import java.time.LocalDate
 
 @Suppress("EXPERIMENTAL_API_USAGE")

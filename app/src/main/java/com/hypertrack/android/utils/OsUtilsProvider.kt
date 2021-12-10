@@ -49,7 +49,7 @@ interface ResourceProvider {
     fun bitmapDescriptorFromResource(@DrawableRes res: Int): BitmapDescriptor
     fun bitmapDescriptorFromVectorResource(
         @DrawableRes res: Int,
-        @ColorRes color: Int
+        @ColorRes color: Int? = null
     ): BitmapDescriptor
 }
 
@@ -192,7 +192,7 @@ public class OsUtilsProvider(
 
     override fun bitmapDescriptorFromVectorResource(
         @DrawableRes res: Int,
-        @ColorRes color: Int
+        @ColorRes color: Int?
     ): BitmapDescriptor {
         val vectorDrawable = ResourcesCompat.getDrawable(context.resources, res, null)
         val bitmap = Bitmap.createBitmap(
@@ -200,8 +200,10 @@ public class OsUtilsProvider(
             vectorDrawable.intrinsicHeight, Bitmap.Config.ARGB_8888
         )
         val canvas = Canvas(bitmap)
-        vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight())
-        DrawableCompat.setTint(vectorDrawable, colorFromResource(color))
+        vectorDrawable.setBounds(0, 0, canvas.width, canvas.height)
+        color?.let {
+            DrawableCompat.setTint(vectorDrawable, colorFromResource(color))
+        }
         vectorDrawable.draw(canvas)
         return BitmapDescriptorFactory.fromBitmap(bitmap)
     }

@@ -87,8 +87,8 @@ data class LocalOrder(
     val metadataNote: String?
         get() = _metadata?.visitsAppMetadata?.note
 
-    val metadataPhotoIds: List<String>
-        get() = _metadata?.visitsAppMetadata?.photos ?: listOf()
+    val routeToPolyline: List<LatLng>?
+        get() = estimate?.route?.polyline?.getPolylinePoints()
 
     companion object {
         const val VISIT_NOTE_KEY = "visit_note"

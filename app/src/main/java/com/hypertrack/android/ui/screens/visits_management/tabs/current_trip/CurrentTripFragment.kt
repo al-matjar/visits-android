@@ -13,6 +13,7 @@ import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
+import com.hypertrack.android.ui.common.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.common.util.*
 import com.hypertrack.android.utils.MyApplication
@@ -86,6 +87,7 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
         bottomHolder.setOnClickListener {
             if (bottomHolderSheetBehavior.state != BottomSheetBehavior.STATE_EXPANDED) {
                 bottomHolderSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED)
+                vm.onTripFocused()
             } else {
                 bottomHolderSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED)
             }

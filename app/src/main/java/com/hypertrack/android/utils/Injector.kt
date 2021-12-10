@@ -6,6 +6,7 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.messaging.PushReceiver
+import com.hypertrack.android.mock.MockLocationProvider
 import com.hypertrack.android.repository.*
 import com.hypertrack.android.deeplink.BranchIoDeepLinkProcessor
 import com.hypertrack.android.deeplink.BranchWrapper
@@ -67,6 +68,8 @@ object Injector {
 
     val batteryLevelMonitor = BatteryLevelMonitor(crashReportsProvider)
 
+    val mockLocationProvider by lazy { MockLocationProvider() }
+
     private fun createAppScope(context: Context): AppScope {
         val crashReportsProvider = this.crashReportsProvider
         val osUtilsProvider = OsUtilsProvider(context, crashReportsProvider)
@@ -74,6 +77,7 @@ object Injector {
         val accountRepository = getAccountRepo(context)
         val moshi = getMoshi()
         return AppScope(
+            MyApplication.context,
             DeeplinkInteractor(
                 driverRepository,
                 accountRepository,
@@ -120,7 +124,7 @@ object Injector {
         )
     }
 
-    //todo user scope
+    //todo move to user scope
     fun <T> provideParamVmFactory(param: T): ParamViewModelFactory<T> {
         return ParamViewModelFactory(
             param,
@@ -129,8 +133,7 @@ object Injector {
             getOsUtilsProvider(MyApplication.context),
             getAccountRepo(MyApplication.context),
             appScope.moshi,
-            crashReportsProvider,
-            getDeviceLocationProvider()
+            crashReportsProvider
         )
     }
 
@@ -162,7 +165,6 @@ object Injector {
         accessTokenRepository: BasicAuthAccessTokenRepository,
         driverRepository: DriverRepository,
         permissionsInteractor: PermissionsInteractor,
-        deviceLocationProvider: DeviceLocationProvider,
         osUtilsProvider: OsUtilsProvider,
         crashReportsProvider: CrashReportsProvider,
         moshi: Moshi,
@@ -171,7 +173,11 @@ object Injector {
         imageDecoder: ImageDecoder,
     ): UserScope {
         val deviceId = accessTokenRepository.deviceId
-
+        val deviceLocationProvider = if (!MyApplication.MOCK_MODE) {
+            FusedDeviceLocationProvider(appScope.appContext, crashReportsProvider)
+        } else {
+            mockLocationProvider
+        }
         val apiClient = ApiClient(
             accessTokenRepository,
             BASE_URL,
@@ -308,7 +314,8 @@ object Injector {
                 osUtilsProvider,
                 placesClient,
                 deviceLocationProvider,
-            )
+            ),
+            deviceLocationProvider
         )
 
         crashReportsProvider.setUserIdentifier(
@@ -337,7 +344,6 @@ object Injector {
                 accessTokenRepository(MyApplication.context),
                 getDriverRepo(),
                 getPermissionInteractor(),
-                getDeviceLocationProvider(),
                 getOsUtilsProvider(MyApplication.context),
                 appScope.crashReportsProvider,
                 appScope.moshi,
@@ -425,10 +431,6 @@ object Injector {
     private fun getCognitoLoginProvider(context: Context): CognitoAccountLoginProvider =
         CognitoAccountLoginProviderImpl(context)
 
-    private fun getDeviceLocationProvider(): DeviceLocationProvider {
-        return FusedDeviceLocationProvider(MyApplication.context)
-    }
-
     fun getPushReceiver(): PushReceiver {
         return PushReceiver(
             getAccountRepo(MyApplication.context),
@@ -459,7 +461,8 @@ class UserScope(
     val hyperTrackService: HyperTrackService,
     val photoUploadQueueInteractor: PhotoUploadQueueInteractor,
     val apiClient: ApiClient,
-    val userScopeViewModelFactory: UserScopeViewModelFactory
+    val userScopeViewModelFactory: UserScopeViewModelFactory,
+    val deviceLocationProvider: DeviceLocationProvider
 ) {
     fun onDestroy() {
         tripsUpdateTimerInteractor.onDestroy()
@@ -468,6 +471,7 @@ class UserScope(
 
 //todo move app scope dependencies here
 class AppScope(
+    val appContext: Context,
     val deeplinkInteractor: DeeplinkInteractor,
     val notificationsInteractor: NotificationsInteractor,
     val crashReportsProvider: CrashReportsProvider,

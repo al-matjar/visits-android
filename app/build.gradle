@@ -23,6 +23,7 @@ android {
             properties.load(project.rootProject.file('local.properties').newDataInputStream())
         } catch (Exception ignored) {}
         def mockMode = properties.getProperty('mock_mode', 'false') == "true"
+        def recordingMode = properties.getProperty('recording_mode', 'false') == "true"
 
         applicationId "com.hypertrack.logistics.android.github"
         minSdkVersion 23
@@ -40,6 +41,7 @@ android {
         buildConfigField("String", "SERVICES_API_KEY", "\"${rootProject.properties.servicesApiKey}\"")
         buildConfigField("String", "GRAPHQL_API_KEY", "\"${rootProject.properties.graphqlApiKey}\"")
         buildConfigField("Boolean", "MOCK_MODE", mockMode.toString())
+        buildConfigField("Boolean", "RECORDING_MODE", recordingMode.toString())
     }
     signingConfigs {
         release {

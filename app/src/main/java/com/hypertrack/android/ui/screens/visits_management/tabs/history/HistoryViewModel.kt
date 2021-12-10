@@ -89,10 +89,10 @@ class HistoryViewModel(
         }
 
         deviceLocationProvider.getCurrentLocation {
-            userLocation = it?.toLatLng()
+            userLocation = it
             history.value?.let { hist ->
                 map?.let { map ->
-                    moveMap(map, hist, it?.toLatLng())
+                    moveMap(map, hist, it)
                 }
             }
         }

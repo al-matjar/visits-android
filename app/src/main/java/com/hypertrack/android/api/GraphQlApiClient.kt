@@ -1,9 +1,7 @@
 package com.hypertrack.android.api
 
-import android.util.Log
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.models.GeofenceMetadata
-import com.hypertrack.android.ui.common.util.toMap
+import com.hypertrack.android.mock.MockGraphQlApi
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.formatters.toIso
 import com.squareup.moshi.Json

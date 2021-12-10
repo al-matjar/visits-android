@@ -1,9 +1,17 @@
-package com.hypertrack.android.api
+package com.hypertrack.android.mock
 
-import android.util.Log
 import com.fonfon.kgeohash.GeoHash
+import com.hypertrack.android.api.ApiInterface
+import com.hypertrack.android.api.Geofence
+import com.hypertrack.android.api.GeofenceParams
+import com.hypertrack.android.api.GeofenceResponse
+import com.hypertrack.android.api.HistoryResponse
+import com.hypertrack.android.api.IntegrationsResponse
+import com.hypertrack.android.api.OrderBody
+import com.hypertrack.android.api.Trip
+import com.hypertrack.android.api.TripResponse
+import com.hypertrack.android.api.VisitsResponse
 import com.hypertrack.android.utils.Injector
-import com.hypertrack.android.utils.MockData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -176,12 +184,12 @@ class MockApi(val remoteApi: ApiInterface) : ApiInterface by remoteApi {
         deviceId: String,
         paginationToken: String
     ): Response<TripResponse> {
-        return Response.success(TripResponse(listOf(MockData.createTrip()), null))
+//        return Response.success(TripResponse(listOf(MockData.createTrip()), null))
 
-//        return Response.success(
-//            Injector.getMoshi().adapter(TripResponse::class.java)
-//                .fromJson(MockData.MOCK_TRIPS_JSON)
-//        )
+        return Response.success(
+            Injector.getMoshi().adapter(TripResponse::class.java)
+                .fromJson(MockData.MOCK_TRIPS_JSON)
+        )
     }
 
     override suspend fun completeOrder(tripId: String, orderId: String): Response<Void> {

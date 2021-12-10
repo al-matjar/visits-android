@@ -56,6 +56,12 @@ class CurrentTripViewModel(
 
     private val map = MutableLiveData<HypertrackMapWrapper>()
 
+    init {
+        map.observeManaged {
+            displayUserLocation(it, userLocation.value)
+        }
+    }
+
     private lateinit var geofencesMapDelegate: GeofencesMapDelegate
 
     override val errorHandler = ErrorHandler(
@@ -71,7 +77,23 @@ class CurrentTripViewModel(
         })
 
     val tripData = MediatorLiveData<TripData?>()
-    val userLocation = MutableLiveData<LatLng?>()
+
+    private var locationMarker: Marker? = null
+    val userLocation: MediatorLiveData<LatLng?> = MediatorLiveData<LatLng?>().apply {
+        postValue(null)
+        addSource(locationProvider.deviceLocation) {
+            if (map.value != null) {
+                displayUserLocation(map.requireValue(), it)
+            }
+            postValue(it)
+        }
+    }
+
+    private fun displayUserLocation(map: HypertrackMapWrapper, latLng: LatLng?) {
+        locationMarker?.remove()
+        locationMarker = map.addUserLocation(latLng)
+    }
+
     val showWhereAreYouGoing: LiveData<Boolean> =
         ZipLiveData(hyperTrackService.isTracking, tripData).let {
             Transformations.map(it) { (isTracking, trip) ->
@@ -135,10 +157,6 @@ class CurrentTripViewModel(
                 }
             }
         }
-
-        locationProvider.getCurrentLocation {
-            userLocation.postValue(it?.toLatLng())
-        }
     }
 
     fun onViewCreated() {
@@ -155,7 +173,7 @@ class CurrentTripViewModel(
                 enableScroll = true,
                 enableZoomKeys = false,
                 enableMyLocationButton = false,
-                enableMyLocationIndicator = true
+                enableMyLocationIndicator = false
             )
         ).apply {
             setOnCameraMovedListener {
@@ -185,6 +203,7 @@ class CurrentTripViewModel(
                 if (tripData.value == null) {
                     super.updateGeofencesOnMap(mapWrapper, geofences)
                 }
+                displayUserLocation(mapWrapper, userLocation.value)
             }
 
             override fun onCameraIdle() {
@@ -269,7 +288,13 @@ class CurrentTripViewModel(
 
     fun onMyLocationClick() {
         if (map.value != null && userLocation.value != null) {
-            map.requireValue().moveCamera(userLocation.value!!)
+            map.requireValue().animateCamera(userLocation.value!!, DEFAULT_ZOOM)
+        }
+    }
+
+    fun onTripFocused() {
+        if (map.value != null && tripData.value != null) {
+            map.requireValue().animateCameraToTrip(tripData.value!!.trip, userLocation.value)
         }
     }
 
@@ -288,20 +313,20 @@ class CurrentTripViewModel(
         }
     }
 
-    private fun displayTripOnMap(map: HypertrackMapWrapper, it: LocalTrip?) {
-        it?.let {
-            map.clear()
-            map.addTrip(it)
-            map.animateCameraToTrip(it, userLocation.value)
-        }
-    }
-
     fun onResume() {
         tripsUpdateTimerInteractor.registerObserver(this.javaClass.simpleName)
     }
 
     fun onPause() {
         tripsUpdateTimerInteractor.unregisterObserver(this.javaClass.simpleName)
+    }
+
+    private fun displayTripOnMap(map: HypertrackMapWrapper, it: LocalTrip?) {
+        it?.let {
+            map.clear()
+            map.addTrip(it)
+            map.animateCameraToTrip(it, userLocation.value)
+        }
     }
 
     inner class TripData(val trip: LocalTrip) {

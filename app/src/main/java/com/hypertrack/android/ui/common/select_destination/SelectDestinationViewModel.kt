@@ -154,7 +154,7 @@ open class SelectDestinationViewModel(
 
         deviceLocationProvider.getCurrentLocation {
             it?.let {
-                sendAction(UserLocationReceived(it.toLatLng(), it.toLatLng().let {
+                sendAction(UserLocationReceived(it, it.let {
                     addressDelegate.displayAddress(osUtilsProvider.getPlaceFromCoordinates(it))
                 }))
             }

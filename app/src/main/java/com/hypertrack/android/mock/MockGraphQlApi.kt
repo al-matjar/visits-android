@@ -1,6 +1,6 @@
-package com.hypertrack.android.api
+package com.hypertrack.android.mock
 
-import retrofit2.Response
+import com.hypertrack.android.api.GraphQlApi
 
 class MockGraphQlApi(private val remoteApi: GraphQlApi) : GraphQlApi by remoteApi {
 

@@ -7,6 +7,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import com.hypertrack.android.deeplink.DeeplinkResult
+import com.hypertrack.android.mock.MockData
 import com.hypertrack.android.ui.base.NavActivity
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
@@ -33,6 +34,14 @@ class MainActivity : NavActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         tvMockMode.setGoneState(MyApplication.MOCK_MODE.not())
+        lMockLocationControls.setGoneState(MyApplication.RECORDING_MODE.not())
+        if (MyApplication.RECORDING_MODE) {
+            bStart.setOnClickListener {
+                Injector.mockLocationProvider.startGeneratingPolyline(
+                    MockData.mockTrip.orders.first().routeToPolyline!!
+                )
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
