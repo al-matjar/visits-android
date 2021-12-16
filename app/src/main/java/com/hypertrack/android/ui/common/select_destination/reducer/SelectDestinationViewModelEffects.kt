@@ -1,5 +1,6 @@
 package com.hypertrack.android.ui.common.select_destination.reducer
 
+import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 
 // @formatter:off
@@ -13,6 +14,8 @@ data class DisplayLocationInfo(
 data class Proceed(val placeData: PlaceData) : Effect()
 data class MoveMapToPlace(val placeSelected: PlaceSelected, val map: HypertrackMapWrapper) : Effect()
 data class MoveMapToUserLocation(val userLocation: UserLocation, val map: HypertrackMapWrapper) : Effect()
+data class AnimateMapToUserLocation(val userLocation: UserLocation, val map: HypertrackMapWrapper) : Effect()
+data class DisplayUserLocation(val latLng: LatLng, val map: HypertrackMapWrapper) : Effect()
 object CloseKeyboard : Effect() {
     override fun toString(): String = javaClass.simpleName
 }

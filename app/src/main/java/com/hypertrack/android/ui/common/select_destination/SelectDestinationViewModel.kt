@@ -22,12 +22,15 @@ import com.hypertrack.android.ui.common.map.viewportPosition
 import com.hypertrack.android.ui.common.select_destination.reducer.*
 import com.hypertrack.android.ui.common.util.isNearZero
 import com.hypertrack.android.ui.common.util.nullIfEmpty
+import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.add_place.AddPlaceFragmentDirections
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
 import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.asNonEmpty
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlin.math.acos
 
 open class SelectDestinationViewModel(
     baseDependencies: BaseViewModelDependencies,
@@ -54,6 +57,7 @@ open class SelectDestinationViewModel(
     val searchQuery = MutableLiveData<String>()
     val locationInfo = MutableLiveData<DisplayLocationInfo>()
     val showConfirmButton = MutableLiveData<Boolean>()
+    val showMyLocationButton = MutableLiveData<Boolean>()
     val placesResults = MutableLiveData<List<GooglePlaceModel>>()
     val closeKeyboard = SingleLiveEvent<Boolean>()
     val goBackEvent = SingleLiveEvent<DestinationData>()
@@ -120,6 +124,9 @@ open class SelectDestinationViewModel(
                     isMapMovingToUserLocation = true
                     moveMapCamera(effect.map, effect.userLocation.latLng)
                 }
+                is AnimateMapToUserLocation -> {
+                    effect.map.animateCamera(effect.userLocation.latLng, defaultZoom)
+                }
                 is Proceed -> {
                     handleEffect(effect)
                 }
@@ -131,6 +138,9 @@ open class SelectDestinationViewModel(
                 }
                 ClearSearchQuery -> {
                     searchQuery.postValue("")
+                }
+                is DisplayUserLocation -> {
+                    effect.map.addUserLocation(effect.latLng)
                 }
             } as Unit
         }
@@ -167,8 +177,8 @@ open class SelectDestinationViewModel(
             googleMap, osUtilsProvider, crashReportsProvider, MapParams(
                 enableScroll = true,
                 enableZoomKeys = true,
-                enableMyLocationButton = true,
-                enableMyLocationIndicator = true,
+                enableMyLocationButton = false,
+                enableMyLocationIndicator = false,
             )
         )
         wrapper.setOnCameraMovedListener { position ->
@@ -293,6 +303,10 @@ open class SelectDestinationViewModel(
             osUtilsProvider,
             markerClickListener
         )
+    }
+
+    fun onMyLocationClick() {
+        sendAction(ShowMyLocationAction)
     }
 
 }

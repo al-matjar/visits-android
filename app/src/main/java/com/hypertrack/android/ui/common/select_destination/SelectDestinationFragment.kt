@@ -16,6 +16,7 @@ import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_select_destination.*
 import kotlinx.android.parcel.Parcelize
+import kotlinx.android.synthetic.main.fragment_current_trip.location_button
 
 open class SelectDestinationFragment :
     ProgressDialogFragment(R.layout.fragment_select_destination) {
@@ -119,6 +120,14 @@ open class SelectDestinationFragment :
         vm.removeSearchFocusEvent.observe(viewLifecycleOwner, {
             search.clearFocus()
         })
+
+        vm.showMyLocationButton.observe(viewLifecycleOwner, {
+            bMyLocation.setGoneState(!it)
+        })
+
+        bMyLocation.setOnClickListener {
+            vm.onMyLocationClick()
+        }
 
         destination_on_map.show()
         confirm.show()

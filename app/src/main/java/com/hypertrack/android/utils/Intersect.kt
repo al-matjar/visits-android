@@ -41,6 +41,15 @@ class Intersect {
         return false
     }
 
+    fun cutPathOnFirstRoughIntersection(path: List<LatLng>, point: LatLng): List<LatLng> {
+        for (i in path.indices) {
+            if (SphericalUtil.computeDistanceBetween(path[i], point) < 100) {
+                return path.subList(i, path.size)
+            }
+        }
+        return path
+    }
+
     private fun polygonContains(point: LatLng, polygon: List<LatLng>): Boolean {
         return PolyUtil.containsLocation(point, polygon, true)
     }

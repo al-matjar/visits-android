@@ -3,7 +3,6 @@ package com.hypertrack.android.interactors
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.util.toLatLng
 import com.hypertrack.android.utils.HyperTrackService
-import com.hypertrack.android.utils.MockData
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.sdk.GeotagResult
 import com.hypertrack.sdk.OutageReason

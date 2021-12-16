@@ -1,7 +1,7 @@
 package com.hypertrack.android.api
 
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.mock.MockGraphQlApi
+import com.hypertrack.android.mock.api.MockGraphQlApi
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.formatters.toIso
 import com.squareup.moshi.Json
@@ -19,35 +19,12 @@ import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 class GraphQlApiClient(
-    private val baseUrl: String,
+    private val api: GraphQlApi,
     private val publishableKey: PublishableKey,
     private val deviceId: DeviceId,
     private val moshi: Moshi,
     private val crashReportsProvider: CrashReportsProvider,
 ) {
-
-    private val remoteApi: GraphQlApi = Retrofit.Builder()
-        .baseUrl(baseUrl)
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .addConverterFactory(ScalarsConverterFactory.create())
-        .client(
-            OkHttpClient.Builder()
-                .readTimeout(30, TimeUnit.SECONDS)
-                .connectTimeout(30, TimeUnit.SECONDS).apply {
-//                    if (BuildConfig.DEBUG) {
-//                        addInterceptor(loggingInterceptor)
-//                    }
-                }
-                .build()
-        )
-        .build()
-        .create(GraphQlApi::class.java)
-
-    private val api = if (MyApplication.MOCK_MODE.not()) {
-        remoteApi
-    } else {
-        MockGraphQlApi(remoteApi)
-    }
 
     suspend fun getPlaceVisitsStats(days: List<DayRange>): Result<Map<DayRange, RemoteDayVisitsStats>> {
         return try {

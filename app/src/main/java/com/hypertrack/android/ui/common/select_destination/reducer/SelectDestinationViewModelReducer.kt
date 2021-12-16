@@ -1,6 +1,7 @@
 package com.hypertrack.android.ui.common.select_destination.reducer
 
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
 import com.hypertrack.android.utils.IllegalActionException
 
 class SelectDestinationViewModelReducer {
@@ -19,6 +20,12 @@ class SelectDestinationViewModelReducer {
                             action.map
                         )
 
+                        val displayUserLocationEffect = if (state.userLocation != null) {
+                            setOf(DisplayUserLocation(state.userLocation.latLng, action.map))
+                        } else {
+                            setOf()
+                        }
+
                         MapReady(
                             action.map,
                             state.userLocation,
@@ -32,7 +39,11 @@ class SelectDestinationViewModelReducer {
                             } else {
                                 false
                             }
-                        ).withEffects(userLocationEffects + setOf(HideProgressbar))
+                        ).withEffects(
+                            userLocationEffects + displayUserLocationEffect + setOf(
+                                HideProgressbar
+                            )
+                        )
                     }
                     is MapReady -> throw IllegalActionException(action, state)
                 }
@@ -137,6 +148,20 @@ class SelectDestinationViewModelReducer {
                     )
                 }
             }
+            ShowMyLocationAction -> {
+                when (state) {
+                    is MapReady -> {
+                        state.withEffects(
+                            if (state.userLocation != null) {
+                                setOf(AnimateMapToUserLocation(state.userLocation, state.map))
+                            } else {
+                                setOf()
+                            }
+                        )
+                    }
+                    is MapNotReady -> state.asReducerResult()
+                }
+            }
         }
     }
 
@@ -149,7 +174,7 @@ class SelectDestinationViewModelReducer {
                     state.waitingForUserLocationMove,
                     userLocation,
                     state.map
-                )
+                ) + setOf(DisplayUserLocation(userLocation.latLng, state.map))
             )
         }
     }

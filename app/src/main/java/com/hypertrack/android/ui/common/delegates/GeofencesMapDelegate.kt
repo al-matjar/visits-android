@@ -72,7 +72,7 @@ open class GeofencesMapDelegate(
 //            GeofenceClusterItem(it)
 //        })
 
-//        if (BuildConfig.DEBUG.not() || !SHOW_DEBUG_DATA) {
+//        if (MyApplication.DEBUG_MODE.not() || !SHOW_DEBUG_DATA) {
 //            clusterManager.setItems(placesInteractor.geofences.value!!.values.map {
 //                GeofenceClusterItem(
 //                    it

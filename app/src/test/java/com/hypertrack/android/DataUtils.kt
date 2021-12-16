@@ -4,7 +4,7 @@ import com.hypertrack.android.api.Point
 import com.hypertrack.android.api.Trip
 import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.api.Views
-import com.hypertrack.android.models.Estimate
+import com.hypertrack.android.models.RemoteEstimate
 import com.hypertrack.android.models.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
@@ -33,7 +33,7 @@ fun createBaseTrip(id: String? = null): Trip {
             0,
             arrivedAt = "2020-02-02T20:20:02.020Z"
         ),
-        estimate = Estimate(
+        estimate = RemoteEstimate(
             "",
             null
         )

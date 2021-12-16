@@ -2,11 +2,9 @@ package com.hypertrack.android.api
 
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.models.*
 import com.hypertrack.android.utils.toBase64
-import com.hypertrack.logistics.android.github.R
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import retrofit2.Response
@@ -251,7 +249,7 @@ data class Trip(
     @field:Json(name = "started_at") val createdAt: String,
     @field:Json(name = "metadata") val metadata: Map<String, Any>?,
     @field:Json(name = "destination") val destination: TripDestination?,
-    @field:Json(name = "estimate") val estimate: Estimate?,
+    @field:Json(name = "estimate") val estimate: RemoteEstimate?,
     @field:Json(name = "orders") val orders: List<Order>?,
 )
 

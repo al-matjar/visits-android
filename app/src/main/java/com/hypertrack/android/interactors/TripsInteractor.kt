@@ -43,9 +43,8 @@ interface TripsInteractor {
         latLng: LatLng,
         address: String?
     ): AddOrderResult
-}
 
-interface OrdersInteractor {
+    fun logState(): Map<String, Any?>
     suspend fun snoozeOrder(orderId: String): SimpleResult
     suspend fun unsnoozeOrder(orderId: String): SimpleResult
 }
@@ -59,7 +58,7 @@ open class TripsInteractorImpl(
     private val osUtilsProvider: OsUtilsProvider,
     private val ioDispatcher: CoroutineDispatcher,
     private val globalScope: CoroutineScope
-) : TripsInteractor, OrdersInteractor {
+) : TripsInteractor {
 
     override val completedTrips = Transformations.map(tripsRepository.trips) {
         it.filter { it.status != TripStatus.ACTIVE }
@@ -367,7 +366,7 @@ open class TripsInteractorImpl(
         }
     }
 
-    fun logState(): Map<String, Any?> {
+    override fun logState(): Map<String, Any?> {
         return mapOf(
             "currentTrip" to currentTrip.value?.let { trip ->
                 mapOf(

@@ -3,7 +3,6 @@ package com.hypertrack.android.api
 import android.graphics.Bitmap
 import android.util.Log
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.mock.MockApi
 import com.hypertrack.android.models.*
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.repository.AccessTokenRepository
@@ -27,47 +26,11 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 class ApiClient(
-    private val accessTokenRepository: AccessTokenRepository,
-    private val baseUrl: String,
+    private val api: ApiInterface,
     private val deviceId: String,
     private val moshi: Moshi,
-    private val crashReportsProvider: CrashReportsProvider,
+    private val crashReportsProvider: CrashReportsProvider
 ) {
-
-    @Suppress("unused")
-    private val loggingInterceptor by lazy {
-        HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
-    }
-
-    private val remoteApi: ApiInterface = Retrofit.Builder()
-        .baseUrl(baseUrl)
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .addConverterFactory(ScalarsConverterFactory.create())
-        .client(
-            OkHttpClient.Builder()
-                .addInterceptor {
-                    val response = it.proceed(it.request())
-                    crashReportsProvider.log("${it.request().method} ${it.request().url.encodedPath} ${response.code}")
-                    response
-                }
-                .authenticator(AccessTokenAuthenticator(accessTokenRepository))
-                .addInterceptor(AccessTokenInterceptor(accessTokenRepository))
-                .addInterceptor(UserAgentInterceptor())
-                .readTimeout(30, TimeUnit.SECONDS)
-                .connectTimeout(30, TimeUnit.SECONDS).apply {
-                    if (BuildConfig.DEBUG) {
-                        addInterceptor(loggingInterceptor)
-                    }
-                }.build()
-        )
-        .build()
-        .create(ApiInterface::class.java)
-
-    private val api = if (MyApplication.MOCK_MODE.not()) {
-        remoteApi
-    } else {
-        MockApi(remoteApi)
-    }
 
     suspend fun clockIn() = api.clockIn(deviceId)
 

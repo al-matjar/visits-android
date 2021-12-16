@@ -17,6 +17,8 @@ import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.util.toMap
 import com.hypertrack.android.utils.HyperTrackService
+import com.hypertrack.android.utils.Intersect
+import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.SimpleResult
 import com.hypertrack.logistics.android.github.BuildConfig
 import kotlinx.coroutines.CoroutineScope
@@ -204,7 +206,7 @@ class TripsRepositoryImpl(
                 .filter { it.value is String } as Map<String, String>)
                 .toMutableMap()
                 .apply {
-                    if (newLocalOrders.any { it.legacy } && BuildConfig.DEBUG) {
+                    if (newLocalOrders.any { it.legacy } && MyApplication.DEBUG_MODE) {
                         put("legacy (debug)", "true")
                     }
                 },
@@ -260,7 +262,7 @@ class TripsRepositoryImpl(
                 }
             }
 
-            return LocalOrder(
+            return LocalOrder.fromRemote(
                 order,
                 isPickedUp = localOrder?.isPickedUp ?: if (isPickUpAllowed) {
                     false
@@ -277,7 +279,7 @@ class TripsRepositoryImpl(
     inner class LegacyOrderFactory : LocalOrderFactory {
         @Suppress("RedundantIf")
         override suspend fun create(order: Order, localOrder: LocalOrder?): LocalOrder {
-            val res = LocalOrder(
+            val res = LocalOrder.fromRemote(
                 order,
                 isPickedUp = localOrder?.isPickedUp ?: if (isPickUpAllowed) {
                     false

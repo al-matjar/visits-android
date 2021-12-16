@@ -19,7 +19,6 @@ import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.util.*
 
 class HypertrackMapWrapper(
     val googleMap: GoogleMap,
@@ -58,10 +57,10 @@ class HypertrackMapWrapper(
         com.hypertrack.maps.google.R.drawable.destination
     )
     private val completedOrderIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
-        R.drawable.ic_order_completed, R.color.colorHyperTrackGreen
+        R.drawable.ic_order_completed
     )
     private val canceledOrderIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
-        R.drawable.ic_order_canceled, R.color.colorHyperTrackGreen
+        R.drawable.ic_order_canceled
     )
     private val userLocationIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
         R.drawable.ic_user_location
@@ -195,8 +194,7 @@ class HypertrackMapWrapper(
     fun addTrip(trip: LocalTrip) {
         val map = googleMap
         val tripStart =
-            trip.ongoingOrders.firstOrNull()?.estimate?.route?.polyline?.getPolylinePoints()
-                ?.firstOrNull()
+            trip.orders.firstOrNull()?.estimate?.route?.firstOrNull()
 
         tripStart?.let {
             map.addMarker(
@@ -208,21 +206,27 @@ class HypertrackMapWrapper(
             )
         }
 
-        trip.ongoingOrders.forEach { order ->
-            order.estimate?.route?.polyline?.getPolylinePoints()?.let {
-                val options = if (order.status == OrderStatus.ONGOING) {
-                    PolylineOptions()
-                        .width(tripRouteWidth)
-                        .color(tripRouteColor)
-                        .pattern(tripLinePattern)
-                } else {
-                    PolylineOptions()
-                        .width(tripRouteWidth)
-                        .color(tripRouteColor)
-                        .pattern(tripLinePattern)
-                }
+        trip.orders.forEach { order ->
+            when (order.status) {
+                OrderStatus.ONGOING, OrderStatus.COMPLETED -> {
+                    order.estimate?.route?.let {
+                        val options = if (order.status == OrderStatus.ONGOING) {
+                            PolylineOptions()
+                                .width(tripRouteWidth)
+                                .color(tripRouteColor)
+                                .pattern(tripLinePattern)
+                        } else {
+                            PolylineOptions()
+                                .width(tripRouteWidth)
+                                .color(tripRouteColor)
+                                .pattern(tripLinePattern)
+                        }
 
-                map.addPolyline(options.addAll(it))
+                        map.addPolyline(options.addAll(it))
+                    }
+                }
+                else -> {
+                }
             }
 
             map.addMarker(
@@ -241,6 +245,7 @@ class HypertrackMapWrapper(
                             }
                         }
                     )
+                    .snippet(order.id)
                     .position(order.destinationLatLng)
                     .zIndex(100f)
             )
@@ -255,14 +260,13 @@ class HypertrackMapWrapper(
         val map = googleMap
         try {
             val tripStart =
-                trip.orders.firstOrNull()?.estimate?.route?.polyline?.getPolylinePoints()
-                    ?.firstOrNull()
+                trip.orders.firstOrNull()?.estimate?.route?.firstOrNull()
 
             if (trip.ongoingOrders.isNotEmpty()) {
                 val bounds = LatLngBounds.builder().apply {
                     trip.ongoingOrders.forEach { order ->
                         include(order.destinationLatLng)
-                        order.estimate?.route?.polyline?.getPolylinePoints()?.forEach {
+                        order.estimate?.route?.forEach {
                             include(it)
                         }
                     }

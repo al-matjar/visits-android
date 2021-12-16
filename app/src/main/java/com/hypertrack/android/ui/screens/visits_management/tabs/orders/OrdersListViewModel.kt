@@ -12,6 +12,7 @@ import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
+import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.formatters.DatetimeFormatter
 import com.hypertrack.logistics.android.github.BuildConfig
 import kotlinx.coroutines.launch
@@ -37,7 +38,7 @@ class OrdersListViewModel(
                     .filter { (key, _) -> !key.startsWith("ht_") }
                     .toList().map { KeyValueItem(it.first, it.second) }.toMutableList()
                     .apply {
-                        if (BuildConfig.DEBUG) {
+                        if (MyApplication.DEBUG_MODE) {
                             add(KeyValueItem("trip_id (debug)", trip.id))
                         }
                     }

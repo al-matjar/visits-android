@@ -6,11 +6,8 @@
         android:right="4dp"
         android:bottom="4dp">
         <shape android:shape="oval">
-            <size
-
-                />
             <solid android:color="@color/colorWhite" />
         </shape>
     </item>
-    <item android:drawable="@drawable/ic_user_location_marker" />
+    <item android:drawable="@drawable/ic_user_location_foreground" />
 </layer-list>

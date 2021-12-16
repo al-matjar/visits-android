@@ -30,7 +30,7 @@ object False : AlgBoolean() {
     }
 }
 
-// todo change all datetimeFromString(str) to this because it crashes if str is null, but not
+// todo change all ZonedDateTime.parse(str) to this because it crashes if str is null, but not
 // enforce compile time non-nullability
 fun datetimeFromString(str: String): ZonedDateTime {
     return ZonedDateTime.parse(str)

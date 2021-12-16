@@ -19,7 +19,7 @@ import com.squareup.moshi.Types
 
 class FeedbackInteractor(
     private val deviceId: String,
-    private val tripsInteractor: TripsInteractorImpl,
+    private val tripsInteractor: TripsInteractor,
     private val integrationsRepository: IntegrationsRepositoryImpl,
     private val moshi: Moshi,
     private val osUtilsProvider: OsUtilsProvider,
@@ -45,8 +45,9 @@ class FeedbackInteractor(
 
     private fun logAppState() {
         try {
+            val tripsState = tripsInteractor
             //clear app state from any sensitive data (location, metadata, addresses, notes, etc)
-            val appState: Map<String, Any?> = mapOf(
+            val appState: Map<String, Any?> = mutableMapOf(
                 "trips" to tripsInteractor.logState(),
                 "integrations" to integrationsRepository.logState()
             )
@@ -59,7 +60,7 @@ class FeedbackInteractor(
                 ).toJson(appState)
             )
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) {
+            if (MyApplication.DEBUG_MODE) {
                 throw e
             }
         }

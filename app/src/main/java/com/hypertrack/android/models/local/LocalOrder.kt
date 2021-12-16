@@ -3,10 +3,11 @@ package com.hypertrack.android.models.local
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.interactors.PhotoForUpload
-import com.hypertrack.android.models.Estimate
+import com.hypertrack.android.models.RemoteEstimate
 import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.models.Order
 import com.hypertrack.android.ui.common.util.nullIfBlank
+import com.hypertrack.android.utils.Intersect
 import com.hypertrack.android.utils.datetimeFromString
 import com.squareup.moshi.JsonClass
 import java.time.ZonedDateTime
@@ -30,29 +31,6 @@ data class LocalOrder(
     val legacy: Boolean = false
 ) {
 
-    @Suppress("UNCHECKED_CAST")
-    constructor(
-        order: Order,
-        isPickedUp: Boolean = true,
-        note: String? = null,
-        metadata: Metadata?,
-        legacy: Boolean = false,
-        photos: MutableSet<PhotoForUpload> = mutableSetOf(),
-        status: OrderStatus? = null
-    ) : this(
-        id = order.id,
-        destination = order.destination,
-        status = status ?: OrderStatus.fromString(order._status),
-        scheduledAt = order.scheduledAt?.let { datetimeFromString(it) },
-        completedAt = order.completedAt?.let { datetimeFromString(it) },
-        estimate = order.estimate,
-        _metadata = metadata,
-        note = note,
-        legacy = legacy,
-        isPickedUp = isPickedUp,
-        photos = photos,
-    )
-
     val metadata: Map<String, String>
         get() = _metadata?.otherMetadata ?: mapOf()
 
@@ -64,11 +42,7 @@ data class LocalOrder(
         get() = destination.address.nullIfBlank()
 
     val eta: ZonedDateTime?
-        get() = estimate?.let {
-            it.arriveAt?.let { arriveAt ->
-                datetimeFromString(arriveAt)
-            }
-        }
+        get() = estimate?.arriveAt
 
     val awaySeconds: Long?
         get() {
@@ -76,7 +50,7 @@ data class LocalOrder(
                 it.arriveAt?.let { arriveAt ->
                     ChronoUnit.SECONDS.between(
                         ZonedDateTime.now(),
-                        datetimeFromString(arriveAt)
+                        arriveAt
                     ).let {
                         if (it < 0) null else it
                     }
@@ -88,9 +62,33 @@ data class LocalOrder(
         get() = _metadata?.visitsAppMetadata?.note
 
     val routeToPolyline: List<LatLng>?
-        get() = estimate?.route?.polyline?.getPolylinePoints()
+        get() = estimate?.route
 
     companion object {
+        fun fromRemote(
+            order: Order,
+            isPickedUp: Boolean = true,
+            note: String? = null,
+            metadata: Metadata?,
+            legacy: Boolean = false,
+            photos: MutableSet<PhotoForUpload> = mutableSetOf(),
+            status: OrderStatus? = null,
+        ): LocalOrder {
+            return LocalOrder(
+                id = order.id,
+                destination = order.destination,
+                status = status ?: OrderStatus.fromString(order._status),
+                scheduledAt = order.scheduledAt?.let { datetimeFromString(it) },
+                completedAt = order.completedAt?.let { datetimeFromString(it) },
+                estimate = Estimate.fromRemote(order.estimate),
+                _metadata = metadata,
+                note = note,
+                legacy = legacy,
+                isPickedUp = isPickedUp,
+                photos = photos,
+            )
+        }
+
         const val VISIT_NOTE_KEY = "visit_note"
         const val VISIT_PHOTOS_KEY = "_visit_photos"
     }
@@ -112,6 +110,23 @@ enum class OrderStatus(val value: String) {
                 }
             }
             return UNKNOWN
+        }
+    }
+}
+
+@JsonClass(generateAdapter = true)
+data class Estimate(
+    val arriveAt: ZonedDateTime?,
+    val route: List<LatLng>?
+) {
+    companion object {
+        fun fromRemote(
+            estimate: RemoteEstimate?,
+        ): Estimate? {
+            return estimate?.let {
+                Estimate(estimate.arriveAt?.let { datetimeFromString(it) },
+                    estimate.route?.polyline?.coordinates?.map { LatLng(it[1], it[0]) })
+            }
         }
     }
 }

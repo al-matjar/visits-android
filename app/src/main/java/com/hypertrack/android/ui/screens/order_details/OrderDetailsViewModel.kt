@@ -31,7 +31,6 @@ class OrderDetailsViewModel(
     private val orderId: String,
     baseDependencies: BaseViewModelDependencies,
     private val tripsInteractor: TripsInteractor,
-    private val ordersInteractor: OrdersInteractor,
     private val photoUploadInteractor: PhotoUploadQueueInteractor,
     private val accountRepository: AccountRepository,
     private val datetimeFormatter: DatetimeFormatter,
@@ -184,7 +183,7 @@ class OrderDetailsViewModel(
 
     fun onSnoozeClicked() {
         withLoadingStateAndErrorHandler {
-            ordersInteractor.snoozeOrder(orderId).let {
+            tripsInteractor.snoozeOrder(orderId).let {
                 when (it) {
                     JustSuccess -> {
                     }
@@ -196,7 +195,7 @@ class OrderDetailsViewModel(
 
     fun onUnsnoozeClicked() {
         withLoadingStateAndErrorHandler {
-            ordersInteractor.unsnoozeOrder(orderId).let {
+            tripsInteractor.unsnoozeOrder(orderId).let {
                 when (it) {
                     JustSuccess -> {
                     }

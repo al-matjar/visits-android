@@ -7,6 +7,11 @@ import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.messaging.PushReceiver
 import com.hypertrack.android.mock.MockLocationProvider
+import com.hypertrack.android.mock.MockNotifications
+import com.hypertrack.android.mock.trips.MockTripStorage
+import com.hypertrack.android.mock.trips.RecordingMockTripsInteractor
+import com.hypertrack.android.mock.api.MockApi
+import com.hypertrack.android.mock.api.MockGraphQlApi
 import com.hypertrack.android.repository.*
 import com.hypertrack.android.deeplink.BranchIoDeepLinkProcessor
 import com.hypertrack.android.deeplink.BranchWrapper
@@ -27,8 +32,12 @@ import com.squareup.moshi.recipes.ZonedDateTimeJsonAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.util.concurrent.TimeUnit
 
 
 class ServiceLocator(val crashReportsProvider: CrashReportsProvider) {
@@ -69,6 +78,13 @@ object Injector {
     val batteryLevelMonitor = BatteryLevelMonitor(crashReportsProvider)
 
     val mockLocationProvider by lazy { MockLocationProvider() }
+    val mockTripStorage by lazy { MockTripStorage() }
+    val mockNotifications by lazy {
+        MockNotifications(
+            appScope.appContext,
+            appScope.notificationsInteractor
+        )
+    }
 
     private fun createAppScope(context: Context): AppScope {
         val crashReportsProvider = this.crashReportsProvider
@@ -178,9 +194,20 @@ object Injector {
         } else {
             mockLocationProvider
         }
-        val apiClient = ApiClient(
-            accessTokenRepository,
+        val api = createRemoteApi(
             BASE_URL,
+            moshi,
+            accessTokenRepository,
+            crashReportsProvider
+        ).let {
+            if (MyApplication.MOCK_MODE.not()) {
+                it
+            } else {
+                MockApi(it)
+            }
+        }
+        val apiClient = ApiClient(
+            api,
             deviceId,
             moshi,
             crashReportsProvider
@@ -241,7 +268,13 @@ object Injector {
             osUtilsProvider,
             Dispatchers.IO,
             GlobalScope
-        )
+        ).let {
+            if (MyApplication.RECORDING_MODE.not()) {
+                it
+            } else {
+                RecordingMockTripsInteractor(it, mockTripStorage)
+            }
+        }
 
         val feedbackInteractor = FeedbackInteractor(
             accessTokenRepository.deviceId,
@@ -252,15 +285,24 @@ object Injector {
             crashReportsProvider
         )
 
+        val graphQlApi = createGraphQlApi(GRAPHQL_API_URL, moshi).let {
+            if (MyApplication.MOCK_MODE.not()) {
+                it
+            } else {
+                MockGraphQlApi(it)
+            }
+        }
+        val graphQlApiClient = GraphQlApiClient(
+            graphQlApi,
+            PublishableKey(publishableKey),
+            DeviceId(deviceId),
+            moshi,
+            crashReportsProvider
+        )
+
         val placesVisitsRepository = PlacesVisitsRepository(
             DeviceId(deviceId),
-            GraphQlApiClient(
-                GRAPHQL_API_URL,
-                PublishableKey(publishableKey),
-                DeviceId(deviceId),
-                moshi,
-                crashReportsProvider
-            ),
+            graphQlApiClient,
             osUtilsProvider,
             crashReportsProvider,
             moshi
@@ -284,7 +326,6 @@ object Injector {
         )
 
         val userScope = UserScope(
-            tripsInteractor,
             tripsInteractor,
             TripsUpdateTimerInteractor(tripsInteractor),
             placesInteractor,
@@ -358,6 +399,54 @@ object Injector {
     private fun destroyUserScope() {
         userScope?.onDestroy()
         userScope = null
+    }
+
+    private fun createRemoteApi(
+        baseUrl: String,
+        moshi: Moshi,
+        accessTokenRepository: BasicAuthAccessTokenRepository,
+        crashReportsProvider: CrashReportsProvider
+    ): ApiInterface {
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .addConverterFactory(ScalarsConverterFactory.create())
+            .client(
+                OkHttpClient.Builder()
+                    .addInterceptor {
+                        val response = it.proceed(it.request())
+                        crashReportsProvider.log("${it.request().method} ${it.request().url.encodedPath} ${response.code}")
+                        response
+                    }
+                    .authenticator(AccessTokenAuthenticator(accessTokenRepository))
+                    .addInterceptor(AccessTokenInterceptor(accessTokenRepository))
+                    .addInterceptor(UserAgentInterceptor())
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .connectTimeout(30, TimeUnit.SECONDS).apply {
+                        if (MyApplication.DEBUG_MODE) {
+                            addInterceptor(HttpLoggingInterceptor().apply {
+                                level = HttpLoggingInterceptor.Level.BODY
+                            })
+                        }
+                    }.build()
+            )
+            .build()
+            .create(ApiInterface::class.java)
+    }
+
+    private fun createGraphQlApi(baseUrl: String, moshi: Moshi): GraphQlApi {
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .addConverterFactory(ScalarsConverterFactory.create())
+            .client(
+                OkHttpClient.Builder()
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .build()
+            )
+            .build()
+            .create(GraphQlApi::class.java)
     }
 
     private val placesClient: PlacesClient by lazy {
@@ -449,7 +538,6 @@ class TripCreationScope(
 
 class UserScope(
     val tripsInteractor: TripsInteractor,
-    val ordersInteractor: OrdersInteractor,
     val tripsUpdateTimerInteractor: TripsUpdateTimerInteractor,
     val placesInteractor: PlacesInteractor,
     val placesVisitsInteractor: PlacesVisitsInteractor,

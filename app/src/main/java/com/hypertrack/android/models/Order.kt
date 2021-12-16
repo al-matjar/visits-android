@@ -5,11 +5,6 @@ import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.models.local.OrderStatus
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import java.util.*
 
 @Suppress("UNCHECKED_CAST")
 @JsonClass(generateAdapter = true)
@@ -19,7 +14,7 @@ data class Order(
     @field:Json(name = "status") val _status: String,
     @field:Json(name = "scheduled_at") val scheduledAt: String?,
     @field:Json(name = "completed_at") val completedAt: String?,
-    val estimate: Estimate?,
+    val estimate: RemoteEstimate?,
     @field:Json(name = "metadata") val _metadata: Map<String, Any>?,
 ) {
 
@@ -33,7 +28,7 @@ data class Order(
 }
 
 @JsonClass(generateAdapter = true)
-data class Estimate(
+data class RemoteEstimate(
     @field:Json(name = "arrive_at") val arriveAt: String?,
     @field:Json(name = "route") val route: Route?
 )

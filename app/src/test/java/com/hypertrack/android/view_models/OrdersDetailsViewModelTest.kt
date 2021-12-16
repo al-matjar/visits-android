@@ -47,7 +47,7 @@ class OrdersDetailsViewModelTest {
         runBlocking {
             val tripsInteractor: TripsInteractor = createTripsInteractorMock(orderSet = {
                 every { it.getOrderLiveData("ONGOING") } returns MutableLiveData<LocalOrder>(
-                    LocalOrder(
+                    LocalOrder.fromRemote(
                         createBaseOrder(status = OrderStatus.ONGOING),
                         note = null,
                         metadata = null,
@@ -55,7 +55,7 @@ class OrdersDetailsViewModelTest {
                     )
                 )
                 every { it.getOrderLiveData("COMPLETED") } returns MutableLiveData<LocalOrder>(
-                    LocalOrder(
+                    LocalOrder.fromRemote(
                         createBaseOrder(status = OrderStatus.COMPLETED),
                         note = null,
                         metadata = null,
@@ -63,7 +63,7 @@ class OrdersDetailsViewModelTest {
                     )
                 )
                 every { it.getOrderLiveData("CANCELED") } returns MutableLiveData<LocalOrder>(
-                    LocalOrder(
+                    LocalOrder.fromRemote(
                         createBaseOrder(status = OrderStatus.CANCELED),
                         note = null,
                         metadata = null,
@@ -71,7 +71,7 @@ class OrdersDetailsViewModelTest {
                     )
                 )
                 every { it.getOrderLiveData("SNOOZED") } returns MutableLiveData<LocalOrder>(
-                    LocalOrder(
+                    LocalOrder.fromRemote(
                         createBaseOrder(status = OrderStatus.SNOOZED),
                         note = null,
                         metadata = null,
@@ -385,7 +385,7 @@ class OrdersDetailsViewModelTest {
                 coEvery { getTrips() } returns listOf(
                     LocalTrip(
                         "1", TripStatus.ACTIVE, mapOf(), mutableListOf(
-                            LocalOrder(
+                            LocalOrder.fromRemote(
                                 order,
                                 metadata = null,
                                 note = "Note_local"
@@ -430,7 +430,7 @@ class OrdersDetailsViewModelTest {
                 coEvery { getTrips() } returns listOf(
                     LocalTrip(
                         "1", TripStatus.ACTIVE, mapOf(), mutableListOf(
-                            LocalOrder(
+                            LocalOrder.fromRemote(
                                 order,
                                 metadata = null,
                                 note = null
@@ -571,7 +571,7 @@ class OrdersDetailsViewModelTest {
             }
             val tripsInteractor = createTripsInteractorMock(orderSet = {
                 every { it.getOrderLiveData("1") } returns MutableLiveData(
-                    LocalOrder(
+                    LocalOrder.fromRemote(
                         createBaseOrder(),
                         true,
                         null,
@@ -619,7 +619,7 @@ class OrdersDetailsViewModelTest {
         fun createTripsInteractorMock(
             orderSet: ((TripsInteractor) -> Unit) = {
                 every { it.getOrderLiveData(any()) } returns MutableLiveData<LocalOrder>(
-                    LocalOrder(
+                    LocalOrder.fromRemote(
                         createBaseOrder(),
                         note = null,
                         metadata = null,
@@ -646,7 +646,7 @@ class OrdersDetailsViewModelTest {
             tripsInteractor: TripsInteractor,
             pickUpAllowed: Boolean = false,
             photoUploadInteractor: PhotoUploadQueueInteractor = mockk(relaxed = true),
-            ordersInteractor: OrdersInteractor = mockk(),
+            ordersInteractor: TripsInteractor = mockk(),
         ): OrderDetailsViewModel {
             return OrderDetailsViewModel(
                 id,
@@ -659,7 +659,6 @@ class OrdersDetailsViewModelTest {
                     }
                 },
                 tripsInteractor,
-                ordersInteractor,
                 photoUploadInteractor,
                 mockk() { coEvery { isPickUpAllowed } returns pickUpAllowed },
                 mockk(relaxed = true),

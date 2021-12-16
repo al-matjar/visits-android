@@ -54,4 +54,8 @@ data class PlaceSelectedAction(
     val latLng: LatLng
 ) : Action()
 
+object ShowMyLocationAction : Action() {
+    override fun toString(): String = javaClass.simpleName
+}
+
 // @formatter:on

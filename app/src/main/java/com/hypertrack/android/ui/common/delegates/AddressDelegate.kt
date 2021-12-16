@@ -197,7 +197,7 @@ fun Place.getAddressString(
         addressComponents?.asList()?.firstOrNull { "street_number" in it.types }?.name
     addressComponents?.asList()
         ?.firstOrNull { "subpremise" in it.types }
-        ?.name.let {
+        ?.name?.let {
             subThoroughfare += " $it"
         }
 

@@ -1,4 +1,4 @@
-package com.hypertrack.android.mock
+package com.hypertrack.android.mock.api
 
 import com.hypertrack.android.api.GraphQlApi
 

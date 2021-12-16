@@ -34,13 +34,9 @@ class MainActivity : NavActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         tvMockMode.setGoneState(MyApplication.MOCK_MODE.not())
-        lMockLocationControls.setGoneState(MyApplication.RECORDING_MODE.not())
+        lRecordingModeControls.setGoneState(MyApplication.RECORDING_MODE.not())
         if (MyApplication.RECORDING_MODE) {
-            bStart.setOnClickListener {
-                Injector.mockLocationProvider.startGeneratingPolyline(
-                    MockData.mockTrip.orders.first().routeToPolyline!!
-                )
-            }
+            Injector.mockLocationProvider.bindButtons(lRecordingModeControls)
         }
     }
 

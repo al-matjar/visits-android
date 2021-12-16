@@ -321,6 +321,7 @@ class CurrentTripViewModel(
         tripsUpdateTimerInteractor.unregisterObserver(this.javaClass.simpleName)
     }
 
+    //todo fix map padding on first trip zoom
     private fun displayTripOnMap(map: HypertrackMapWrapper, it: LocalTrip?) {
         it?.let {
             map.clear()

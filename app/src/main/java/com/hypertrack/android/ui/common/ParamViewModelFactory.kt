@@ -52,7 +52,6 @@ class ParamViewModelFactory<T>(
                 orderId = param as String,
                 baseDependencies,
                 userScopeProvider.get().tripsInteractor,
-                userScopeProvider.get().ordersInteractor,
                 userScopeProvider.get().photoUploadQueueInteractor,
                 accountRepository,
                 appScope.datetimeFormatter,
