@@ -1,5 +1,6 @@
 package com.hypertrack.android.repository
 
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.GeofenceSuccess
 import com.hypertrack.android.utils.Injector

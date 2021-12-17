@@ -1,7 +1,7 @@
 package com.hypertrack.android.interactors
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.hypertrack.android.api.MainCoroutineScopeRule
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.repository.HistoryRepositoryImpl
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.mock.MockData

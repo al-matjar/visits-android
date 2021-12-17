@@ -1,7 +1,7 @@
 package com.hypertrack.android.view_models
 
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.api.MainCoroutineScopeRule
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModel
 import com.hypertrack.android.ui.common.select_destination.reducer.*
 import com.hypertrack.android.utils.False

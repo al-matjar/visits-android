@@ -149,7 +149,7 @@ class AddPlaceInfoViewModel(
 
     @SuppressLint("MissingPermission")
     fun onMapReady(context: Context, googleMap: GoogleMap) {
-        map = HypertrackMapWrapper(
+        val mapWrapper = HypertrackMapWrapper(
             googleMap, osUtilsProvider, crashReportsProvider, MapParams(
                 enableScroll = false,
                 enableZoomKeys = true,
@@ -157,9 +157,10 @@ class AddPlaceInfoViewModel(
                 enableMyLocationIndicator = false
             )
         )
+        map = mapWrapper
         geofencesMapDelegate = object : GeofencesMapDelegate(
             context,
-            map!!,
+            mapWrapper,
             placesInteractor,
             osUtilsProvider,
             {}

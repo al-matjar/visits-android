@@ -3,6 +3,7 @@ package com.hypertrack.android.interactors
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.api.*
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
@@ -134,37 +135,6 @@ class TripInteractorTest {
     }
 
     @Test
-    fun `it should create trip with one order for first legacy trip (and ignore any others)`() {
-        val backendTrips = listOf(
-            createBaseTrip().copy(orders = null),
-            createBaseTrip().copy(orders = listOf()),
-            createBaseTrip().copy(
-                orders = listOf(
-                    createBaseOrder()
-                )
-            ),
-        )
-        val tripsInteractorImpl = createTripInteractorImpl(
-            backendTrips = backendTrips
-        )
-        runBlocking {
-            tripsInteractorImpl.refreshTrips()
-        }
-        runBlocking {
-            tripsInteractorImpl.currentTrip.observeAndGetValue()!!.let { trip ->
-                trip.orders.let {
-                    assertEquals(1, it.size)
-                    it[0].let { order ->
-                        assertTrue(order.legacy)
-                        assertEquals(trip.id, order.id)
-                        assertEquals(OrderStatus.ONGOING, order.status)
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
     fun `it should create legacy trip only for ongoing trip`() {
         val backendTrips = listOf(
             createBaseTrip().copy(status = TripStatus.COMPLETED.value, orders = null),
@@ -186,38 +156,6 @@ class TripInteractorTest {
         }
         runBlocking {
             tripsInteractorImpl.currentTrip.observeAndAssertNull()
-        }
-    }
-
-    @Test
-    fun `it should create legacy trip with correct picked up state`() {
-        val backendTrips = listOf(
-            createBaseTrip().copy(status = TripStatus.ACTIVE.value, orders = null),
-        )
-        var tripsInteractorImpl = createTripInteractorImpl(
-            backendTrips = backendTrips,
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
-        )
-        runBlocking {
-            tripsInteractorImpl.refreshTrips()
-        }
-        runBlocking {
-            tripsInteractorImpl.currentTrip.observeAndGetValue().let {
-                assertTrue(it!!.orders.first().isPickedUp)
-            }
-        }
-
-        tripsInteractorImpl = createTripInteractorImpl(
-            backendTrips = backendTrips,
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns true }
-        )
-        runBlocking {
-            tripsInteractorImpl.refreshTrips()
-        }
-        runBlocking {
-            tripsInteractorImpl.currentTrip.observeAndGetValue().let {
-                assertFalse(it!!.orders.first().isPickedUp)
-            }
         }
     }
 
@@ -285,35 +223,6 @@ class TripInteractorTest {
                     orders[2].let {
                         assertEquals(false, it.isPickedUp)
                         assertEquals(1, it.photos.size)
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
-    fun `it should persist local orders state when refreshing trip for legacy trip`() {
-        val backendTrips = listOf(
-            createBaseTrip().copy(
-                id = "tripId",
-                orders = null
-            ),
-        )
-        val tripsInteractorImpl = createTripInteractorImpl(
-            tripStorage = createTripsStorage(),
-            backendTrips = backendTrips,
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns true }
-        )
-        runBlocking {
-            tripsInteractorImpl.refreshTrips()
-            tripsInteractorImpl.setOrderPickedUp("tripId")
-            tripsInteractorImpl.refreshTrips()
-        }
-        runBlocking {
-            tripsInteractorImpl.currentTrip.observeAndGetValue()!!.let { trip ->
-                trip.orders.let { orders ->
-                    orders[0].let {
-                        assertEquals(true, it.isPickedUp)
                     }
                 }
             }

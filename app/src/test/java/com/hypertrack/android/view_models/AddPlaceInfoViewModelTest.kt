@@ -2,7 +2,7 @@ package com.hypertrack.android.view_models
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.api.MainCoroutineScopeRule
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.observeAndAssertNull
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.IntegrationsRepository

@@ -1,7 +1,7 @@
 package com.hypertrack.android.view_models
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.hypertrack.android.api.MainCoroutineScopeRule
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.interactors.DeeplinkInteractor
 import com.hypertrack.android.interactors.NoLogin
 import com.hypertrack.android.interactors.NoPublishableKey

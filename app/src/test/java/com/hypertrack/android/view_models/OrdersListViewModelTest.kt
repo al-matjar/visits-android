@@ -2,7 +2,7 @@ package com.hypertrack.android.view_models
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
-import com.hypertrack.android.api.MainCoroutineScopeRule
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.interactors.TripInteractorTest

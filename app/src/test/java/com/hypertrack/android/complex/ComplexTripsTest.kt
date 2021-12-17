@@ -2,8 +2,8 @@ package com.hypertrack.android.complex
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.api.ApiClient
-import com.hypertrack.android.api.MainCoroutineScopeRule
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.interactors.TripInteractorTest
@@ -57,14 +57,12 @@ class ComplexTripsTest {
                 mockk(relaxed = true),
                 mockk(relaxed = true),
                 mockk(relaxed = true),
-                mockk(relaxed = true),
             )
         val detailsVm2 =
             OrderDetailsViewModel(
                 "2",
                 mockk(relaxed = true),
                 tripsInteractor,
-                mockk(relaxed = true),
                 mockk(relaxed = true),
                 mockk(relaxed = true),
                 mockk(relaxed = true),

@@ -24,10 +24,13 @@ class AddOrderInfoFragment : ProgressDialogFragment(R.layout.fragment_add_order_
     private val args: AddOrderInfoFragmentArgs by navArgs()
     private val vm: AddOrderInfoViewModel by viewModels {
         MyApplication.injector.provideParamVmFactory(
-            AddOrderInfoViewModel.Params(
-                args.destinationData,
-                args.tripId
-            )
+            args.tripId.let { tripId ->
+                if (tripId == null) {
+                    NewTripParams(args.destinationData)
+                } else {
+                    AddOrderToTripParams(args.destinationData, tripId)
+                }
+            }
         )
     }
 
@@ -78,7 +81,5 @@ class AddOrderInfoFragment : ProgressDialogFragment(R.layout.fragment_add_order_
                 address = etAddress.textString(),
             )
         }
-
     }
-
 }

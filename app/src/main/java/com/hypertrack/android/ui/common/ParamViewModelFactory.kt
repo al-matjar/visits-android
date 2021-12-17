@@ -2,8 +2,6 @@ package com.hypertrack.android.ui.common
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.google.android.libraries.places.api.net.PlacesClient
-import com.hypertrack.android.api.ApiClient
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.screens.add_order.AddOrderViewModel
@@ -12,13 +10,10 @@ import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoViewModel
 import com.hypertrack.android.ui.screens.place_details.PlaceDetailsViewModel
 import com.hypertrack.android.ui.screens.order_details.OrderDetailsViewModel
 import com.hypertrack.android.ui.common.select_destination.DestinationData
-import com.hypertrack.android.ui.screens.select_trip_destination.SelectTripDestinationViewModel
+import com.hypertrack.android.ui.screens.add_order_info.AddOrderParams
 import com.hypertrack.android.utils.*
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
-import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.android.utils.formatters.MetersDistanceFormatter
 import com.squareup.moshi.Moshi
-import kotlinx.coroutines.GlobalScope
 import javax.inject.Provider
 
 @Suppress("UNCHECKED_CAST")
@@ -69,7 +64,7 @@ class ParamViewModelFactory<T>(
                 ) as T
             }
             AddOrderInfoViewModel::class.java -> AddOrderInfoViewModel(
-                param as AddOrderInfoViewModel.Params,
+                param as AddOrderParams,
                 baseDependencies,
                 userScopeProvider.get().tripsInteractor,
             ) as T

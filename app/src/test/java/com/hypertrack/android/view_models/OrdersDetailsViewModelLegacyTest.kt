@@ -4,8 +4,8 @@ import android.app.Activity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.api.ApiClient
-import com.hypertrack.android.api.MainCoroutineScopeRule
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.interactors.*
@@ -45,7 +45,7 @@ class OrdersDetailsViewModelLegacyTest {
             val tripsInteractor: TripsInteractor =
                 OrdersDetailsViewModelTest.createTripsInteractorMock(orderSet = {
                     every { it.getOrderLiveData(any()) } returns MutableLiveData(
-                        LocalOrder(
+                        LocalOrder.fromRemote(
                             createBaseOrder(),
                             note = "Note",
                             metadata = null,
@@ -99,127 +99,6 @@ class OrdersDetailsViewModelLegacyTest {
     }
 
     @Test
-    fun `it should save note on legacy order completion`() {
-        val pickUpAllowed = true
-        val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
-            backendTrips = listOf(createBaseTrip().copy(id = "1", orders = null)),
-            accountRepository = mockk { coEvery { isPickUpAllowed } returns pickUpAllowed }
-        )
-        runBlocking {
-            tripsInteractor.refreshTrips()
-
-            OrdersDetailsViewModelTest.createVm("1", tripsInteractor, pickUpAllowed).let {
-                it.onCompleteClicked("Note")
-
-                assertEquals("Note", it.note.observeAndGetValue())
-            }
-        }
-    }
-
-    @Test
-    fun `it should save note on exit for legacy order`() {
-        val pickUpAllowed = true
-        val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
-            backendTrips = listOf(createBaseTrip().copy(id = "1", orders = null)),
-            accountRepository = mockk { coEvery { isPickUpAllowed } returns pickUpAllowed }
-        )
-
-        runBlocking {
-            val vm = OrdersDetailsViewModelTest.createVm(
-                "1",
-                tripsInteractor,
-                pickUpAllowed,
-            )
-            tripsInteractor.refreshTrips()
-
-            vm.onExit("Note")
-
-            runBlocking {
-                assertEquals("Note", vm.note.observeAndGetValue())
-            }
-        }
-    }
-
-    @Test
-    fun `it should persist order note and photos for legacy order`() {
-        val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
-            backendTrips = listOf(createBaseTrip().copy(id = "1", orders = null)),
-            accountRepository = mockk { coEvery { isPickUpAllowed } returns false }
-        )
-        runBlocking {
-            tripsInteractor.refreshTrips()
-
-            OrdersDetailsViewModelTest.createVm("1", tripsInteractor).onExit("New note")
-
-            tripsInteractor.refreshTrips()
-
-            delay(100)
-
-            assertEquals(
-                "New note",
-                OrdersDetailsViewModelTest.createVm("1", tripsInteractor).note.observeAndGetValue()
-            )
-        }
-    }
-
-    @Test
-    fun `it should upload order photo for legacy order`() {
-        runBlocking {
-            val backendTrips = listOf(
-                createBaseTrip().copy(
-                    id = "1",
-                    status = TripStatus.ACTIVE.value,
-                    orders = null
-                ),
-            )
-            val queueInteractor = object : PhotoUploadQueueInteractor {
-                override fun addToQueue(photo: PhotoForUpload) {
-                    queue.postValue(queue.value!!.toMutableMap().apply {
-                        put(photo.photoId, photo.apply {
-                            state = PhotoUploadingState.UPLOADED
-                        })
-                    })
-                }
-
-                override fun retry(photoId: String) {
-                }
-
-                override val errorFlow = MutableSharedFlow<Consumable<Exception>>()
-                override val queue = MutableLiveData<Map<String, PhotoForUpload>>(mapOf())
-            }
-            assertTrue(queueInteractor.queue.value!!.isEmpty())
-            val tripsInteractor = TripInteractorTest.createTripInteractorImpl(
-                backendTrips = backendTrips,
-                queueInteractor = queueInteractor
-            )
-            tripsInteractor.refreshTrips()
-
-
-            OrdersDetailsViewModelTest.createVm("1", tripsInteractor, false, queueInteractor).let {
-                val activity = mockk<Activity>(relaxed = true)
-
-                it.onAddPhotoClicked(activity, "Note")
-
-                verify { activity.startActivityForResult(any(), any()) }
-                assertEquals(
-                    "Note",
-                    tripsInteractor.currentTrip.observeAndGetValue()!!.orders.first().note
-                )
-
-                it.onActivityResult(
-                    REQUEST_IMAGE_CAPTURE,
-                    AppCompatActivity.RESULT_OK,
-                    null
-                )
-
-                assertEquals(1, tripsInteractor.getOrder("1")!!.photos.size)
-
-                assertEquals(PhotoUploadingState.UPLOADED, it.photos.observeAndGetValue()[0].state)
-            }
-        }
-    }
-
-    @Test
     fun `it should send geotag on legacy order complete`() {
         runBlocking {
             val backendTrips = listOf(
@@ -248,7 +127,7 @@ class OrdersDetailsViewModelLegacyTest {
                     coEvery { getTrips() } returns listOf(
                         LocalTrip(
                             "1", TripStatus.ACTIVE, mapOf(), orders = listOf(
-                                LocalOrder(
+                                LocalOrder.fromRemote(
                                     createBaseOrder().copy(id = "1"),
                                     false,
                                     "Note",
@@ -321,7 +200,7 @@ class OrdersDetailsViewModelLegacyTest {
                     coEvery { getTrips() } returns listOf(
                         LocalTrip(
                             "1", TripStatus.ACTIVE, mapOf(), orders = listOf(
-                                LocalOrder(
+                                LocalOrder.fromRemote(
                                     createBaseOrder().copy(id = "1"),
                                     false,
                                     "Note",
@@ -388,7 +267,7 @@ class OrdersDetailsViewModelLegacyTest {
                     coEvery { getTrips() } returns listOf(
                         LocalTrip(
                             "1", TripStatus.ACTIVE, mapOf(), orders = listOf(
-                                LocalOrder(
+                                LocalOrder.fromRemote(
                                     createBaseOrder().copy(id = "1"),
                                     false,
                                     "Note",

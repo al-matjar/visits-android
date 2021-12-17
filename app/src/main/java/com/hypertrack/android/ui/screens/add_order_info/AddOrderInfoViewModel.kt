@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 
 
 class AddOrderInfoViewModel(
-    private val params: Params,
+    private val params: AddOrderParams,
     baseDependencies: BaseViewModelDependencies,
     private val tripsInteractor: TripsInteractor,
 ) : BaseViewModel(baseDependencies) {
@@ -46,7 +46,9 @@ class AddOrderInfoViewModel(
             }
         }
     }
-    val enableConfirmButton = MutableLiveData<Boolean>(shouldEnableConfirmButton())
+
+    //todo form validation
+    val enableConfirmButton = MutableLiveData<Boolean>(true)
 
     @SuppressLint("MissingPermission")
     fun onMapReady(googleMap: GoogleMap) {
@@ -55,12 +57,12 @@ class AddOrderInfoViewModel(
     }
 
     fun onConfirmClicked(address: String) {
-        if (enableConfirmButton.value!!) {
-            if (!params.isNewTrip) {
+        when (params) {
+            is AddOrderToTripParams -> {
                 viewModelScope.launch {
                     loadingState.postValue(true)
                     val res = tripsInteractor.addOrderToTrip(
-                        tripId = params.tripId!!,
+                        tripId = params.tripId,
                         destinationData.latLng,
                         address
                     )
@@ -76,15 +78,14 @@ class AddOrderInfoViewModel(
                     }
                     loadingState.postValue(false)
                 }
-            } else {
+            }
+            is NewTripParams -> {
                 MyApplication.injector.tripCreationScope = TripCreationScope(destinationData)
                 destination.postValue(
                     AddOrderFragmentDirections
                         .actionGlobalVisitManagementFragment(Tab.CURRENT_TRIP)
                 )
             }
-        } else {
-//            error.postValue(osUtilsProvider.getString(R.string.place_info_confirm_disabled))
         }
     }
 
@@ -94,15 +95,11 @@ class AddOrderInfoViewModel(
         }
     }
 
-    private fun shouldEnableConfirmButton(): Boolean {
-        return true
-    }
-
-    class Params(
-        val destinationData: DestinationData,
-        val tripId: String?
-    ) {
-        val isNewTrip = tripId == null
-    }
-
 }
+
+sealed class AddOrderParams(val destinationData: DestinationData)
+class NewTripParams(destinationData: DestinationData) : AddOrderParams(destinationData)
+class AddOrderToTripParams(
+    destinationData: DestinationData,
+    val tripId: String
+) : AddOrderParams(destinationData)

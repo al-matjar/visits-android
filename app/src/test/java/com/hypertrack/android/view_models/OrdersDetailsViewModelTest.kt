@@ -4,8 +4,8 @@ import android.app.Activity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.MutableLiveData
+import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.api.ApiClient
-import com.hypertrack.android.api.MainCoroutineScopeRule
 import com.hypertrack.android.api.OrderCompletionSuccess
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
