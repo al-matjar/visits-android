@@ -24,8 +24,10 @@ class SendFeedbackFragment : BaseFragment<MainActivity>(R.layout.fragment_send_f
 
         toolbar.title = R.string.feedback_send.stringFromResource()
         mainActivity().setSupportActionBar(toolbar)
-        mainActivity().supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        mainActivity().supportActionBar!!.setHomeButtonEnabled(true)
+        mainActivity().supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeButtonEnabled(true)
+        }
 
         vm.popBackStack.observe(viewLifecycleOwner, {
             findNavController().popBackStack()

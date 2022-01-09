@@ -22,5 +22,7 @@
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="elevation">6dp</dimen>
 
+    <dimen name="action_button_height">48dp</dimen>
 
 </resources>
+

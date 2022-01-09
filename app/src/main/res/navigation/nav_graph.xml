@@ -49,6 +49,9 @@
         <action
             android:id="@+id/action_visitManagementFragment_to_selectTripDestinationFragment"
             app:destination="@id/selectTripDestinationFragment" />
+        <action
+            android:id="@+id/action_visitManagementFragment_to_addGeotagFragment"
+            app:destination="@id/addGeotagFragment" />
     </fragment>
     <fragment
         android:id="@+id/visitDetailsFragment"
@@ -181,4 +184,8 @@
     <action
         android:id="@+id/action_global_placeDetailsFragment"
         app:destination="@id/placeDetailsFragment" />
+    <fragment
+        android:id="@+id/addGeotagFragment"
+        android:name="com.hypertrack.android.ui.screens.add_geotag.AddGeotagFragment"
+        android:label="AddGeotagFragment" />
 </navigation>

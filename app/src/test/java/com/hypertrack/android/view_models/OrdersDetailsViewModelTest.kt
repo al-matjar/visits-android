@@ -19,8 +19,8 @@ import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.ui.base.Consumable
-import com.hypertrack.android.ui.common.KeyValueItem
-import com.hypertrack.android.ui.common.formatUnderscore
+import com.hypertrack.android.ui.common.adapters.KeyValueItem
+import com.hypertrack.android.ui.common.adapters.formatUnderscore
 import com.hypertrack.android.ui.screens.order_details.OrderDetailsViewModel
 import com.hypertrack.android.ui.screens.order_details.OrderDetailsViewModel.Companion.REQUEST_IMAGE_CAPTURE
 import com.hypertrack.logistics.android.github.R

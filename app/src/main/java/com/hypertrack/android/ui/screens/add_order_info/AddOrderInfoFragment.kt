@@ -37,10 +37,12 @@ class AddOrderInfoFragment : ProgressDialogFragment(R.layout.fragment_add_order_
 
         toolbar.title = getString(R.string.add_order)
         mainActivity().setSupportActionBar(toolbar)
-        mainActivity().supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        mainActivity().supportActionBar!!.setHomeButtonEnabled(true)
+        mainActivity().supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeButtonEnabled(true)
+        }
 
-        (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment?)?.getMapAsync {
+        (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment).getMapAsync {
             vm.onMapReady(it)
         }
 

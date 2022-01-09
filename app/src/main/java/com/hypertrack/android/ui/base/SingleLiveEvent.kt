@@ -5,6 +5,7 @@ import androidx.annotation.MainThread
 import androidx.lifecycle.*
 import java.util.concurrent.atomic.AtomicBoolean
 
+@Deprecated("Use Consumable")
 class SingleLiveEvent<T> : MutableLiveData<T>() {
     private val pending = AtomicBoolean(false)
 

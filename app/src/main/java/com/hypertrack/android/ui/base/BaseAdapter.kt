@@ -12,12 +12,6 @@ abstract class BaseAdapter<T : Any, VH : BaseAdapter.BaseVh<T>> : RecyclerView.A
 
     val items: MutableList<T> = mutableListOf<T>()
 
-    fun deleteItem(item: T) {
-        items.remove(item)
-        notifyDataSetChanged()
-//        notifyItemRemoved()
-    }
-
     fun updateItems(_items: List<T>) {
         items.clear()
         addItemsAndUpdate(_items)
@@ -28,15 +22,20 @@ abstract class BaseAdapter<T : Any, VH : BaseAdapter.BaseVh<T>> : RecyclerView.A
         notifyDataSetChanged()
     }
 
+    fun removeItemAndUpdate(position: Int) {
+        items.removeAt(position)
+        notifyItemRemoved(position)
+    }
+
     abstract val itemLayoutResource: Int
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         return createViewHolder(
-                LayoutInflater.from(parent.context).inflate(
-                        itemLayoutResource,
-                        parent,
-                        false
-                )
+            LayoutInflater.from(parent.context).inflate(
+                itemLayoutResource,
+                parent,
+                false
+            )
         ) { position ->
             onItemClickListener?.invoke(items[position])
         }

@@ -68,7 +68,7 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
 
         vm.onViewCreated()
 
-        (childFragmentManager.findFragmentById(R.id.googleMap) as SupportMapFragment?)?.getMapAsync {
+        (childFragmentManager.findFragmentById(R.id.googleMap) as SupportMapFragment).getMapAsync {
             map = it
             vm.onMapReady(requireContext(), it)
         }

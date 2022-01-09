@@ -7,8 +7,8 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
-import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -19,10 +19,15 @@ import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
-import kotlinx.android.synthetic.main.fragment_tab_map_webview.*
+import kotlinx.android.synthetic.main.fragment_history.bAddGeotag
+import kotlinx.android.synthetic.main.fragment_history.mapLoaderCanvas
+import kotlinx.android.synthetic.main.fragment_history.progress
+import kotlinx.android.synthetic.main.fragment_history.rvTimeline
+import kotlinx.android.synthetic.main.fragment_history.scrim
+import kotlinx.android.synthetic.main.fragment_tracking.destination
 import kotlinx.android.synthetic.main.progress_bar.*
 
-class MapViewFragment : BaseFragment<MainActivity>(R.layout.fragment_tab_map_webview) {
+class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
 
     private val vm: HistoryViewModel by viewModels {
         MyApplication.injector.provideUserScopeViewModelFactory()
@@ -33,7 +38,7 @@ class MapViewFragment : BaseFragment<MainActivity>(R.layout.fragment_tab_map_web
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?)?.getMapAsync {
+        (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment).getMapAsync {
             vm.onMapReady(requireContext(), it)
         }
 
@@ -59,7 +64,17 @@ class MapViewFragment : BaseFragment<MainActivity>(R.layout.fragment_tab_map_web
             SnackbarUtil.showErrorSnackbar(view, it)
         })
 
+        vm.destination.observe(viewLifecycleOwner) { consumable ->
+            consumable.consume {
+                findNavController().navigate(it)
+            }
+        }
+
         setupTimeline()
+
+        bAddGeotag.setOnClickListener {
+            vm.onAddGeotagClick()
+        }
     }
 
     override fun onResume() {

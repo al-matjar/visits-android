@@ -93,7 +93,7 @@ open class SelectDestinationViewModel(
                     MapFlow -> placesResults.postValue(listOf())
                 }
             }
-        }.let { }
+        } as Unit
         this.state = state
         val stateLog = "new state = $state"
         if (enableLogging) Log.v("hypertrack-verbose", stateLog)
@@ -132,7 +132,7 @@ open class SelectDestinationViewModel(
                 ClearSearchQuery -> {
                     searchQuery.postValue("")
                 }
-            }.let {}
+            } as Unit
         }
     }
 

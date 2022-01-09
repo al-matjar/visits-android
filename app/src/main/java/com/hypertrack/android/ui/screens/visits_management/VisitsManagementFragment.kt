@@ -2,7 +2,6 @@ package com.hypertrack.android.ui.screens.visits_management
 
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentPagerAdapter
@@ -15,7 +14,7 @@ import com.hypertrack.android.ui.common.util.SimplePageChangedListener
 import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripFragment
-import com.hypertrack.android.ui.screens.visits_management.tabs.history.MapViewFragment
+import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryFragment
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersFragment
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesFragment
 import com.hypertrack.android.ui.screens.visits_management.tabs.profile.ProfileFragment
@@ -32,7 +31,7 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
     private val ordersFragment = OrdersFragment.newInstance()
     private val tabsMap = mapOf(
         Tab.CURRENT_TRIP to CurrentTripFragment(),
-        Tab.HISTORY to MapViewFragment(),
+        Tab.HISTORY to HistoryFragment(),
         Tab.ORDERS to ordersFragment,
         Tab.PLACES to PlacesFragment.getInstance(),
         Tab.SUMMARY to SummaryFragment.newInstance(),

@@ -326,6 +326,15 @@ class HypertrackMapWrapper(
         )
     }
 
+    fun addGeotagMarker(location: LatLng) {
+        googleMap.addMarker(
+            MarkerOptions()
+                .icon(geofenceMarkerIcon)
+                .position(location)
+                .anchor(0.5f, 0.5f)
+        )
+    }
+
     private fun History.asPolylineOptions(): PolylineOptions = this
         .locationTimePoints
         .map { it.first }

@@ -7,7 +7,10 @@ import androidx.lifecycle.Transformations
 import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.Visit
+import com.hypertrack.sdk.GeotagResult
 import com.hypertrack.sdk.HyperTrack
+import com.hypertrack.sdk.OutageReason
+import com.hypertrack.sdk.Result
 import com.hypertrack.sdk.TrackingError
 import com.hypertrack.sdk.TrackingStateObserver
 
@@ -39,6 +42,11 @@ class HyperTrackService(
     val isTracking: LiveData<Boolean> = Transformations.map(state) {
         it == TrackingStateValue.TRACKING
     }
+
+    val latestLocation: Result<Location, OutageReason>
+        get() {
+            return sdkInstance.latestLocation
+        }
 
     fun setDeviceInfo(
         name: String?,
@@ -83,10 +91,6 @@ class HyperTrackService(
         crashReportsProvider?.log("sendCompletionEvent ${legacyOrder.id}")
     }
 
-    fun createVisitStartEvent(id: String, typeKey: String) {
-        sdkInstance.addGeotag(mapOf(typeKey to id, "type" to Constants.VISIT_ADDED))
-    }
-
     fun sendPickedUp(id: String, typeKey: String) {
         crashReportsProvider?.log("sendPickedUp ${id}")
         sdkInstance.addGeotag(mapOf(typeKey to id, "type" to Constants.PICK_UP))
@@ -109,6 +113,10 @@ class HyperTrackService(
 
     fun showPermissionsPrompt() {
         sdkInstance.backgroundTrackingRequirement(false).requestPermissionsIfNecessary()
+    }
+
+    fun createGeotag(metadata: Map<String, String>): GeotagResult {
+        return sdkInstance.addGeotag(metadata)
     }
 
     companion object {

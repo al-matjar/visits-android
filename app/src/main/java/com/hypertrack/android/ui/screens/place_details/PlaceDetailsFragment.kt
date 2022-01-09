@@ -1,6 +1,5 @@
 package com.hypertrack.android.ui.screens.place_details
 
-import android.graphics.Paint
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.viewModels
@@ -8,14 +7,13 @@ import androidx.navigation.fragment.navArgs
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.hypertrack.android.ui.base.ProgressDialogFragment
-import com.hypertrack.android.ui.common.*
+import com.hypertrack.android.ui.common.adapters.KeyValueAdapter
 import com.hypertrack.android.ui.common.util.*
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_place_details.*
 import kotlinx.android.synthetic.main.fragment_place_details.lIntegration
 import kotlinx.android.synthetic.main.inflate_integration.*
-import kotlinx.android.synthetic.main.inflate_integration.view.*
 import kotlinx.android.synthetic.main.inflate_integration.view.bCopy
 import kotlinx.android.synthetic.main.inflate_integration.view.tvIntegrationId
 import kotlinx.android.synthetic.main.inflate_integration_details.view.*
@@ -36,7 +34,7 @@ class PlaceDetailsFragment : ProgressDialogFragment(R.layout.fragment_place_deta
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        (childFragmentManager.findFragmentById(R.id.liveMap) as SupportMapFragment?)?.getMapAsync {
+        (childFragmentManager.findFragmentById(R.id.liveMap) as SupportMapFragment).getMapAsync {
             vm.onMapReady(it)
         }
 

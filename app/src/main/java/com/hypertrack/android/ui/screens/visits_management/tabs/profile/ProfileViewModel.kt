@@ -8,7 +8,7 @@ import com.hypertrack.android.repository.DriverRepository
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
-import com.hypertrack.android.ui.common.KeyValueItem
+import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.*
 import com.hypertrack.logistics.android.github.BuildConfig

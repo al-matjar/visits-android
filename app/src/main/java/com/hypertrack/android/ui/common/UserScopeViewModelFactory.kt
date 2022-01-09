@@ -17,6 +17,7 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.profile.ProfileV
 import com.hypertrack.android.ui.screens.visits_management.tabs.summary.SummaryViewModel
 import com.hypertrack.android.ui.screens.permission_request.PermissionRequestViewModel
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModel
+import com.hypertrack.android.ui.screens.add_geotag.AddGeotagViewModel
 import com.hypertrack.android.ui.screens.select_trip_destination.SelectTripDestinationViewModel
 import com.hypertrack.android.ui.screens.send_feedback.SendFeedbackViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
@@ -143,6 +144,10 @@ class UserScopeViewModelFactory(
                 appScope.datetimeFormatter,
                 appScope.distanceFormatter,
                 appScope.timeFormatter,
+            ) as T
+            AddGeotagViewModel::class.java -> AddGeotagViewModel(
+                baseDependencies,
+                userScopeProvider.get().geotagsInteractor
             ) as T
             else -> throw IllegalArgumentException("Can't instantiate class $modelClass")
         }

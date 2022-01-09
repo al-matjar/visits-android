@@ -91,6 +91,8 @@
     <string name="code_from_clipboard">Code have pasted from clipboard</string>
     <string name="password_too_short">Password length must be 8 characters or more </string>
     <string name="invalid_email">Invalid email</string>
+    <string name="editable_key_hint">Field name</string>
+    <string name="editable_value_hint">Value</string>
 
     <string name="network_error">Network error. Please check your internet connection</string>
     <string name="clocked_in">You are clocked in</string>
@@ -211,6 +213,14 @@
     <string name="place_integration_submit_button">Add company</string>
     <string name="place_integration_integration_type">Integration type</string>
 
+    <string name="add_geotag">Add geotag</string>
+    <string name="add_geotag_add_field">Add data field</string>
+    <string name="add_geotag_hint">Create a geotag to mark specific location and add additional info to this mark</string>
+    <string name="add_geotag_validation_empty_key_or_value">Data keys and values can\'t be empty</string>
+    <string name="add_geotag_validation_empty_metadata">You need to add at least one data field to create a geotag</string>
+    <string name="add_geotag_create_button">Create</string>
+    <string name="add_geotag_success">Geotag was successfully created</string>
+
     <string name="profile_report_an_issue">Report an issue</string>
     <string name="profile_report_sent">App state is successfully reported</string>
 
@@ -264,6 +274,8 @@
     <string name="address_not_available">Address is not available</string>
     <string name="created_at">Created at</string>
     <string name="places_visits_loading">Loading...</string>
+    <string name="map_is_not_ready_yet">Failed to perform action: Map is not loaded yet</string>
+    <string name="add_geotag_error_hint">Unable to create geotag</string>
 
     <plurals name="time">
         <item quantity="one">time</item>

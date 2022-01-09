@@ -22,6 +22,7 @@ open class BaseViewModel(
 
     val destination = MutableLiveData<Consumable<NavDirections>>()
     val popBackStack = MutableLiveData<Consumable<Boolean>>()
+    val snackbar = MutableLiveData<Consumable<String>>()
 
     open val errorHandler =
         ErrorHandler(baseDependencies.osUtilsProvider, baseDependencies.crashReportsProvider)

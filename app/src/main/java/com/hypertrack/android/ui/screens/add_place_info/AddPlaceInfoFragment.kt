@@ -46,10 +46,12 @@ class AddPlaceInfoFragment : ProgressDialogFragment(R.layout.fragment_add_place_
 
         toolbar.title = getString(R.string.add_place)
         mainActivity().setSupportActionBar(toolbar)
-        mainActivity().supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        mainActivity().supportActionBar!!.setHomeButtonEnabled(true)
+        mainActivity().supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeButtonEnabled(true)
+        }
 
-        (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment?)?.getMapAsync {
+        (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment).getMapAsync {
             vm.onMapReady(requireContext(), it)
         }
 

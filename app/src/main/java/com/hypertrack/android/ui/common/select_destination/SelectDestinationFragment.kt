@@ -30,14 +30,16 @@ open class SelectDestinationFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment?)?.getMapAsync {
+        (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment).getMapAsync {
             vm.onMapReady(requireContext(), it)
         }
 
         toolbar.title = getString(R.string.select_destination)
         mainActivity().setSupportActionBar(toolbar)
-        mainActivity().supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        mainActivity().supportActionBar!!.setHomeButtonEnabled(true)
+        mainActivity().supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeButtonEnabled(true)
+        }
 
         locations.setLinearLayoutManager(requireContext())
         locations.adapter = adapter

@@ -74,3 +74,17 @@ fun Int?.orEmpty(): String {
     return this?.toString() ?: ""
 }
 
+class ErrorMessage(
+    private val errorHint: String,
+    private val errorText: String,
+    private val addNewLine: Boolean = true
+) {
+    override fun toString(): String {
+        return if (addNewLine) {
+            "$errorHint:\n$errorText"
+        } else {
+            "$errorHint: $errorText"
+        }
+    }
+}
+

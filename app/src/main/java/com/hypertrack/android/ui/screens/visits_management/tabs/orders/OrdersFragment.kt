@@ -7,7 +7,7 @@ import androidx.navigation.fragment.findNavController
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
-import com.hypertrack.android.ui.common.*
+import com.hypertrack.android.ui.common.adapters.KeyValueAdapter
 import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager

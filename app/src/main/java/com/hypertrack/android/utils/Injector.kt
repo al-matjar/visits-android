@@ -273,6 +273,10 @@ object Injector {
             placesClient
         )
 
+        val geotagsInteractor = GeotagsInteractor(
+            hyperTrackService
+        )
+
         val userScope = UserScope(
             tripsInteractor,
             tripsInteractor,
@@ -280,6 +284,7 @@ object Injector {
             placesInteractor,
             placesVisitsInteractor,
             googlePlacesInteractor,
+            geotagsInteractor,
             historyInteractor,
             feedbackInteractor,
             integrationsRepository,
@@ -447,6 +452,7 @@ class UserScope(
     val placesInteractor: PlacesInteractor,
     val placesVisitsInteractor: PlacesVisitsInteractor,
     val googlePlacesInteractor: GooglePlacesInteractor,
+    val geotagsInteractor: GeotagsInteractor,
     val historyInteractor: HistoryInteractor,
     val feedbackInteractor: FeedbackInteractor,
     val integrationsRepository: IntegrationsRepository,

@@ -34,7 +34,7 @@ abstract class DeeplinkResultDelegate(
                     }
                     proceedToSignIn(it)
                 }
-            }.let {}
+            } as Unit
         }
     }
 
@@ -79,7 +79,7 @@ abstract class DeeplinkResultDelegate(
                 crashReportsProvider.logException(InvalidDeeplinkException(failure.toString()))
                 postError(resourceProvider.stringFromResource(R.string.splash_screen_duplicate_fields))
             }
-        }.let { }
+        } as Unit
     }
 
 }

@@ -1,23 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/srlHistory"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+
     <androidx.fragment.app.FragmentContainerView
-        android:name="com.google.android.gms.maps.SupportMapFragment"
         android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
     <FrameLayout
+        android:id="@+id/mapLoaderCanvas"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/mapLoaderCanvas"
-        android:elevation="10dp"
         android:background="@color/colorWhite"
+        android:elevation="10dp"
         android:visibility="visible">
 
         <include
@@ -33,14 +32,26 @@
         android:id="@+id/scrim"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvTimeline"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_behavior="@string/bottom_sheet_behavior"
-        app:behavior_hideable="false" />
+        app:behavior_hideable="false"
+        app:layout_behavior="@string/bottom_sheet_behavior" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/bAddGeotag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:layout_marginRight="16dp"
+        android:layout_marginBottom="48dp"
+        android:backgroundTint="@color/colorHyperTrackGreen"
+        android:clickable="true"
+        app:tint="@color/colorWhite"
+        app:srcCompat="@drawable/ic_plus" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

@@ -47,8 +47,10 @@ class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_
 
         toolbar.title = ""
         mainActivity().setSupportActionBar(toolbar)
-        mainActivity().supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        mainActivity().supportActionBar!!.setHomeButtonEnabled(true)
+        mainActivity().supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeButtonEnabled(true)
+        }
 
         rvIntegrations.setLinearLayoutManager(requireContext())
         rvIntegrations.adapter = adapter

@@ -12,10 +12,10 @@ import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.ui.base.*
-import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
-import com.hypertrack.android.ui.common.KeyValueItem
-import com.hypertrack.android.ui.common.map.MapParams
+import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.util.format
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.ui.common.util.requireValue

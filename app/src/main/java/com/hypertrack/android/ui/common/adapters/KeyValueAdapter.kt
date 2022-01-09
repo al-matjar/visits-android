@@ -1,4 +1,4 @@
-package com.hypertrack.android.ui.common
+package com.hypertrack.android.ui.common.adapters
 
 import android.view.View
 import com.hypertrack.android.ui.base.BaseAdapter

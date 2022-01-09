@@ -1,5 +1,8 @@
 package com.hypertrack.android.ui.base
 
+import androidx.navigation.NavDirections
+import com.google.android.datatransport.runtime.Destination
+
 class Consumable<T>(
     val payload: T,
     private var _consumed: Boolean = false
@@ -36,5 +39,9 @@ fun String.toConsumable(): Consumable<String> {
 }
 
 fun Boolean.toConsumable(): Consumable<Boolean> {
+    return Consumable(this)
+}
+
+fun NavDirections.toConsumable(): Consumable<NavDirections> {
     return Consumable(this)
 }

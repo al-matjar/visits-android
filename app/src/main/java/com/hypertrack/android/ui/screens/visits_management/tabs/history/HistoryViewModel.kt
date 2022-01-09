@@ -15,6 +15,9 @@ import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.ErrorHandler
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
+import com.hypertrack.android.ui.base.toConsumable
+import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragment
+import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.formatters.DatetimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
@@ -101,7 +104,7 @@ class HistoryViewModel(
         this.map = HypertrackMapWrapper(
             googleMap, osUtilsProvider, crashReportsProvider, MapParams(
                 enableScroll = true,
-                enableZoomKeys = true,
+                enableZoomKeys = false,
                 enableMyLocationButton = true,
                 enableMyLocationIndicator = true
             )
@@ -413,6 +416,13 @@ class HistoryViewModel(
             }
             else -> reason
         }
+    }
+
+    fun onAddGeotagClick() {
+        destination.postValue(
+            VisitsManagementFragmentDirections
+                .actionVisitManagementFragmentToAddGeotagFragment().toConsumable()
+        )
     }
 
     companion object {
