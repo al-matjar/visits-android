@@ -9,6 +9,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.util.Log
+import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.security.ProviderInstaller
 import com.google.android.libraries.places.api.Places
 import com.hypertrack.logistics.android.github.BuildConfig
 import com.hypertrack.logistics.android.github.R
@@ -38,6 +40,8 @@ class MyApplication : Application() {
         injector.batteryLevelMonitor.init(this)
 
         Log.w("hypertrack-verbose", "Visits app started")
+
+        upgradeSecurityProvider(this, injector.crashReportsProvider);
     }
 
     private fun buildNotificationChannels() {
@@ -61,6 +65,35 @@ class MyApplication : Application() {
                 description = getString(R.string.notification_important_channel_description)
                 notificationManager.createNotificationChannel(this)
             }
+        }
+    }
+
+    private fun upgradeSecurityProvider(
+        context: Context,
+        crashReportsProvider: CrashReportsProvider
+    ) {
+        try {
+            ProviderInstaller.installIfNeededAsync(
+                this,
+                object : ProviderInstaller.ProviderInstallListener {
+                    override fun onProviderInstalled() {
+                        crashReportsProvider.log("Security Provider installed")
+                    }
+
+                    override fun onProviderInstallFailed(errorCode: Int, recoveryIntent: Intent?) {
+                        try {
+                            GoogleApiAvailability.getInstance()
+                                .showErrorNotification(context, errorCode)
+                            crashReportsProvider.logException(
+                                Exception("Security provider installation failed, error code: $errorCode")
+                            )
+                        } catch (e: Exception) {
+                            crashReportsProvider.logException(e)
+                        }
+                    }
+                })
+        } catch (e: Exception) {
+            crashReportsProvider.logException(e)
         }
     }
 

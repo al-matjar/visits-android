@@ -31,20 +31,21 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import retrofit2.HttpException
 import retrofit2.Response
+import com.hypertrack.android.TestApplication
 
 @ExperimentalCoroutinesApi
-@RunWith(RobolectricTestRunner::class) //Location class in Android
-@Config(sdk = [Build.VERSION_CODES.P])
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P], application = TestApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class PhotoUploadQueueInteractorTest() {
 
     /*
-    * Initial queue - photos 5 (NOT_UPLOADED) and 6 (ERROR)
+    * Initial queue - photos #5 (NOT_UPLOADED) and #6 (ERROR)
     * Init interactor
-    * Add 1-4 to queue (NOT_UPLOADED)
-    * upload 2 - always return error
-    * 4, 5 get uploaded after 1 retry
-    * 4 falls with 401 (should not be retried)
+    * Add photos #1-4 to queue (NOT_UPLOADED)
+    * upload photo #2 - always return error
+    * #4, #5 get uploaded after 1 retry
+    * #4 falls with 401 (should not be retried)
     * */
 
     lateinit var photoUploadInteractorImpl: PhotoUploadQueueInteractorImpl

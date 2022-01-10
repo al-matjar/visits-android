@@ -41,6 +41,7 @@ open class SignInViewModel(
     ) {
         override fun postError(text: String) {
             deeplinkErrorText.postValue(text)
+            loadingState.postValue(false)
         }
 
         override fun proceedToSignIn(handleDeeplinkResult: HandleDeeplinkResult) {
@@ -138,7 +139,6 @@ open class SignInViewModel(
                     )
                 }
             }
-
         } catch (e: Exception) {
             crashReportsProvider.logException(e, mapOf("loginToken" to loginToken))
             val message =
