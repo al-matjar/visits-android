@@ -1,13 +1,24 @@
 # Changelog
 
-## [0.12.0] - 2021-12-09
+## [0.12.1] - 2021-01-10
+
 ### Fixed
+
+- Branch.io connection error when device have outdated Security Provider
+- Stucking in loading state when logging in using login token
+
+## [0.12.0] - 2021-12-09
+
+### Fixed
+
 - Order details marker icon
 - Firebase message icon
 - Trip route polyline starting point
 - Map padding when displaying trip
 - Bug that caused logout on new trip push message click
+
 ### Added
+
 - "Completed at" and "Scheduled at" fields on Order details screen
 - Hiding empty note for completed order on Order details screen
 - Copy integration name feature on Place details screen
