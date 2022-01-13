@@ -162,14 +162,9 @@ open class SignInViewModel(
     private fun handleDeeplink(link: String, activity: Activity) {
         loadingState.postValue(true)
         viewModelScope.launch {
-            val result = suspendCoroutine<DeeplinkResult> {
-                deeplinkProcessor.onLinkRetrieved(activity, link, object : DeeplinkResultListener {
-                    override fun onDeeplinkResult(result: DeeplinkResult) {
-                        it.resume(result)
-                    }
-                })
+            deeplinkProcessor.onLinkRetrieved(activity, link).let { result ->
+                onDeeplinkParamsReceived(result, activity)
             }
-            onDeeplinkParamsReceived(result, activity)
             loadingState.postValue(false)
         }
     }

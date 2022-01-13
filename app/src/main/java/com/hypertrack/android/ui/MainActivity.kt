@@ -3,6 +3,7 @@ package com.hypertrack.android.ui
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import com.hypertrack.android.ui.base.NavActivity
@@ -13,8 +14,9 @@ import com.hypertrack.android.utils.*
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.launch
 
-class MainActivity : NavActivity(), DeeplinkResultListener {
+class MainActivity : NavActivity() {
 
     val splashScreenViewModel: SplashScreenViewModel by viewModels {
         MyApplication.injector.provideViewModelFactory(MyApplication.context)
@@ -43,7 +45,11 @@ class MainActivity : NavActivity(), DeeplinkResultListener {
                     findNavController(R.id.root).navigate(NavGraphDirections.actionGlobalVisitManagementFragment())
                 }
             } else {
-                deepLinkProcessor.activityOnNewIntent(this, this)
+                lifecycleScope.launch {
+                    deepLinkProcessor.activityOnNewIntent(this@MainActivity).let {
+                        onDeeplinkResult(it)
+                    }
+                }
             }
         }
     }
@@ -54,7 +60,11 @@ class MainActivity : NavActivity(), DeeplinkResultListener {
 
     override fun onStart() {
         super.onStart()
-        deepLinkProcessor.activityOnStart(this, this)
+        lifecycleScope.launch {
+            deepLinkProcessor.activityOnStart(this@MainActivity).let {
+                onDeeplinkResult(it)
+            }
+        }
     }
 
     override fun onResume() {
@@ -69,7 +79,7 @@ class MainActivity : NavActivity(), DeeplinkResultListener {
         super.onPause()
     }
 
-    override fun onDeeplinkResult(result: DeeplinkResult) {
+    fun onDeeplinkResult(result: DeeplinkResult) {
         splashScreenViewModel.handleDeeplink(result, this)
     }
 
