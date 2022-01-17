@@ -5,13 +5,14 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.delegates.DeeplinkResultDelegate
 import com.hypertrack.android.interactors.*
+import com.hypertrack.android.deeplink.DeeplinkParams
+import com.hypertrack.android.deeplink.DeeplinkProcessor
+import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.utils.*
 import com.hypertrack.logistics.android.github.R
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.launch
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 open class SignInViewModel(
     baseDependencies: BaseViewModelDependencies,

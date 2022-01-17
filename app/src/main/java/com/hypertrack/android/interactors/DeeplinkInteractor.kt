@@ -3,6 +3,10 @@ package com.hypertrack.android.interactors
 import android.app.Activity
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.repository.DriverRepository
+import com.hypertrack.android.deeplink.DeeplinkError
+import com.hypertrack.android.deeplink.DeeplinkParams
+import com.hypertrack.android.deeplink.DeeplinkResult
+import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.utils.*
 import com.squareup.moshi.Moshi
 

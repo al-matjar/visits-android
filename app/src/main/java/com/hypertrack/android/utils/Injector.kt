@@ -7,6 +7,9 @@ import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.messaging.PushReceiver
 import com.hypertrack.android.repository.*
+import com.hypertrack.android.deeplink.BranchIoDeepLinkProcessor
+import com.hypertrack.android.deeplink.BranchWrapper
+import com.hypertrack.android.deeplink.DeeplinkProcessor
 import com.hypertrack.android.ui.common.ParamViewModelFactory
 import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.UserScopeViewModelFactory
@@ -25,7 +28,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import java.time.ZoneId
 
 
 class ServiceLocator(val crashReportsProvider: CrashReportsProvider) {

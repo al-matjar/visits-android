@@ -18,9 +18,9 @@ import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.ZipNotNullableLiveData
-import com.hypertrack.android.ui.common.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.KeyValueItem
-import com.hypertrack.android.ui.common.MapParams
+import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.delegates.GeofenceAddressDelegate
 import com.hypertrack.android.ui.common.util.format
 

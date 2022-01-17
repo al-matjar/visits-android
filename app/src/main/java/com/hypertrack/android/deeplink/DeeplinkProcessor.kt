@@ -1,10 +1,15 @@
-package com.hypertrack.android.utils
+package com.hypertrack.android.deeplink
 
 import android.app.Activity
 import android.app.Application
 import android.net.Uri
-import com.hypertrack.android.utils.DeeplinkProcessor.Companion.DEEPLINK_REGEX
-import io.branch.referral.Branch
+import com.hypertrack.android.deeplink.DeeplinkProcessor.Companion.DEEPLINK_REGEX
+import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.Failure
+import com.hypertrack.android.utils.OsUtilsProvider
+import com.hypertrack.android.utils.Result
+import com.hypertrack.android.utils.Success
+import io.branch.referral.BranchError
 import java.util.regex.Pattern
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -15,19 +20,12 @@ interface DeeplinkProcessor {
     suspend fun activityOnNewIntent(activity: Activity): DeeplinkResult
     suspend fun onLinkRetrieved(activity: Activity, link: String): DeeplinkResult
 
+    @Suppress("RegExpRedundantEscape")
     companion object {
-        val DEEPLINK_REGEX = Pattern
+        val DEEPLINK_REGEX: Pattern = Pattern
             .compile("https:\\/\\/hypertrack-logistics\\.app\\.link\\/(.+)(\\?.*)?")
     }
 }
-
-sealed class DeeplinkResult
-object NoDeeplink : DeeplinkResult() {
-    override fun toString(): String = javaClass.simpleName
-}
-
-data class DeeplinkParams(val parameters: Map<String, Any>) : DeeplinkResult()
-data class DeeplinkError(val exception: Exception) : DeeplinkResult() {}
 
 
 class BranchIoDeepLinkProcessor(
@@ -58,13 +56,18 @@ class BranchIoDeepLinkProcessor(
     private suspend fun handleAction(action: Action): DeeplinkResult {
         return when (action) {
             is IntentReceived -> {
-                action.activity.intent?.let {
-                    it.data?.let { uri ->
+                action.activity.intent?.let { intent ->
+                    intent.data?.let { uri ->
+                        crashReportsProvider.log("Deeplink intent received: ${intent.data}")
+                        intent.extras?.get(BRANCH_DATA_KEY)?.let {
+                            crashReportsProvider.log("Branch data: $it")
+                        }
                         handleLink(action.activity, uri, action.reInit)
                     } ?: NoDeeplink
                 } ?: NoDeeplink
             }
             is DeeplinkPasted -> {
+                crashReportsProvider.log("Deeplink pasted: ${action.link}")
                 with(DEEPLINK_REGEX.matcher(action.link)) {
                     if (matches()) {
                         handleLink(action.activity, osUtilsProvider.parseUri(action.link), true)
@@ -89,12 +92,16 @@ class BranchIoDeepLinkProcessor(
             activity.intent.putExtra("branch_force_new_session", true)
         }
 
-        return initBranchSession(activity, uri, reInit).let { branchResult ->
+        return initBranchSession(
+            activity,
+            uri,
+            reInit
+        ).let { branchResult: Result<BranchMetadata> ->
             when (branchResult) {
-                is BranchSuccess -> {
-                    DeeplinkParams(branchResult.metadata)
+                is Success -> {
+                    DeeplinkParams(branchResult.result)
                 }
-                is com.hypertrack.android.utils.BranchError -> {
+                is Failure -> {
                     DeeplinkError(branchResult.exception)
                 }
             }
@@ -105,72 +112,16 @@ class BranchIoDeepLinkProcessor(
         activity: Activity,
         link: Uri,
         reInit: Boolean
-    ): BranchResult = suspendCoroutine { continuation ->
+    ): Result<BranchMetadata> = suspendCoroutine { continuation ->
         branch.initSession(activity, link, reInit) { branchResult ->
             continuation.resume(branchResult)
         }
     }
 
-}
-
-sealed class BranchResult
-class BranchSuccess(val metadata: Map<String, String>) : BranchResult()
-class BranchError(val exception: Exception) : BranchResult()
-
-class BranchWrapper {
-    fun getAutoInstance(application: Application) {
-        Branch.getAutoInstance(application)
-            .setNetworkTimeout(BRANCH_CONNECTION_TIMEOUT)
-    }
-
-    fun initSession(
-        activity: Activity,
-        link: Uri,
-        reInit: Boolean,
-        callback: (BranchResult) -> Unit
-    ) {
-        try {
-            Branch.sessionBuilder(activity)
-                .withCallback { branchUniversalObject, _, error ->
-                    callback.invoke(
-                        if (error != null) {
-                            BranchError(BranchErrorException(error.errorCode, error.message))
-                        } else {
-                            branchUniversalObject?.contentMetadata?.customMetadata?.let {
-                                BranchSuccess(it)
-                            } ?: BranchError(Exception("branch metadata == null"))
-                        }
-                    )
-                }
-                .withData(link).apply {
-                    if (reInit) {
-                        reInit()
-                    } else {
-                        init()
-                    }
-                }
-        } catch (e: Exception) {
-            callback.invoke(BranchError(e))
-        }
-    }
-
     companion object {
-        private const val BRANCH_CONNECTION_TIMEOUT = 30000
+        private const val BRANCH_DATA_KEY = "branch_data"
     }
 
 }
 
 class InvalidDeeplinkFormat(link: String) : Exception("Invalid url format: $link")
-class BranchErrorException(
-    val code: Int,
-    val branchMessage: String
-) : Exception("$code: $branchMessage")
-
-sealed class Action
-data class DeeplinkPasted(val activity: Activity, val link: String) : Action()
-data class IntentReceived(
-    val activity: Activity,
-    val reInit: Boolean
-) : Action()
-
-

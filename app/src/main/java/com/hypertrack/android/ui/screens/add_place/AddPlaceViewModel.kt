@@ -13,7 +13,7 @@ import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.ErrorHandler
 import com.hypertrack.android.ui.base.postValue
-import com.hypertrack.android.ui.common.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.delegates.GeofenceClusterItem
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.select_destination.DestinationData

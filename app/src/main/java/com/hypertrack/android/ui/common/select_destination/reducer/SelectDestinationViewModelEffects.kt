@@ -1,7 +1,6 @@
 package com.hypertrack.android.ui.common.select_destination.reducer
 
-import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.ui.common.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 
 // @formatter:off
 

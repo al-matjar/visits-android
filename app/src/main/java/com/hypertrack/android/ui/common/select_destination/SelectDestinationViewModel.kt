@@ -13,10 +13,12 @@ import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.SingleLiveEvent
 import com.hypertrack.android.ui.base.postValue
-import com.hypertrack.android.ui.common.*
 import com.hypertrack.android.ui.common.delegates.GeofenceClusterItem
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.GooglePlaceAddressDelegate
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.MapParams
+import com.hypertrack.android.ui.common.map.viewportPosition
 import com.hypertrack.android.ui.common.select_destination.reducer.*
 import com.hypertrack.android.ui.common.util.isNearZero
 import com.hypertrack.android.ui.common.util.nullIfEmpty

@@ -1,6 +1,8 @@
 package com.hypertrack.android.view_models
 
 import android.app.Activity
+import com.hypertrack.android.deeplink.DeeplinkParams
+import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.ui.screens.sign_in.SignInViewModel
 import com.hypertrack.android.utils.*
 import io.mockk.every

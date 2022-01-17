@@ -1,7 +1,6 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.current_trip
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.*
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
@@ -14,8 +13,8 @@ import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.repository.TripCreationError
 import com.hypertrack.android.repository.TripCreationSuccess
 import com.hypertrack.android.ui.base.*
-import com.hypertrack.android.ui.common.HypertrackMapWrapper
-import com.hypertrack.android.ui.common.MapParams
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
 import com.hypertrack.android.ui.common.select_destination.DestinationData

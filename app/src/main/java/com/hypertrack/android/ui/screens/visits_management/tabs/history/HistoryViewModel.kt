@@ -13,8 +13,8 @@ import com.hypertrack.android.models.*
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.ErrorHandler
-import com.hypertrack.android.ui.common.HypertrackMapWrapper
-import com.hypertrack.android.ui.common.MapParams
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.formatters.DatetimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter

@@ -3,11 +3,11 @@ package com.hypertrack.android.ui.screens.splash_screen
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.delegates.DeeplinkResultDelegate
 import com.hypertrack.android.interactors.*
+import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
-import com.hypertrack.android.utils.*
 import kotlinx.coroutines.launch
 
 class SplashScreenViewModel(

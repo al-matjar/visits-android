@@ -6,6 +6,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
+import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.ui.base.NavActivity
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel

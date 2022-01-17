@@ -9,6 +9,8 @@ import com.hypertrack.android.observeAndAssertNull
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.repository.DriverRepository
+import com.hypertrack.android.deeplink.DeeplinkParams
+import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenFragmentDirections
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
 import com.hypertrack.android.utils.*

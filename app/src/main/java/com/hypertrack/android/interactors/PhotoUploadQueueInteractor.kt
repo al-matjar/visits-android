@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.hypertrack.android.api.ApiClient
 import com.hypertrack.android.repository.FileRepository
+import com.hypertrack.android.utils.ImageDecoder
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.util.toMap
 import com.hypertrack.android.utils.*

@@ -3,7 +3,18 @@ package com.hypertrack.android.ui
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Bundle
+import com.hypertrack.android.deeplink.BranchErrorException
+import com.hypertrack.android.deeplink.BranchIoDeepLinkProcessor
+import com.hypertrack.android.deeplink.BranchMetadata
+import com.hypertrack.android.deeplink.BranchWrapper
+import com.hypertrack.android.deeplink.DeeplinkError
+import com.hypertrack.android.deeplink.DeeplinkParams
+import com.hypertrack.android.deeplink.DeeplinkProcessor
+import com.hypertrack.android.deeplink.DeeplinkResult
+import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.utils.*
+import io.branch.referral.BranchError
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -26,6 +37,7 @@ class DeeplinkProcessorTest {
             val activity: Activity = mockk() {
                 every { intent } returns mockk() {
                     every { data } returns link?.let { uri }
+                    every { extras } returns Bundle()
                 }
             }
             it.activityOnStart(activity).let {
@@ -43,6 +55,7 @@ class DeeplinkProcessorTest {
         BranchIoDeepLinkProcessor(mockk(relaxed = true), mockk(relaxed = true), branch).let {
             val activity: Activity = mockk() {
                 every { intent } returns mockk() {
+                    every { extras } returns Bundle()
                     every { data } returns link?.let { uri }
                     intentMockConfig.invoke(this)
                 }
@@ -70,7 +83,7 @@ class DeeplinkProcessorTest {
     fun `it should correctly handle login with deeplink`() {
         val branch: BranchWrapper = mockk() {
             every { initSession(any(), any(), any(), any()) } answers {
-                arg<(BranchResult) -> Unit>(3).invoke(BranchSuccess(hashMapOf("param1" to "value1")))
+                arg<(Result<BranchMetadata>) -> Unit>(3).invoke(Success(hashMapOf("param1" to "value1")))
             }
         }
 
@@ -97,6 +110,7 @@ class DeeplinkProcessorTest {
             BranchIoDeepLinkProcessor(mockk(relaxed = true), mockk(relaxed = true), branch).let {
                 val slot = slot<Boolean>()
                 val mockIntent: Intent = mockk() {
+                    every { extras } returns Bundle()
                     every { data } returns null
                     every { putExtra("branch_force_new_session", capture(slot)) } returns this
                 }
@@ -120,8 +134,8 @@ class DeeplinkProcessorTest {
         val exception = mockk<BranchErrorException>()
         val branch: BranchWrapper = mockk() {
             every { initSession(any(), any(), any(), any()) } answers {
-                arg<(BranchResult) -> Unit>(3).invoke(
-                    BranchError(exception)
+                arg<(Result<BranchMetadata>) -> Unit>(3).invoke(
+                    Failure(exception)
                 )
             }
         }
@@ -145,6 +159,7 @@ class DeeplinkProcessorTest {
             BranchIoDeepLinkProcessor(mockk(relaxed = true), mockk(relaxed = true), branch).let {
                 val mockIntent: Intent = mockk() {
                     every { data } returns null
+                    every { extras } returns Bundle()
                     every { putExtra("branch_force_new_session", any<Boolean>()) } returns this
                 }
                 val activity: Activity = mockk() {

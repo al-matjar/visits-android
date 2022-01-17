@@ -1,8 +1,7 @@
-package com.hypertrack.android.ui.common
+package com.hypertrack.android.ui.common.map
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.util.Log
 import android.util.TypedValue
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
