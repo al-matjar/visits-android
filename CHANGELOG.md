@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.2] - 2021-01-10
+
+### Added
+
+- Deeplink error reporting
+
 ## [0.12.1] - 2021-01-10
 
 ### Fixed
@@ -18,7 +24,6 @@
 - Bug that caused logout on new trip push message click
 
 ### Added
-
 - "Completed at" and "Scheduled at" fields on Order details screen
 - Hiding empty note for completed order on Order details screen
 - Copy integration name feature on Place details screen
