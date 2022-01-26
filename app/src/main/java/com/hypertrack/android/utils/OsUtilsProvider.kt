@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import android.location.Geocoder
 import android.net.Uri
 import android.provider.MediaStore
@@ -40,8 +41,8 @@ import java.time.ZoneId
 import java.util.*
 
 interface ResourceProvider {
-    fun getString(resId: Int): String
     fun getQuantityString(@PluralsRes res: Int, number: Int): String
+    fun drawableFromResource(@DrawableRes res: Int): Drawable?
     fun stringFromResource(@StringRes res: Int, vararg formatArgs: Any): String
     fun stringFromResource(@StringRes res: Int): String
     fun colorFromResource(@ColorRes res: Int): Int
@@ -110,7 +111,9 @@ public class OsUtilsProvider(
         ClipboardUtil.copyToClipboard(str)
     }
 
-    override fun getString(resId: Int): String = context.getString(resId)
+    override fun drawableFromResource(@DrawableRes res: Int): Drawable? {
+        return ContextCompat.getDrawable(MyApplication.context, res)
+    }
 
     override fun stringFromResource(@StringRes res: Int): String {
         return MyApplication.context.getString(res)
@@ -263,6 +266,34 @@ public class OsUtilsProvider(
 
     fun parseUri(link: String): Uri {
         return Uri.parse(link)
+    }
+
+    fun getErrorMessage(e: Exception): ErrorMessage {
+        //todo NonReportableException
+        return when (e) {
+            is HttpException -> {
+                val errorBody = e.response()?.errorBody()?.string()
+                if (MyApplication.DEBUG_MODE) {
+                    Log.v("hypertrack-verbose", errorBody.toString())
+                }
+                val path = e.response()?.let { response ->
+                    response.raw().request.let { request ->
+                        "${request.method} ${response.code()} ${request.url.encodedPath}"
+                    }
+                }
+                "${path.toString()}\n\n${errorBody.toString()}"
+            }
+            else -> {
+                if (e.isNetworkError()) {
+                    stringFromResource(R.string.network_error)
+                } else {
+                    if (MyApplication.DEBUG_MODE) {
+                        e.printStackTrace()
+                    }
+                    e.format()
+                }
+            }
+        }.let { ErrorMessage(it) }
     }
 
     companion object {

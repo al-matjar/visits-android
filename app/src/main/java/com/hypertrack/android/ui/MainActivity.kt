@@ -7,7 +7,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import com.hypertrack.android.deeplink.DeeplinkResult
-import com.hypertrack.android.mock.MockData
 import com.hypertrack.android.ui.base.NavActivity
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
@@ -30,15 +29,6 @@ class MainActivity : NavActivity() {
     override val layoutRes: Int = R.layout.activity_main
 
     override val navHostId: Int = R.id.navHost
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        tvMockMode.setGoneState(MyApplication.MOCK_MODE.not())
-        lRecordingModeControls.setGoneState(MyApplication.RECORDING_MODE.not())
-        if (MyApplication.RECORDING_MODE) {
-            Injector.mockLocationProvider.bindButtons(lRecordingModeControls)
-        }
-    }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)

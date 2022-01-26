@@ -20,7 +20,6 @@ interface DeviceLocationProvider {
     fun getCurrentLocation(callback: (latLng: LatLng?) -> Unit)
 }
 
-@SuppressLint("MissingPermission")
 class FusedDeviceLocationProvider(
     private val context: Context,
     private val crashReportsProvider: CrashReportsProvider

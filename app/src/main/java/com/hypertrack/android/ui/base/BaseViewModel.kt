@@ -91,7 +91,7 @@ class ErrorHandler(
         }
         addSource(_exception) {
             postValue(it.map {
-                getErrorMessage(it)
+                osUtilsProvider.getErrorMessage(it).text
             })
         }
     }
@@ -116,32 +116,6 @@ class ErrorHandler(
 
     private fun onExceptionReceived(e: Exception) {
         crashReportsProvider.logException(e)
-    }
-
-    private fun getErrorMessage(e: Exception): String {
-        //todo NonReportableException
-        return when (e) {
-            is HttpException -> {
-                val errorBody = e.response()?.errorBody()?.string()
-                if (MyApplication.DEBUG_MODE) {
-                    Log.v("hypertrack-verbose", errorBody.toString())
-                }
-                val path = e.response()?.raw()?.request?.let {
-                    "${it.method} ${e.response()!!.code()} ${it.url.encodedPath}"
-                }
-                return "${path.toString()}\n\n${errorBody.toString()}"
-            }
-            else -> {
-                if (e.isNetworkError()) {
-                    osUtilsProvider.stringFromResource(R.string.network_error)
-                } else {
-                    if (MyApplication.DEBUG_MODE) {
-                        e.printStackTrace()
-                    }
-                    e.format()
-                }
-            }
-        }
     }
 
     fun handle(code: () -> Unit) {

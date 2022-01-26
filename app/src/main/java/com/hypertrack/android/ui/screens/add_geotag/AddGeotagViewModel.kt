@@ -3,15 +3,12 @@ package com.hypertrack.android.ui.screens.add_geotag
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.interactors.Error
 import com.hypertrack.android.interactors.GeotagCreationError
 import com.hypertrack.android.interactors.GeotagCreationException
-import com.hypertrack.android.interactors.GeotagCreationResult
 import com.hypertrack.android.interactors.GeotagCreationSuccess
 import com.hypertrack.android.interactors.GeotagsInteractor
 import com.hypertrack.android.interactors.LatestLocation
-import com.hypertrack.android.interactors.LatestLocationResult
 import com.hypertrack.android.interactors.Outage
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
@@ -19,11 +16,12 @@ import com.hypertrack.android.ui.base.toConsumable
 import com.hypertrack.android.ui.common.adapters.EditableKeyValueItem
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
-import com.hypertrack.android.ui.common.util.ErrorMessage
+import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.IllegalActionException
 import com.hypertrack.android.utils.ReducerResult
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.logistics.android.github.R
+import kotlinx.coroutines.Dispatchers
 import java.util.*
 
 class AddGeotagViewModel(
@@ -33,8 +31,9 @@ class AddGeotagViewModel(
 
     private val stateMachine = StateMachine<Action, State, Effect>(
         this::class.java.simpleName,
-        viewModelScope,
         InitialState,
+        viewModelScope,
+        Dispatchers.Main,
         this::handleAction,
         this::applyEffects,
         this::stateChangeEffects
@@ -109,19 +108,28 @@ class AddGeotagViewModel(
             }
             is GeotagResultAction -> {
                 when (action.result) {
-                    GeotagCreationSuccess -> state.withEffects(GoBackEffect)
-                    is GeotagCreationError -> OutageState(
-                        ErrorMessage(
-                            errorHint,
-                            formatUnderscoreName(action.result.reason.name)
+                    GeotagCreationSuccess -> {
+                        state.withEffects(
+                            GoBackEffect,
+                            ShowToastEffect(R.string.add_geotag_success)
                         )
-                    ).asReducerResult()
-                    is GeotagCreationException -> OutageState(
-                        ErrorMessage(
-                            errorHint,
-                            action.result.exception.toString()
-                        )
-                    ).asReducerResult()
+                    }
+                    is GeotagCreationError -> {
+                        OutageState(
+                            ErrorMessage(
+                                errorHint,
+                                formatUnderscoreName(action.result.reason.name)
+                            )
+                        ).asReducerResult()
+                    }
+                    is GeotagCreationException -> {
+                        OutageState(
+                            ErrorMessage(
+                                errorHint,
+                                action.result.exception.toString()
+                            )
+                        ).asReducerResult()
+                    }
                 }
             }
             is CreateButtonClickAction -> {
@@ -190,6 +198,9 @@ class AddGeotagViewModel(
                     geotagsInteractor.createGeotag(effect.metadata).let {
                         stateMachine.handleAction(GeotagResultAction(it))
                     }
+                }
+                is ShowToastEffect -> {
+                    osUtilsProvider.makeToast(effect.stringResource)
                 }
             } as Unit
         }

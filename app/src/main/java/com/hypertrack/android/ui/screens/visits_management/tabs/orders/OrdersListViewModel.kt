@@ -10,11 +10,10 @@ import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
-import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.MyApplication
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
-import com.hypertrack.logistics.android.github.BuildConfig
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import kotlinx.coroutines.launch
 
 @Suppress("IfThenToElvis")
@@ -22,10 +21,10 @@ class OrdersListViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val tripsInteractor: TripsInteractor,
     private val tripsUpdateTimerInteractor: TripsUpdateTimerInteractor,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val dateTimeFormatter: DateTimeFormatter,
 ) : BaseViewModel(baseDependencies) {
 
-    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, datetimeFormatter)
+    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, dateTimeFormatter)
 
     val error = tripsInteractor.errorFlow.asLiveData()
 
@@ -93,7 +92,7 @@ class OrdersListViewModel(
 
     fun createAdapter(): OrdersAdapter {
         return OrdersAdapter(
-            datetimeFormatter,
+            dateTimeFormatter,
             addressDelegate
         )
     }

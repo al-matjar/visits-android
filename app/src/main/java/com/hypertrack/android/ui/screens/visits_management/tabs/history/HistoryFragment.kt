@@ -1,5 +1,7 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.history
 
+import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -20,12 +22,42 @@ import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_history.bAddGeotag
+import kotlinx.android.synthetic.main.fragment_history.bSelectDate
 import kotlinx.android.synthetic.main.fragment_history.mapLoaderCanvas
 import kotlinx.android.synthetic.main.fragment_history.progress
-import kotlinx.android.synthetic.main.fragment_history.rvTimeline
 import kotlinx.android.synthetic.main.fragment_history.scrim
-import kotlinx.android.synthetic.main.fragment_tracking.destination
 import kotlinx.android.synthetic.main.progress_bar.*
+
+import android.app.DatePickerDialog
+import android.view.LayoutInflater
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
+import com.hypertrack.android.ui.common.util.toView
+import com.hypertrack.android.ui.common.util.toViewOrHideIfNull
+import kotlinx.android.synthetic.main.fragment_history.lError
+import kotlinx.android.synthetic.main.fragment_history.lTimeline
+import kotlinx.android.synthetic.main.inflate_error.view.bReload
+import kotlinx.android.synthetic.main.inflate_error.view.tvErrorMessage
+import kotlinx.android.synthetic.main.inflate_timeline.ivTimelineArrowUp
+import kotlinx.android.synthetic.main.inflate_timeline.rvTimeline
+import kotlinx.android.synthetic.main.inflate_timeline.tvSummaryDistance
+import kotlinx.android.synthetic.main.inflate_timeline.tvSummaryDuration
+import kotlinx.android.synthetic.main.inflate_timeline.tvSummaryTitle
+import kotlinx.android.synthetic.main.inflate_timeline_dialog_gefence_visit.view.bCloseDialog
+import kotlinx.android.synthetic.main.inflate_timeline_dialog_geotag.view.bCopyId
+import kotlinx.android.synthetic.main.inflate_timeline_dialog_geotag.view.bCopyMetadata
+import kotlinx.android.synthetic.main.inflate_timeline_dialog_geotag.view.tvGeotagAddress
+import kotlinx.android.synthetic.main.inflate_timeline_dialog_geotag.view.tvGeotagId
+import kotlinx.android.synthetic.main.inflate_timeline_dialog_geotag.view.tvGeotagMetadata
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.bCopy
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.ivRouteTo
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvDescription
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvPlaceAddress
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvPlaceIntegrationName
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvRouteTo
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvTitle
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvVisitId
+import java.time.LocalDate
+
 
 class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
 
@@ -37,43 +69,105 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment).getMapAsync {
-            vm.onMapReady(requireContext(), it)
-        }
-
-        vm.loadingState.observe(viewLifecycleOwner, {
-            displayLoadingState(it)
-        })
-
-        //value doesn't represent correct state
-        vm.bottomSheetOpened.observe(viewLifecycleOwner, {
-            bottomSheetBehavior.state = if (it) {
-                BottomSheetBehavior.STATE_EXPANDED
-            } else {
-                BottomSheetBehavior.STATE_COLLAPSED
+        try {
+            (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment).getMapAsync {
+                vm.onMapReady(it)
             }
-            rvTimeline.scrollToPosition(0)
-        })
 
-        vm.tiles.observe(viewLifecycleOwner) {
-            rvTimeline.adapter?.notifyDataSetChanged()
-        }
-
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, {
-            SnackbarUtil.showErrorSnackbar(view, it)
-        })
-
-        vm.destination.observe(viewLifecycleOwner) { consumable ->
-            consumable.consume {
-                findNavController().navigate(it)
+            vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+                displayLoadingState(it)
             }
-        }
 
-        setupTimeline()
+            vm.setBottomSheetOpenedEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+                bottomSheetBehavior.state = if (it) {
+                    BottomSheetBehavior.STATE_EXPANDED
+                } else {
+                    BottomSheetBehavior.STATE_COLLAPSED
+                }
+                rvTimeline.scrollToPosition(0)
+            }
 
-        bAddGeotag.setOnClickListener {
-            vm.onAddGeotagClick()
+            vm.openDatePickerDialogEvent.observeWithErrorHandling(
+                viewLifecycleOwner,
+                vm::onError
+            ) { event ->
+                event.consume { showDatePickerDialog(it) }
+            }
+
+            vm.errorHandler.errorText.observeWithErrorHandling(viewLifecycleOwner, vm::onError, {
+                SnackbarUtil.showErrorSnackbar(view, it)
+            })
+
+            vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { consumable ->
+                consumable.consume {
+                    findNavController().navigate(it)
+                }
+            }
+
+            vm.errorTextState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+                lError.setGoneState(it == null)
+                lError.tvErrorMessage.text = it?.text
+            }
+
+            vm.daySummaryTexts.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+                tvSummaryTitle.text = it.title
+                tvSummaryDistance.text = it.totalDriveDistance
+                tvSummaryDuration.text = it.totalDriveDuration
+                tvSummaryDistance.setGoneState(it.totalDriveDistance == null)
+                tvSummaryDuration.setGoneState(it.totalDriveDuration == null)
+            }
+
+            vm.currentDateText.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+                bSelectDate.text = it
+                bSelectDate.setGoneState(it == null)
+            }
+
+            vm.showTimelineUpArrow.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+                ivTimelineArrowUp.setGoneState(!it)
+            }
+
+            vm.showAddGeotagButton.observeWithErrorHandling(
+                viewLifecycleOwner,
+                vm::onError
+            ) { show ->
+                bAddGeotag.animation?.cancel()
+                bAddGeotag.apply {
+                    if (show) {
+                        show()
+                        alpha = 0f
+                        animate().alpha(1f).setDuration(FADE_DURATION).start()
+                    } else {
+                        alpha = 1f
+                        animate().alpha(0f).setDuration(FADE_DURATION).withEndAction { hide() }
+                            .start()
+                    }
+                }
+            }
+
+            vm.openDialogEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { event ->
+                event.consume {
+                    when (it) {
+                        is GeofenceVisitDialog -> createGeofenceVisitDialog(it).show()
+                        is GeotagDialog -> createGeotagDialog(it).show()
+                    } as Any?
+                }
+            }
+
+            setupTimeline()
+
+            bAddGeotag.setOnClickListener {
+                vm.onAddGeotagClick()
+            }
+
+            bSelectDate.setOnClickListener {
+                vm.onSelectDateClick()
+            }
+
+            lError.bReload.setOnClickListener {
+                vm.onReloadClicked()
+            }
+        } catch (e: Exception) {
+            vm.onError(e)
         }
     }
 
@@ -83,14 +177,10 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
     }
 
     private fun setupTimeline() {
-        bottomSheetBehavior = BottomSheetBehavior.from(rvTimeline)
+        bottomSheetBehavior = BottomSheetBehavior.from(lTimeline)
         bottomSheetBehavior.peekHeight = vm.style.summaryPeekHeight
 
-        val adapter = TimelineTileItemAdapter(
-            vm.tiles,
-            vm.style
-        ) { vm.onTileSelected(it) }
-        rvTimeline.adapter = adapter
+        rvTimeline.adapter = vm.timelineAdapter
         rvTimeline.layoutManager = LinearLayoutManager(MyApplication.context)
 
         scrim.setOnClickListener { bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED }
@@ -107,8 +197,19 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
             }
 
             override fun onStateChanged(bottomSheet: View, newState: Int) {
+                vm.onBottomSheetStateChanged(newState)
             }
         })
+    }
+
+    private fun showDatePickerDialog(date: LocalDate) {
+        DatePickerDialog(
+            requireContext(),
+            R.style.DatePickerTheme,
+            { _, year, month, dayOfMonth ->
+                vm.onDateSelected(LocalDate.of(year, month, dayOfMonth))
+            }, date.year, date.monthValue, date.dayOfMonth
+        ).show()
     }
 
     private fun displayLoadingState(isLoading: Boolean) {
@@ -116,6 +217,95 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
         mapLoaderCanvas?.setGoneState(!isLoading)
         progress?.background = null
         if (isLoading) loader?.playAnimation() else loader?.cancelAnimation()
+    }
+
+    @SuppressLint("InflateParams")
+    private fun createGeofenceVisitDialog(dialogData: GeofenceVisitDialog): AlertDialog {
+        val containerView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.inflate_timeline_dialog_gefence_visit, null, false)
+        dialogData.visitId.toView(containerView.tvVisitId)
+        dialogData.geofenceName.toView(containerView.tvTitle)
+        dialogData.geofenceDescription.toViewOrHideIfNull(containerView.tvDescription)
+        dialogData.integrationName.toViewOrHideIfNull(containerView.tvPlaceIntegrationName)
+        dialogData.address.toViewOrHideIfNull(containerView.tvPlaceAddress)
+
+        dialogData.routeToText?.toView(containerView.tvRouteTo)
+        listOf(containerView.ivRouteTo, containerView.tvRouteTo).forEach {
+            it.setGoneState(dialogData.routeToText == null)
+        }
+
+        containerView.bCopy.setOnClickListener {
+            dialogData.visitId.let {
+                vm.onCopyClick(it)
+            }
+        }
+
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(containerView)
+            .create()
+
+        containerView.bCloseDialog.setOnClickListener { dialog.dismiss() }
+
+        val listener = { _: View ->
+            dialog.dismiss()
+            vm.onGeofenceClick(dialogData.visitId)
+        }
+        containerView.apply {
+            listOf(
+                tvTitle,
+                tvDescription,
+                tvPlaceIntegrationName,
+                tvPlaceAddress
+            ).forEach { it.setOnClickListener(listener) }
+        }
+
+        return dialog
+    }
+
+    private fun createGeotagDialog(dialogData: GeotagDialog): AlertDialog {
+        val containerView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.inflate_timeline_dialog_geotag, null, false)
+        dialogData.geotagId.toView(containerView.tvGeotagId)
+        dialogData.title.toView(containerView.tvTitle)
+        dialogData.metadataString.toView(containerView.tvGeotagMetadata)
+        dialogData.address.toViewOrHideIfNull(containerView.tvGeotagAddress)
+
+        dialogData.routeToText?.toView(containerView.tvRouteTo)
+        listOf(containerView.ivRouteTo, containerView.tvRouteTo).forEach {
+            it.setGoneState(dialogData.routeToText == null)
+        }
+
+        containerView.bCopyId.setOnClickListener {
+            dialogData.geotagId.let {
+                vm.onCopyClick(it)
+            }
+        }
+
+        containerView.bCopyMetadata.setOnClickListener {
+            dialogData.metadataString.let {
+                vm.onCopyClick(it)
+            }
+        }
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(containerView)
+            .create()
+
+        containerView.bCloseDialog.setOnClickListener { dialog.dismiss() }
+        return dialog
+    }
+
+    override fun onBackPressed(): Boolean {
+        return if (super.onBackPressed()) {
+            true
+        } else {
+            vm.onBackPressed()
+        }
+    }
+
+    companion object {
+        const val FADE_DURATION = 200L
     }
 }
 

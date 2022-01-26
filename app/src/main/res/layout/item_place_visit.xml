@@ -17,7 +17,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvTakePicture"
         app:srcCompat="@color/colorTitle" />
 
     <TextView
@@ -41,6 +40,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:layout_weight="1"
+        tools:visibility="go"
         app:layout_constraintEnd_toEndOf="@+id/tvTitle"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/tvTitle"
@@ -81,7 +81,7 @@
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:visibility="visible"
-        app:layout_constraintEnd_toEndOf="@+id/tvDescription"
+        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
         app:layout_constraintTop_toBottomOf="@+id/tvDescription"
         app:srcCompat="@drawable/ic_copy"
         app:tint="#44000000"

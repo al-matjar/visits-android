@@ -9,6 +9,7 @@ import com.hypertrack.android.repository.BasicAuthAccessTokenRepository
 import com.hypertrack.android.repository.IntegrationsRepository
 import com.hypertrack.android.repository.IntegrationsRepositoryImpl
 import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.DeviceId
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.logistics.android.github.BuildConfig
@@ -18,7 +19,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 
 class FeedbackInteractor(
-    private val deviceId: String,
+    private val deviceId: DeviceId,
     private val tripsInteractor: TripsInteractor,
     private val integrationsRepository: IntegrationsRepositoryImpl,
     private val moshi: Moshi,

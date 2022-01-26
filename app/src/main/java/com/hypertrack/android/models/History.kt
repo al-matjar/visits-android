@@ -1,6 +1,5 @@
 package com.hypertrack.android.models
 
-import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import com.squareup.moshi.JsonClass
 
@@ -96,30 +95,3 @@ enum class Status {
 
 class HistoryError(val error: Exception?) : HistoryResult()
 sealed class HistoryResult
-
-
-data class HistoryTile(
-    val status: Status,
-    val description: CharSequence,
-    val address: CharSequence?,
-    val timeframe: String,
-    val tileType: HistoryTileType,
-    val locations: List<Location> = emptyList(),
-    val isStatusTile: Boolean = true,
-)
-
-enum class HistoryTileType {
-    OUTAGE_START,
-    OUTAGE,
-    ACTIVE_START,
-    ACTIVE,
-    SUMMARY
-}
-
-fun List<HistoryTile>.asHistory() = History(
-    Summary(0, 0, 0, 0, 0, 0, 0),
-    flatMap { it.locations }.map { it to "2020-02-02T20:20:02.020Z" },
-    emptyList()
-)
-
-private const val TAG = "History"

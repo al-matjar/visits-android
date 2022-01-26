@@ -27,14 +27,10 @@ import java.util.concurrent.TimeUnit
 
 class ApiClient(
     private val api: ApiInterface,
-    private val deviceId: String,
+    private val deviceId: DeviceId,
     private val moshi: Moshi,
     private val crashReportsProvider: CrashReportsProvider
 ) {
-
-    suspend fun clockIn() = api.clockIn(deviceId)
-
-    suspend fun clockOut() = api.clockOut(deviceId)
 
     suspend fun getGeofences(
         paginationToken: String?,
@@ -44,7 +40,7 @@ class ApiClient(
 //            Log.v("hypertrack-verbose", "getGeofences ${paginationToken.hashCode()}")
             val response = api.getDeviceGeofences(
                 paginationToken = paginationToken,
-                deviceId = deviceId,
+                deviceId = deviceId.value,
                 geohash = geoHash
             )
             if (response.isSuccessful) {
@@ -84,7 +80,7 @@ class ApiClient(
         metadata: GeofenceMetadata
     ): Response<List<Geofence>> {
         return api.createGeofences(
-            deviceId,
+            deviceId = deviceId.value,
             GeofenceParams(
                 setOf(
                     GeofenceProperties(
@@ -92,14 +88,18 @@ class ApiClient(
                         metadata.toMap(moshi),
                         radius
                     )
-                ), deviceId
+                ),
+                deviceId = deviceId.value
             )
         )
     }
 
     suspend fun getTrips(page: String = ""): List<Trip> {
         try {
-            val response = api.getTrips(deviceId, page)
+            val response = api.getTrips(
+                deviceId = deviceId.value,
+                paginationToken = page
+            )
             if (response.isSuccessful) {
                 return response.body()?.trips?.filterNot {
                     it.id.isNullOrEmpty()
@@ -130,7 +130,10 @@ class ApiClient(
 
     suspend fun uploadImage(filename: String, image: Bitmap) {
         try {
-            val response = api.persistImage(deviceId, EncodedImage(filename, image))
+            val response = api.persistImage(
+                deviceId = deviceId.value,
+                EncodedImage(filename, image)
+            )
             if (response.isSuccessful) {
                 // Log.v(TAG, "Got post image response ${response.body()}")
             } else {
@@ -146,30 +149,9 @@ class ApiClient(
         try {
             with(
                 api.getHistory(
-                    deviceId,
-                    day.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                    timezone.id
-                )
-            ) {
-                if (isSuccessful) {
-                    return body().asHistory()
-                } else {
-                    return HistoryError(HttpException(this))
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Got exception $e fetching device history")
-            return HistoryError(e)
-        }
-    }
-
-    suspend fun getHistory(from: ZonedDateTime, to: ZonedDateTime): HistoryResult {
-        try {
-            with(
-                api.getHistoryForPeriod(
-                    deviceId,
-                    from.format(DateTimeFormatter.ISO_INSTANT),
-                    to.format(DateTimeFormatter.ISO_INSTANT)
+                    deviceId = deviceId.value,
+                    day = day.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                    timezone = timezone.id
                 )
             ) {
                 if (isSuccessful) {
@@ -188,7 +170,7 @@ class ApiClient(
         try {
             val res = api.createTrip(
                 TripParams(
-                    deviceId = deviceId,
+                    deviceId = deviceId.value,
                     orders = listOf(
                         OrderParams(
                             orderId = UUID.randomUUID().toString(),
@@ -224,7 +206,7 @@ class ApiClient(
                 api.addOrderToTrip(
                     tripId,
                     AddOrderBody(
-                        deviceId = deviceId,
+                        deviceId = deviceId.value,
                         orderCreationParams = listOf(orderCreationParams)
                     )
                 )
@@ -340,7 +322,7 @@ class ApiClient(
 
     suspend fun getImageBase64(imageId: String): String? {
         try {
-            val res = api.getImage(deviceId = deviceId, imageId = imageId)
+            val res = api.getImage(deviceId = deviceId.value, imageId = imageId)
             if (res.isSuccessful) {
                 return res.body()?.data
             } else {

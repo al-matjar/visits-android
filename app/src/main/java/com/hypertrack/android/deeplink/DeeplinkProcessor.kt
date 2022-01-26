@@ -99,7 +99,7 @@ class BranchIoDeepLinkProcessor(
         ).let { branchResult: Result<BranchMetadata> ->
             when (branchResult) {
                 is Success -> {
-                    DeeplinkParams(branchResult.result)
+                    DeeplinkParams(branchResult.data)
                 }
                 is Failure -> {
                     DeeplinkError(branchResult.exception)

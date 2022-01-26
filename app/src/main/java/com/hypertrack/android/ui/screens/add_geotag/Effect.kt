@@ -1,5 +1,6 @@
 package com.hypertrack.android.ui.screens.add_geotag
 
+import androidx.annotation.StringRes
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 
@@ -9,6 +10,7 @@ sealed class Effect {
 
 data class SetViewStateEffect(val viewState: ViewState) : Effect()
 data class ShowErrorMessageEffect(val text: String) : Effect()
+data class ShowToastEffect(@StringRes val stringResource: Int) : Effect()
 data class CreateGeotag(val metadata: Map<String, String>) : Effect()
 object GoBackEffect : Effect()
 data class ShowOnMapEffect(val map: HypertrackMapWrapper, val latestLocation: LatLng) : Effect()

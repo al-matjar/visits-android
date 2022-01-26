@@ -1,26 +1,24 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.summary
 
 import androidx.lifecycle.*
-import com.hypertrack.android.interactors.HistoryInteractor
-import com.hypertrack.android.models.EMPTY_HISTORY
+import com.hypertrack.android.interactors.SummaryInteractor
 import com.hypertrack.android.models.HistoryError
-import com.hypertrack.android.models.Summary
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.utils.formatters.DistanceFormatter
-import com.hypertrack.android.utils.formatters.TimeFormatter
+import com.hypertrack.android.utils.formatters.TimeValueFormatter
 
 import com.hypertrack.logistics.android.github.R
 
 class SummaryViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val historyInteractor: HistoryInteractor,
+    private val summaryInteractor: SummaryInteractor,
     private val distanceFormatter: DistanceFormatter,
-    private val timeFormatter: TimeFormatter,
+    private val timeFormatter: TimeValueFormatter,
 ) : BaseViewModel(baseDependencies) {
 
-    val summary: LiveData<List<SummaryItem>> = Transformations.map(historyInteractor.todayHistory) {
-        (it ?: EMPTY_HISTORY).summary.let { summary ->
+    val summary: LiveData<List<SummaryItem>> =
+        Transformations.map(summaryInteractor.summary) { summary ->
             listOf(
                 SummaryItem(
                     R.drawable.ic_ht_eta,
@@ -46,11 +44,10 @@ class SummaryViewModel(
                 ),
             )
         }
-    }
 
     val error = MutableLiveData<HistoryError>()
 
     fun refreshSummary() {
-        historyInteractor.refreshTodayHistory()
+        summaryInteractor.refresh()
     }
 }

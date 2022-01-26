@@ -14,7 +14,7 @@
     <dimen name="visit_list_subicon_top">0dp</dimen>
 
     <dimen name="history_map_padding">60dp</dimen>
-    <dimen name="history_summary_peek_height">30dp</dimen>
+    <dimen name="history_summary_peek_height">48dp</dimen>
 
     <dimen name="current_trip_bottom_bar_start_height">140dp</dimen>
 

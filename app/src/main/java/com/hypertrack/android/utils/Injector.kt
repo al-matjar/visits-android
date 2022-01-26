@@ -4,14 +4,15 @@ import android.content.Context
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.hypertrack.android.api.*
+import com.hypertrack.android.api.graphql.GraphQlApi
+import com.hypertrack.android.api.graphql.GraphQlApiClient
+import com.hypertrack.android.api.graphql.models.GraphQlDeviceStatusMarkerActiveData
+import com.hypertrack.android.api.graphql.models.GraphQlDeviceStatusMarkerData
+import com.hypertrack.android.api.graphql.models.GraphQlDeviceStatusMarkerInactiveData
 import com.hypertrack.android.interactors.*
+import com.hypertrack.android.interactors.history.GraphQlHistoryInteractor
+import com.hypertrack.android.interactors.history.HistoryInteractor
 import com.hypertrack.android.messaging.PushReceiver
-import com.hypertrack.android.mock.MockLocationProvider
-import com.hypertrack.android.mock.MockNotifications
-import com.hypertrack.android.mock.trips.MockTripStorage
-import com.hypertrack.android.mock.trips.RecordingMockTripsInteractor
-import com.hypertrack.android.mock.api.MockApi
-import com.hypertrack.android.mock.api.MockGraphQlApi
 import com.hypertrack.android.repository.*
 import com.hypertrack.android.deeplink.BranchIoDeepLinkProcessor
 import com.hypertrack.android.deeplink.BranchWrapper
@@ -20,6 +21,13 @@ import com.hypertrack.android.ui.common.ParamViewModelFactory
 import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.UserScopeViewModelFactory
 import com.hypertrack.android.ui.common.ViewModelFactory
+import com.hypertrack.android.ui.common.delegates.DateTimeRangeFormatterDelegate
+import com.hypertrack.android.ui.common.delegates.DeviceStatusMarkerDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.address.GeofenceAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.GeofenceVisitAddressDelegate
+import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.GeotagDisplayDelegate
+import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.*
 import com.hypertrack.android.utils.formatters.*
@@ -34,10 +42,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.Executors.newSingleThreadExecutor
+import kotlin.coroutines.CoroutineContext
 
 
 class ServiceLocator(val crashReportsProvider: CrashReportsProvider) {
@@ -77,21 +89,21 @@ object Injector {
 
     val batteryLevelMonitor = BatteryLevelMonitor(crashReportsProvider)
 
-    val mockLocationProvider by lazy { MockLocationProvider() }
-    val mockTripStorage by lazy { MockTripStorage() }
-    val mockNotifications by lazy {
-        MockNotifications(
-            appScope.appContext,
-            appScope.notificationsInteractor
-        )
-    }
-
     private fun createAppScope(context: Context): AppScope {
         val crashReportsProvider = this.crashReportsProvider
         val osUtilsProvider = OsUtilsProvider(context, crashReportsProvider)
         val driverRepository = getDriverRepo()
         val accountRepository = getAccountRepo(context)
         val moshi = getMoshi()
+        val datetimeFormatter = DateTimeFormatterImpl()
+        val distanceFormatter = LocalizedDistanceFormatter(osUtilsProvider)
+        val timeFormatter = TimeValueFormatterImpl(osUtilsProvider)
+        val geofenceVisitAddressDelegate = GeofenceVisitAddressDelegate(osUtilsProvider)
+        val geofenceAddressDelegate = GeofenceAddressDelegate(osUtilsProvider)
+        val datetimeRangeFormatterDelegate = DateTimeRangeFormatterDelegate(
+            osUtilsProvider,
+            datetimeFormatter
+        )
         return AppScope(
             MyApplication.context,
             DeeplinkInteractor(
@@ -103,15 +115,38 @@ object Injector {
             NotificationsInteractor(),
             crashReportsProvider,
             osUtilsProvider,
-            DateTimeFormatterImpl(),
-            LocalizedDistanceFormatter(osUtilsProvider),
-            TimeFormatterImpl(osUtilsProvider),
+            datetimeFormatter,
+            distanceFormatter,
+            timeFormatter,
+            geofenceAddressDelegate,
+            GeofenceVisitDisplayDelegate(
+                osUtilsProvider,
+                datetimeFormatter,
+                distanceFormatter,
+                timeFormatter,
+                geofenceVisitAddressDelegate,
+                datetimeRangeFormatterDelegate
+            ),
+            DeviceStatusMarkerDisplayDelegate(
+                osUtilsProvider,
+                distanceFormatter,
+                timeFormatter,
+                datetimeRangeFormatterDelegate,
+            ),
+            GeotagDisplayDelegate(
+                osUtilsProvider,
+                datetimeFormatter,
+                moshi
+            ),
             BranchIoDeepLinkProcessor(
                 Injector.crashReportsProvider,
                 osUtilsProvider,
                 BranchWrapper()
             ),
-            moshi
+            HypertrackMapItemsFactory(osUtilsProvider),
+            moshi,
+            CoroutineScope(SupervisorJob()),
+            newSingleThreadExecutor().asCoroutineDispatcher()
         )
     }
 
@@ -124,6 +159,17 @@ object Injector {
                 .registerSubtype(HistoryStatusMarker::class.java, "device_status")
                 .registerSubtype(HistoryTripMarker::class.java, "trip_marker")
                 .registerSubtype(HistoryGeofenceMarker::class.java, "geofence")
+        )
+        .add(
+            RuntimeJsonAdapterFactory(GraphQlDeviceStatusMarkerData::class.java, "__typename")
+                .registerSubtype(
+                    GraphQlDeviceStatusMarkerActiveData::class.java,
+                    "DeviceStatusMarkerActive"
+                )
+                .registerSubtype(
+                    GraphQlDeviceStatusMarkerInactiveData::class.java,
+                    "DeviceStatusMarkerInactive"
+                )
         )
         .build()
 
@@ -188,30 +234,22 @@ object Injector {
         fileRepository: FileRepository,
         imageDecoder: ImageDecoder,
     ): UserScope {
-        val deviceId = accessTokenRepository.deviceId
-        val deviceLocationProvider = if (!MyApplication.MOCK_MODE) {
+        val deviceId = DeviceId(accessTokenRepository.deviceId)
+        val deviceLocationProvider =
             FusedDeviceLocationProvider(appScope.appContext, crashReportsProvider)
-        } else {
-            mockLocationProvider
-        }
         val api = createRemoteApi(
             BASE_URL,
             moshi,
             accessTokenRepository,
             crashReportsProvider
-        ).let {
-            if (MyApplication.MOCK_MODE.not()) {
-                it
-            } else {
-                MockApi(it)
-            }
-        }
+        )
         val apiClient = ApiClient(
             api,
             deviceId,
             moshi,
             crashReportsProvider
         )
+
         val historyRepository = HistoryRepositoryImpl(
             apiClient,
             crashReportsProvider,
@@ -230,7 +268,7 @@ object Injector {
             placesRepository,
             integrationsRepository,
             osUtilsProvider,
-            appScope.datetimeFormatter,
+            appScope.dateTimeFormatter,
             Intersect(),
             GlobalScope
         )
@@ -268,16 +306,10 @@ object Injector {
             osUtilsProvider,
             Dispatchers.IO,
             GlobalScope
-        ).let {
-            if (MyApplication.RECORDING_MODE.not()) {
-                it
-            } else {
-                RecordingMockTripsInteractor(it, mockTripStorage)
-            }
-        }
+        )
 
         val feedbackInteractor = FeedbackInteractor(
-            accessTokenRepository.deviceId,
+            deviceId,
             tripsInteractor,
             integrationsRepository,
             moshi,
@@ -285,23 +317,17 @@ object Injector {
             crashReportsProvider
         )
 
-        val graphQlApi = createGraphQlApi(GRAPHQL_API_URL, moshi).let {
-            if (MyApplication.MOCK_MODE.not()) {
-                it
-            } else {
-                MockGraphQlApi(it)
-            }
-        }
+        val graphQlApi = createGraphQlApi(GRAPHQL_API_URL, moshi)
         val graphQlApiClient = GraphQlApiClient(
             graphQlApi,
             PublishableKey(publishableKey),
-            DeviceId(deviceId),
+            deviceId,
             moshi,
             crashReportsProvider
         )
 
         val placesVisitsRepository = PlacesVisitsRepository(
-            DeviceId(deviceId),
+            deviceId,
             graphQlApiClient,
             osUtilsProvider,
             crashReportsProvider,
@@ -312,9 +338,19 @@ object Injector {
             placesVisitsRepository
         )
 
-        val historyInteractor = HistoryInteractorImpl(
+        val historyInteractorLegacy = HistoryInteractorImpl(
             historyRepository,
             GlobalScope
+        )
+
+        val historyInteractor = GraphQlHistoryInteractor(
+            deviceId,
+            graphQlApiClient,
+            osUtilsProvider,
+            crashReportsProvider,
+            moshi,
+            appScope.appCoroutineScope,
+            appScope.stateMachineContext
         )
 
         val googlePlacesInteractor = GooglePlacesInteractorImpl(
@@ -325,6 +361,8 @@ object Injector {
             hyperTrackService
         )
 
+        val summaryInteractor = SummaryInteractor(historyInteractorLegacy)
+
         val userScope = UserScope(
             tripsInteractor,
             TripsUpdateTimerInteractor(tripsInteractor),
@@ -333,6 +371,8 @@ object Injector {
             googlePlacesInteractor,
             geotagsInteractor,
             historyInteractor,
+            historyInteractorLegacy,
+            summaryInteractor,
             feedbackInteractor,
             integrationsRepository,
             hyperTrackService,
@@ -362,7 +402,7 @@ object Injector {
         crashReportsProvider.setUserIdentifier(
             moshi.adapter(UserIdentifier::class.java).toJson(
                 UserIdentifier(
-                    deviceId = accessTokenRepository.deviceId,
+                    deviceId = deviceId.value,
                     driverId = driverRepository.username,
                     pubKey = accountRepository.publishableKey,
                 )
@@ -544,6 +584,8 @@ class UserScope(
     val googlePlacesInteractor: GooglePlacesInteractor,
     val geotagsInteractor: GeotagsInteractor,
     val historyInteractor: HistoryInteractor,
+    val historyInteractorLegacy: HistoryInteractorImpl,
+    val summaryInteractor: SummaryInteractor,
     val feedbackInteractor: FeedbackInteractor,
     val integrationsRepository: IntegrationsRepository,
     val hyperTrackService: HyperTrackService,
@@ -564,11 +606,18 @@ class AppScope(
     val notificationsInteractor: NotificationsInteractor,
     val crashReportsProvider: CrashReportsProvider,
     val osUtilsProvider: OsUtilsProvider,
-    val datetimeFormatter: DatetimeFormatter,
+    val dateTimeFormatter: DateTimeFormatter,
     val distanceFormatter: DistanceFormatter,
-    val timeFormatter: TimeFormatter,
+    val timeFormatter: TimeValueFormatter,
+    val geofenceAddressDelegate: GeofenceAddressDelegate,
+    val geofenceVisitDisplayDelegate: GeofenceVisitDisplayDelegate,
+    val deviceStatusMarkerDisplayDelegate: DeviceStatusMarkerDisplayDelegate,
+    val geotagDisplayDelegate: GeotagDisplayDelegate,
     val deeplinkProcessor: DeeplinkProcessor,
+    val mapItemsFactory: HypertrackMapItemsFactory,
     val moshi: Moshi,
+    val appCoroutineScope: CoroutineScope,
+    val stateMachineContext: CoroutineContext
 )
 
 fun interface Factory<A, T> {

@@ -13,7 +13,7 @@ import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
-import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.util.format
@@ -21,7 +21,7 @@ import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.launch
 import java.util.*
@@ -33,9 +33,9 @@ class OrderDetailsViewModel(
     private val tripsInteractor: TripsInteractor,
     private val photoUploadInteractor: PhotoUploadQueueInteractor,
     private val accountRepository: AccountRepository,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val dateTimeFormatter: DateTimeFormatter,
 ) : BaseViewModel(baseDependencies) {
-    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, datetimeFormatter)
+    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, dateTimeFormatter)
 
     override val errorHandler =
         ErrorHandler(
@@ -73,13 +73,13 @@ class OrderDetailsViewModel(
                 order.completedAt?.let {
                     put(
                         osUtilsProvider.stringFromResource(R.string.order_completed_at),
-                        datetimeFormatter.formatDatetime(it)
+                        dateTimeFormatter.formatDateTime(it)
                     )
                 }
                 order.scheduledAt?.let {
                     put(
                         osUtilsProvider.stringFromResource(R.string.order_scheduled_at),
-                        datetimeFormatter.formatDatetime(it)
+                        dateTimeFormatter.formatDateTime(it)
                     )
                 }
                 put(

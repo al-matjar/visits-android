@@ -21,14 +21,12 @@ import com.hypertrack.android.ui.screens.add_geotag.AddGeotagViewModel
 import com.hypertrack.android.ui.screens.select_trip_destination.SelectTripDestinationViewModel
 import com.hypertrack.android.ui.screens.send_feedback.SendFeedbackViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
+import com.hypertrack.android.ui.screens.visits_management.tabs.history.BaseHistoryStyle
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersListViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesVisitsViewModel
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryViewModel
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
-import com.hypertrack.android.utils.formatters.DistanceFormatter
-import com.hypertrack.android.utils.formatters.TimeFormatter
 import javax.inject.Provider
 
 @Suppress("UNCHECKED_CAST")
@@ -66,7 +64,7 @@ class UserScopeViewModelFactory(
                 baseDependencies,
                 tripsInteractor,
                 userScopeProvider.get().tripsUpdateTimerInteractor,
-                appScope.datetimeFormatter,
+                appScope.dateTimeFormatter,
             ) as T
             AddIntegrationViewModel::class.java -> AddIntegrationViewModel(
                 baseDependencies,
@@ -85,7 +83,7 @@ class UserScopeViewModelFactory(
                 userScopeProvider.get().tripsUpdateTimerInteractor,
                 hyperTrackService,
                 deviceLocationProvider,
-                appScope.datetimeFormatter,
+                appScope.dateTimeFormatter,
                 appScope.timeFormatter
             ) as T
             SelectDestinationViewModel::class.java -> SelectDestinationViewModel(
@@ -99,7 +97,7 @@ class UserScopeViewModelFactory(
                 userScopeProvider.get().placesInteractor,
                 deviceLocationProvider,
                 appScope.distanceFormatter,
-                appScope.datetimeFormatter
+                appScope.dateTimeFormatter
             ) as T
             PermissionRequestViewModel::class.java -> PermissionRequestViewModel(
                 baseDependencies,
@@ -108,20 +106,26 @@ class UserScopeViewModelFactory(
             ) as T
             SummaryViewModel::class.java -> SummaryViewModel(
                 baseDependencies,
-                userScopeProvider.get().historyInteractor,
+                userScopeProvider.get().summaryInteractor,
                 appScope.distanceFormatter,
                 appScope.timeFormatter
             ) as T
             HistoryViewModel::class.java -> HistoryViewModel(
                 baseDependencies,
                 userScopeProvider.get().historyInteractor,
-                appScope.datetimeFormatter,
+                appScope.geofenceVisitDisplayDelegate,
+                appScope.deviceStatusMarkerDisplayDelegate,
+                appScope.geotagDisplayDelegate,
+                appScope.timeFormatter,
                 appScope.distanceFormatter,
-                deviceLocationProvider
+                deviceLocationProvider,
+                appScope.mapItemsFactory,
+                //todo inject context from AppScope (these changes are in the other PR)
+                BaseHistoryStyle(MyApplication.context)
             ) as T
             VisitsManagementViewModel::class.java -> VisitsManagementViewModel(
                 baseDependencies,
-                userScopeProvider.get().historyInteractor,
+                userScopeProvider.get().historyInteractorLegacy,
                 accountRepository,
                 hyperTrackService,
                 accessTokenRepository
@@ -141,9 +145,9 @@ class UserScopeViewModelFactory(
             PlacesVisitsViewModel::class.java -> PlacesVisitsViewModel(
                 baseDependencies,
                 userScopeProvider.get().placesVisitsInteractor,
-                appScope.datetimeFormatter,
+                appScope.geofenceVisitDisplayDelegate,
+                appScope.dateTimeFormatter,
                 appScope.distanceFormatter,
-                appScope.timeFormatter,
             ) as T
             AddGeotagViewModel::class.java -> AddGeotagViewModel(
                 baseDependencies,

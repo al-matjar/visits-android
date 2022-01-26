@@ -30,8 +30,4 @@ object False : AlgBoolean() {
     }
 }
 
-// todo change all ZonedDateTime.parse(str) to this because it crashes if str is null, but not
-// enforce compile time non-nullability
-fun datetimeFromString(str: String): ZonedDateTime {
-    return ZonedDateTime.parse(str)
-}
+open class TypeWrapper<T>(val value: T)

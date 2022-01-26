@@ -215,9 +215,9 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
                     it.setGoneState(!order.etaAvailable)
                 }
                 listOf(destination_away, destination_away_title).forEach {
-                    it.setGoneState(order.awayText == null)
+                    it.goneIfNull(order.awayText)
                 }
-                order.awayText.toView(destination_away)
+                order.awayText?.toView(destination_away)
             }
         }
 

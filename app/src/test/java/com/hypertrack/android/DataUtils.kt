@@ -4,18 +4,27 @@ import com.hypertrack.android.api.Point
 import com.hypertrack.android.api.Trip
 import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.api.Views
+import com.hypertrack.android.mock.TestMockData
 import com.hypertrack.android.models.RemoteEstimate
 import com.hypertrack.android.models.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
-import com.hypertrack.android.mock.MockData
+import com.hypertrack.android.utils.datetime.toIso
+import java.time.ZonedDateTime
 
-//todo replace with MockData
 fun createBaseOrder(
     id: String? = null,
     status: OrderStatus = OrderStatus.ONGOING
 ): Order {
-    return MockData.createOrder(id, status)
+    return Order(
+        id ?: ("order " + Math.random()),
+        TripDestination(TestMockData.PALO_ALTO_LAT_LNG, "Test Address"),
+        status.value,
+        ZonedDateTime.now().toIso(),
+        ZonedDateTime.now().toIso(),
+        RemoteEstimate(ZonedDateTime.now().plusMinutes(29).toIso(), null),
+        mapOf(),
+    )
 }
 
 //todo replace with MockData

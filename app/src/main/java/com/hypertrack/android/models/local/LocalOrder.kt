@@ -7,8 +7,7 @@ import com.hypertrack.android.models.RemoteEstimate
 import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.models.Order
 import com.hypertrack.android.ui.common.util.nullIfBlank
-import com.hypertrack.android.utils.Intersect
-import com.hypertrack.android.utils.datetimeFromString
+import com.hypertrack.android.utils.datetime.dateTimeFromString
 import com.squareup.moshi.JsonClass
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -78,8 +77,8 @@ data class LocalOrder(
                 id = order.id,
                 destination = order.destination,
                 status = status ?: OrderStatus.fromString(order._status),
-                scheduledAt = order.scheduledAt?.let { datetimeFromString(it) },
-                completedAt = order.completedAt?.let { datetimeFromString(it) },
+                scheduledAt = order.scheduledAt?.let { dateTimeFromString(it) },
+                completedAt = order.completedAt?.let { dateTimeFromString(it) },
                 estimate = Estimate.fromRemote(order.estimate),
                 _metadata = metadata,
                 note = note,
@@ -124,7 +123,7 @@ data class Estimate(
             estimate: RemoteEstimate?,
         ): Estimate? {
             return estimate?.let {
-                Estimate(estimate.arriveAt?.let { datetimeFromString(it) },
+                Estimate(estimate.arriveAt?.let { dateTimeFromString(it) },
                     estimate.route?.polyline?.coordinates?.map { LatLng(it[1], it[0]) })
             }
         }

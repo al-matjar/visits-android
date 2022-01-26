@@ -3,6 +3,7 @@ package com.hypertrack.android.ui.common.map
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.util.TypedValue
+import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
@@ -11,7 +12,7 @@ import com.hypertrack.android.models.local.LocalGeofence
 import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
-import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryStyle
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.OsUtilsProvider
@@ -31,6 +32,9 @@ class HypertrackMapWrapper(
             isScrollGesturesEnabled = params.enableScroll
             isZoomControlsEnabled = params.enableZoomKeys
             isMyLocationButtonEnabled = params.enableMyLocationButton
+            isCompassEnabled = false
+            isMapToolbarEnabled = false
+            isRotateGesturesEnabled = false
         }
 
         try {
@@ -79,6 +83,10 @@ class HypertrackMapWrapper(
 
     fun setOnCameraMovedListener(listener: (LatLng) -> Unit) {
         googleMap.setOnCameraIdleListener { listener.invoke(googleMap.viewportPosition) }
+    }
+
+    fun addMarker(markerOptions: MarkerOptions): Marker? {
+        return googleMap.addMarker(markerOptions)
     }
 
     fun addGeofenceShape(geofence: LocalGeofence) {
@@ -252,12 +260,7 @@ class HypertrackMapWrapper(
         }
     }
 
-    fun showHistory(history: History, style: HistoryStyle) {
-        addPolyline(history.asPolylineOptions().color(style.activeColor))
-    }
-
     fun animateCameraToTrip(trip: LocalTrip, userLocation: LatLng? = null) {
-        val map = googleMap
         try {
             val tripStart =
                 trip.orders.firstOrNull()?.estimate?.route?.firstOrNull()
@@ -274,7 +277,7 @@ class HypertrackMapWrapper(
                     userLocation?.let { include(it) }
                 }.build()
                 //newLatLngBounds can cause crash if called before layout without map size
-                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100))
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100))
             }
         } catch (e: Exception) {
             crashReportsProvider.logException(e)
@@ -282,15 +285,15 @@ class HypertrackMapWrapper(
     }
 
     fun moveCamera(latLng: LatLng, zoom: Float? = null) {
-        GlobalScope.launch(Dispatchers.Main) {
-            googleMap.moveCamera(latLng, zoom)
-        }
+        googleMap.moveCamera(latLng, zoom)
     }
 
     fun animateCamera(latLng: LatLng, zoom: Float? = null) {
-        GlobalScope.launch(Dispatchers.Main) {
-            googleMap.animateCamera(latLng, zoom)
-        }
+        googleMap.animateCamera(latLng, zoom)
+    }
+
+    fun moveCamera(cameraUpdate: CameraUpdate) {
+        googleMap.animateCamera(cameraUpdate)
     }
 
     fun setOnMapClickListener(listener: () -> Unit) {
@@ -305,8 +308,8 @@ class HypertrackMapWrapper(
         googleMap.clear()
     }
 
-    fun addPolyline(polylineOptions: PolylineOptions) {
-        googleMap.addPolyline(polylineOptions)
+    fun addPolyline(polylineOptions: PolylineOptions): Polyline {
+        return googleMap.addPolyline(polylineOptions)
     }
 
     fun setPadding(left: Int = 0, top: Int = 0, right: Int = 0, bottom: Int = 0) {
@@ -332,6 +335,19 @@ class HypertrackMapWrapper(
         )
     }
 
+    fun animateCameraToBounds(bounds: LatLngBounds) {
+        try {
+            googleMap.animateCamera(
+                CameraUpdateFactory.newLatLngBounds(
+                    bounds,
+                    BOUNDS_CAMERA_PADDING
+                )
+            )
+        } catch (e: Exception) {
+            crashReportsProvider.logException(e)
+        }
+    }
+
     private fun History.asPolylineOptions(): PolylineOptions = this
         .locationTimePoints
         .map { it.first }
@@ -353,6 +369,7 @@ class HypertrackMapWrapper(
 
     companion object {
         const val DEFAULT_ZOOM = 13f
+        const val BOUNDS_CAMERA_PADDING = 100
     }
 
     private class StyleAttrs {

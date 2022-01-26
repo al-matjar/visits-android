@@ -1,5 +1,6 @@
 package com.hypertrack.android.api
 
+import com.hypertrack.android.api.graphql.models.GraphQlDeviceStatusMarker
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.ToJson

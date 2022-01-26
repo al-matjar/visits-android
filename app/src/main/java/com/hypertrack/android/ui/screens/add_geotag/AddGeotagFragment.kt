@@ -13,6 +13,7 @@ import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
 import com.hypertrack.android.ui.common.util.toView
+import com.hypertrack.android.ui.common.util.toViewOrHideIfNull
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_add_geotag.bAddField
@@ -49,8 +50,7 @@ class AddGeotagFragment : BaseFragment<MainActivity>(R.layout.fragment_add_geota
         rvGeotagMetadata.adapter = metadataAdapter
 
         vm.viewState.observe(viewLifecycleOwner) { viewState ->
-            tvAddGeotagError.setGoneState(viewState.errorText == null)
-            viewState.errorText.toView(tvAddGeotagError)
+            viewState.errorText.toViewOrHideIfNull(tvAddGeotagError)
             tvAddGeotagHint.setGoneState(!viewState.showHint)
             listOf(rvGeotagMetadata, bAddField).forEach {
                 it.setGoneState(!viewState.showMetadata)

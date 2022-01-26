@@ -462,12 +462,7 @@ class SplashScreenViewModelTest {
                     mapOf(
                         "publishable_key" to "key",
                         "email" to "email@mail.com",
-                        "metadata" to Injector.getMoshi().adapter<Map<String, Any>>(
-                            Types.newParameterizedType(
-                                Map::class.java, String::class.java,
-                                Any::class.java
-                            )
-                        ).toJson(map),
+                        "metadata" to Injector.getMoshi().createAnyMapAdapter().toJson(map),
                     )
                 ), mockk(relaxed = true)
             )

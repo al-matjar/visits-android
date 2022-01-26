@@ -1,10 +1,11 @@
 package com.hypertrack.android.interactors
 
 import com.hypertrack.android.api.ApiClient
+import com.hypertrack.android.mock.TestMockData
 import com.hypertrack.android.models.GeofenceMetadata
 import com.hypertrack.android.repository.PlacesRepositoryImpl
+import com.hypertrack.android.utils.DeviceId
 import com.hypertrack.android.utils.Injector
-import com.hypertrack.android.mock.MockData
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,12 +25,12 @@ class PlacesInteractorTest {
         val apiClient: ApiClient = mockk(relaxed = true) {
             coEvery { createGeofence(any(), any(), any(), any()) } coAnswers {
                 slot = arg(3)
-                Response.success(listOf(MockData.createGeofence()))
+                Response.success(listOf(TestMockData.createGeofence()))
             }
         }
         val placesInteractor = PlacesInteractorImpl(
             PlacesRepositoryImpl(
-                "1",
+                DeviceId("1"),
                 apiClient,
                 Injector.getMoshi(),
                 mockk(relaxed = true),

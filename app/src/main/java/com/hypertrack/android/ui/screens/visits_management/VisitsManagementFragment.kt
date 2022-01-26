@@ -29,9 +29,10 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
     val args: VisitsManagementFragmentArgs by navArgs()
 
     private val ordersFragment = OrdersFragment.newInstance()
+    private val historyFragment = HistoryFragment()
     private val tabsMap = mapOf(
         Tab.CURRENT_TRIP to CurrentTripFragment(),
-        Tab.HISTORY to HistoryFragment(),
+        Tab.HISTORY to historyFragment,
         Tab.ORDERS to ordersFragment,
         Tab.PLACES to PlacesFragment.getInstance(),
         Tab.SUMMARY to SummaryFragment.newInstance(),
@@ -131,6 +132,17 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
         ordersFragment.refresh()
     }
 
+    override fun onBackPressed(): Boolean {
+        return if (super.onBackPressed()) {
+            true
+        } else {
+            if (viewpager?.currentItem == Tab.HISTORY.ordinal) {
+                historyFragment.onBackPressed()
+            } else {
+                false
+            }
+        }
+    }
 
 }
 

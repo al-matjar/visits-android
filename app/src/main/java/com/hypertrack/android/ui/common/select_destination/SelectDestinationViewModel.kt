@@ -15,7 +15,7 @@ import com.hypertrack.android.ui.base.SingleLiveEvent
 import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.delegates.GeofenceClusterItem
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
-import com.hypertrack.android.ui.common.delegates.GooglePlaceAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.map.viewportPosition
@@ -140,9 +140,9 @@ open class SelectDestinationViewModel(
                     searchQuery.postValue("")
                 }
                 is DisplayUserLocation -> {
-                    effect.map.addUserLocation(effect.latLng)
+                    effect.map.addUserLocation(effect.latLng) as Any?
                 }
-            } as Unit
+            } as Any?
         }
     }
 

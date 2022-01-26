@@ -338,10 +338,10 @@ abstract class Geometry {
 @JsonClass(generateAdapter = true)
 data class GeofenceVisit(
     @field:Json(name = "geofence_id") val geofenceId: String,
+    //todo why null? and non-null on graphQl schema
     @field:Json(name = "marker_id") val markerId: String?,
     @field:Json(name = "device_id") val deviceId: String,
-    //todo why null?
-    @field:Json(name = "arrival") val arrival: Arrival?,
+    @field:Json(name = "arrival") val arrival: Arrival,
     @field:Json(name = "exit") val exit: Exit?,
     @field:Json(name = "geometry") val geometry: Geometry?,
     @field:Json(name = "route_to") val routeTo: RouteTo?,

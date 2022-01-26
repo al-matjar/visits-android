@@ -39,6 +39,10 @@ object Utils {
 
 }
 
+fun Int?.nullIfZero(): Int? {
+    return if (this == 0) null else this
+}
+
 fun String?.nullIfEmpty(): String? {
     return if (this?.isEmpty() == true) null else this
 }
@@ -73,18 +77,3 @@ fun LatLng.isNearZero(): Boolean {
 fun Int?.orEmpty(): String {
     return this?.toString() ?: ""
 }
-
-class ErrorMessage(
-    private val errorHint: String,
-    private val errorText: String,
-    private val addNewLine: Boolean = true
-) {
-    override fun toString(): String {
-        return if (addNewLine) {
-            "$errorHint:\n$errorText"
-        } else {
-            "$errorHint: $errorText"
-        }
-    }
-}
-

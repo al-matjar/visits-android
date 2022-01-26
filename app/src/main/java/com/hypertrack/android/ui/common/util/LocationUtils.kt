@@ -65,5 +65,9 @@ fun LatLng.format(): String {
     return "${latitude.roundToSign(5)}, ${longitude.roundToSign(5)}"
 }
 
+fun LatLng.copy(latitude: Double? = null, longitude: Double? = null): LatLng {
+    return LatLng(latitude ?: this.latitude, longitude ?: this.longitude)
+}
+
 
 

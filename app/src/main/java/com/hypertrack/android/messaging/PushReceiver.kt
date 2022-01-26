@@ -7,6 +7,7 @@ import com.hypertrack.android.interactors.TripsInteractor
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.createStringMapAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import kotlinx.coroutines.GlobalScope
@@ -28,12 +29,7 @@ class PushReceiver(
             // this is for debug only, you can send a test message from Firebase admin panel with text
             // that contains JSON that mimics the format of real message payload
             remoteMessage.notification?.body?.let {
-                moshi.adapter<Map<String, String>>(
-                    Types.newParameterizedType(
-                        Map::class.java, String::class.java,
-                        String()::class.java
-                    )
-                ).fromJson(it)
+                moshi.createStringMapAdapter().fromJson(it)
             }!!
         } catch (e: Exception) {
             mapOf()

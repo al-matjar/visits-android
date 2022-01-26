@@ -3,36 +3,35 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.places
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
 import com.hypertrack.android.ui.base.BaseAdapter
-import com.hypertrack.android.ui.common.delegates.GeofenceAddressDelegate
-import com.hypertrack.android.ui.screens.place_details.PlaceVisitsAdapter
-import com.hypertrack.android.ui.screens.visits_management.tabs.history.TimeDistanceFormatter
+import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.util.setGoneState
+import com.hypertrack.android.ui.common.util.toView
+import com.hypertrack.android.ui.common.util.toViewOrHideIfNull
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
-import com.hypertrack.android.utils.formatters.TimeFormatter
 
 import com.hypertrack.logistics.android.github.R
-import kotlinx.android.synthetic.main.item_day.view.*
-import kotlinx.android.synthetic.main.item_place.view.tvTitle
-import kotlinx.android.synthetic.main.item_place_visit_all_places.view.*
+import kotlinx.android.synthetic.main.item_day.view.tvDayTitle
+import kotlinx.android.synthetic.main.item_day.view.tvTotal
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.bCopy
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.ivRouteTo
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvDescription
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvPlaceAddress
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvPlaceIntegrationName
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvRouteTo
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvTitle
+import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvVisitId
 
 
 class AllPlacesVisitsAdapter(
     private val osUtilsProvider: OsUtilsProvider,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val displayDelegate: GeofenceVisitDisplayDelegate,
+    private val dateTimeFormatter: DateTimeFormatter,
     private val distanceFormatter: DistanceFormatter,
-    private val timeFormatter: TimeFormatter,
     private val onCopyClickListener: ((String) -> Unit)
 ) : BaseAdapter<VisitItem, BaseAdapter.BaseVh<VisitItem>>() {
-
-    private val timeDistanceFormatter = TimeDistanceFormatter(
-        datetimeFormatter, distanceFormatter
-    )
-
-    private val nameDelegate = GeofenceNameDelegate(osUtilsProvider, datetimeFormatter)
-    private val addressDelegate = GeofenceAddressDelegate(osUtilsProvider)
 
     override val itemLayoutResource: Int = R.layout.item_place_visit_all_places
 
@@ -71,22 +70,30 @@ class AllPlacesVisitsAdapter(
             override fun bind(item: VisitItem) {
                 when (item) {
                     is Day -> {
-                        containerView.tvTitle.text = datetimeFormatter.formatDate(item.date)
+                        containerView.tvDayTitle.text = dateTimeFormatter.formatDate(item.date)
                         containerView.tvTotal.text = item.totalDriveDistance.meters.let {
-                            timeDistanceFormatter.formatDistance(it)
+                            distanceFormatter.formatDistance(it)
                         } ?: osUtilsProvider.stringFromResource(R.string.places_visits_loading)
                     }
                     is Visit -> {
-                        PlaceVisitsAdapter.bindVisit(
-                            containerView,
-                            item.visit,
-                            timeFormatter,
-                            timeDistanceFormatter,
-                            osUtilsProvider,
-                            onCopyClickListener
-                        )
-                        containerView.tvPlaceName.text = nameDelegate.getName(item.visit)
-                        containerView.tvPlaceAddress.text = addressDelegate.shortAddress(item.visit)
+                        val visit = item.visit
+                        visit.id?.toView(containerView.tvVisitId)
+                        displayDelegate.getGeofenceName(visit).toView(containerView.tvTitle)
+                        displayDelegate.getDurationText(visit)
+                            .toViewOrHideIfNull(containerView.tvDescription)
+                        displayDelegate.getRouteToText(visit)
+                            .toViewOrHideIfNull(containerView.tvRouteTo)
+                        listOf(containerView.ivRouteTo, containerView.tvRouteTo).forEach {
+                            it.setGoneState(visit.routeTo == null)
+                        }
+                        containerView.bCopy.setOnClickListener {
+                            visit.id?.let {
+                                onCopyClickListener.invoke(it)
+                            }
+                        }
+                        containerView.tvPlaceIntegrationName.text =
+                            displayDelegate.getGeofenceName(visit)
+                        containerView.tvPlaceAddress.text = visit.address
                     }
 //                    is MonthItem -> {
 ////                        Log.v(

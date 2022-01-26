@@ -1,21 +1,25 @@
 package com.hypertrack.android.utils.formatters
 
+import com.hypertrack.android.utils.DistanceValue
 import com.hypertrack.android.utils.OsUtilsProvider
+import com.hypertrack.android.utils.Steps
 import com.hypertrack.logistics.android.github.R
-import java.time.ZoneId
 import java.util.*
 
 interface DistanceFormatter {
+    //todo remove legacy
     fun formatDistance(meters: Int): String
+    fun formatDistance(distance: DistanceValue): String
+    fun formatSteps(steps: Steps): String
 }
 
-class LocalizedDistanceFormatter(
+open class LocalizedDistanceFormatter(
     private val osUtilsProvider: OsUtilsProvider,
 ) : DistanceFormatter {
     private val shouldUseImperial = Locale.getDefault().country in listOf("US", "LR", "MM")
 
     override fun formatDistance(meters: Int): String {
-        return if (shouldUseImperial && false) {
+        return if (shouldUseImperial) {
             val miles = meters / 1609.0
             when {
                 miles >= 100 -> {
@@ -53,13 +57,27 @@ class LocalizedDistanceFormatter(
             }
         }
     }
+
+    override fun formatDistance(distance: DistanceValue): String {
+        return formatDistance(distance.meters)
+    }
+
+    override fun formatSteps(steps: Steps): String {
+        return osUtilsProvider.stringFromResource(R.string.steps, steps.steps)
+    }
 }
 
-class MetersDistanceFormatter(val osUtilsProvider: OsUtilsProvider) : DistanceFormatter {
+class MetersDistanceFormatter(val osUtilsProvider: OsUtilsProvider) :
+    LocalizedDistanceFormatter(osUtilsProvider) {
     override fun formatDistance(meters: Int): String {
         return osUtilsProvider.stringFromResource(
             R.string.meters,
             meters
         )
     }
+
+    override fun formatDistance(distance: DistanceValue): String {
+        return formatDistance(distance.meters)
+    }
+
 }

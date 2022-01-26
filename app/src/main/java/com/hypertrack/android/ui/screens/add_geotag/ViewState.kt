@@ -1,6 +1,6 @@
 package com.hypertrack.android.ui.screens.add_geotag
 
-import com.hypertrack.android.ui.common.util.ErrorMessage
+import com.hypertrack.android.utils.ErrorMessage
 
 sealed class ViewState(
     val showHint: Boolean,

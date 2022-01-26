@@ -3,17 +3,16 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.places
 import android.view.View
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
-import com.hypertrack.android.models.Location
 import com.hypertrack.android.models.local.LocalGeofence
 import com.hypertrack.android.ui.base.BaseAdapter
-import com.hypertrack.android.ui.common.delegates.GeofenceAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.GeofenceAddressDelegate
 import com.hypertrack.android.ui.common.util.LocationUtils
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.toView
 import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
 
 import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.logistics.android.github.R
@@ -24,11 +23,11 @@ class PlacesAdapter(
     private val osUtilsProvider: OsUtilsProvider,
     private val locationProvider: DeviceLocationProvider,
     private val distanceFormatter: DistanceFormatter,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val dateTimeFormatter: DateTimeFormatter,
 ) : BaseAdapter<PlaceItem, BaseAdapter.BaseVh<PlaceItem>>() {
 
     private val addressDelegate = GeofenceAddressDelegate(osUtilsProvider)
-    private val geofenceNameDelegate = GeofenceNameDelegate(osUtilsProvider, datetimeFormatter)
+    private val geofenceNameDelegate = GeofenceNameDelegate(osUtilsProvider, dateTimeFormatter)
 
     override val itemLayoutResource: Int = R.layout.item_place
 
@@ -59,7 +58,7 @@ class PlacesAdapter(
                             )
 
                         "${
-                            MyApplication.context.getString(
+                            osUtilsProvider.stringFromResource(
                                 R.string.places_visited,
                                 visitsCount.toString()
                             )
@@ -69,7 +68,7 @@ class PlacesAdapter(
                         item.geofence.lastVisit?.arrival?.let {
                             MyApplication.context.getString(
                                 R.string.places_last_visit,
-                                datetimeFormatter.formatDatetime(it)
+                                dateTimeFormatter.formatDateTime(it.value)
                             )
                         }?.toView(containerView.tvLastVisit)
 

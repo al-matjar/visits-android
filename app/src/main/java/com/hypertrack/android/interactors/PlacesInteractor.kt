@@ -12,7 +12,7 @@ import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.DataPage
 import com.hypertrack.android.utils.Intersect
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
@@ -57,12 +57,12 @@ class PlacesInteractorImpl(
     private val placesRepository: PlacesRepository,
     private val integrationsRepository: IntegrationsRepository,
     private val osUtilsProvider: OsUtilsProvider,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val dateTimeFormatter: DateTimeFormatter,
     private val intersect: Intersect,
     private val globalScope: CoroutineScope
 ) : PlacesInteractor {
 
-    private val geofenceNameDelegate = GeofenceNameDelegate(osUtilsProvider, datetimeFormatter)
+    private val geofenceNameDelegate = GeofenceNameDelegate(osUtilsProvider, dateTimeFormatter)
 
     private var pendingCreatedGeofences = mutableListOf<LocalGeofence>()
 
@@ -108,10 +108,10 @@ class PlacesInteractorImpl(
 
     override suspend fun getGeofence(geofenceId: String): GeofenceResult {
         val cached = geofences.value?.get(geofenceId)
-        if (cached != null) {
-            return GeofenceSuccess(cached)
+        return if (cached != null) {
+            GeofenceSuccess(cached)
         } else {
-            return placesRepository.getGeofence(geofenceId).also {
+            placesRepository.getGeofence(geofenceId).also {
                 if (it is GeofenceSuccess) {
                     addGeofencesToCache(listOf(it.geofence))
                 }

@@ -70,7 +70,7 @@
     <string name="cancel_visit_confirmation">Are you sure you want to cancel this visit?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
-    <string name="duration">%1$d hr, %2$d min</string>
+    <string name="duration">%1$d hr %2$d min</string>
     <string name="duration_minutes">%1$d min</string>
     <string name="steps">%1$d steps</string>
     <string name="miles">%s mi</string>
@@ -111,7 +111,7 @@
 
     <string name="sign_in_deeplink_issues">Having issues with deeplink?</string>
     <string name="sign_in_deeplink_hint">Paste the deeplink or login token here</string>
-    <string name="sign_in_deeplink_invalid_format">Invalid deeplink format.\nCorrect format: \n\n <b>https://hypertrack-logistics.app.link/...</b></string>
+    <string name="sign_in_deeplink_invalid_format">Invalid deeplink format.\nCorrect format: \n\n <b>https://hypertrack-logistics.app.link/\u2026</b></string>
 
     <string name="permissions_allow_location_access">Please allow Location permissions</string>
     <string name="permission_rationale_1">This app collects activity and location data \n to  manage your work on the move \n even when the app is closed or not in use</string>
@@ -132,7 +132,10 @@
     <string name="add_order">Add order</string>
     <string name="add_order_create">@string/add_order</string>
 
-    <string name="timeline_summary">Tracking summary: %s</string>
+    <string name="timeline_summary">Driven</string>
+    <string name="timeline_summary_template_distance">/ %s</string>
+    <string name="timeline_summary_template_duration">%s</string>
+    <string name="timeline_empty_summary">No tracked movement for this day</string>
     <string name="timeline_inactive_reason_location_permissions_denied">Location permissions denied</string>
     <string name="timeline_inactive_reason_location_services_disabled">Location services disabled</string>
     <string name="timeline_inactive_reason_motion_activity_permissions_denied">Activity permission denied</string>
@@ -141,6 +144,10 @@
     <string name="timeline_inactive_reason_tracking_stopped">Tracking stopped</string>
     <string name="timeline_inactive_reason_tracking_service_terminated">Tracking service terminated</string>
     <string name="timeline_inactive_reason_unexpected">Unknown outage</string>
+
+    <string name="timeline_geotag_dialog_id">Geotag ID</string>
+    <string name="timeline_geotag_dialog_title">Geotag at %s</string>
+    <string name="timeline_geotag_dialog_metadata">Geotag metadata</string>
 
     <string name="orders_list">Orders</string>
     <string name="orders_list_current_trip">Current trip</string>
@@ -171,6 +178,7 @@
 
     <string name="places_places">Places</string>
     <string name="places_visits">Visits</string>
+    <string name="places_visits_loading">Loading\u2026</string>
     <string name="places_no_places">You don\'t have Places yet</string>
     <string name="places_no_visits">You don\'t have Place visits yet</string>
     <string name="places_visited">Visited %s</string>
@@ -220,6 +228,7 @@
     <string name="add_geotag_validation_empty_metadata">You need to add at least one data field to create a geotag</string>
     <string name="add_geotag_create_button">Create</string>
     <string name="add_geotag_success">Geotag was successfully created</string>
+    <string name="add_geotag_error_hint">Unable to create geotag</string>
 
     <string name="profile_report_an_issue">Report an issue</string>
     <string name="profile_report_sent">App state is successfully reported</string>
@@ -235,6 +244,7 @@
     <string name="feedback_email_text">-- Please attach screenshots that demonstrate the issue, if possible --\n\n %s \n\n %s</string>
 
     <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="geotag">Geotag</string>
     <string name="active">Active</string>
     <string name="inactive">Inactive</string>
     <string name="disabled">Disabled</string>
@@ -267,15 +277,13 @@
     <string name="add_home_address">Add home address</string>
     <string name="search_address">Search address</string>
     <string name="share_live">Share</string>
-
     <string name="tap_to_turn_location_settings">Tap to turn on location in settings</string>
     <string name="app_settings">App settings</string>
     <string name="coordinates">Coordinates</string>
     <string name="address_not_available">Address is not available</string>
     <string name="created_at">Created at</string>
-    <string name="places_visits_loading">Loading...</string>
+    <string name="reload">Reload</string>
     <string name="map_is_not_ready_yet">Failed to perform action: Map is not loaded yet</string>
-    <string name="add_geotag_error_hint">Unable to create geotag</string>
 
     <plurals name="time">
         <item quantity="one">time</item>

@@ -110,10 +110,6 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
         }
     }
 
-    private val visitsListAdapter by lazy {
-        moshi.adapter<List<Visit>>(Types.newParameterizedType(List::class.java, Visit::class.java))
-    }
-
     private val tripsListAdapter by lazy {
         moshi.adapter<List<LocalTrip>>(
             Types.newParameterizedType(

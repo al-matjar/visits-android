@@ -104,20 +104,6 @@ class MyApplication : Application() {
         const val SERVICES_API_KEY = BuildConfig.SERVICES_API_KEY
         const val GRAPHQL_API_KEY = BuildConfig.GRAPHQL_API_KEY
 
-        //should be used only in Injector and MainActivity
-        val RECORDING_MODE: Boolean = if (BuildConfig.DEBUG) {
-            BuildConfig.RECORDING_MODE
-        } else {
-            false
-        }
-
-        //should be used only in Injector and MainActivity
-        val MOCK_MODE: Boolean = if (BuildConfig.DEBUG) {
-            RECORDING_MODE || BuildConfig.MOCK_MODE
-        } else {
-            false
-        }
-
         val DEBUG_MODE = BuildConfig.DEBUG
 
         val injector: Injector = Injector

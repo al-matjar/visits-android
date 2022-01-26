@@ -2,7 +2,8 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools">
 
 
     <androidx.fragment.app.FragmentContainerView
@@ -26,32 +27,53 @@
             android:layout_height="match_parent"
             android:layout_gravity="center"
             android:visibility="visible" />
+
     </FrameLayout>
 
     <FrameLayout
         android:id="@+id/scrim"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:visibility="gone">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvTimeline"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+    </FrameLayout>
+
+    <include
+        android:id="@+id/lTimeline"
+        layout="@layout/inflate_timeline"
         app:behavior_hideable="false"
-        app:layout_behavior="@string/bottom_sheet_behavior" />
+        app:layout_behavior="@string/bottom_sheet_behavior"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/bSelectDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right|top"
+        android:layout_margin="8dp"
+        android:background="@drawable/bg_info"
+        android:elevation="@dimen/elevation"
+        android:padding="8dp"
+        tools:text="24.12.2021" />
+
+    <include
+        android:id="@+id/lError"
+        layout="@layout/inflate_error"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/bAddGeotag"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|right"
-        android:layout_marginRight="16dp"
+        android:layout_marginRight="24dp"
         android:layout_marginBottom="48dp"
         android:backgroundTint="@color/colorHyperTrackGreen"
         android:clickable="true"
-        app:tint="@color/colorWhite"
-        app:srcCompat="@drawable/ic_plus" />
+        app:srcCompat="@drawable/ic_plus"
+        app:tint="@color/colorWhite" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

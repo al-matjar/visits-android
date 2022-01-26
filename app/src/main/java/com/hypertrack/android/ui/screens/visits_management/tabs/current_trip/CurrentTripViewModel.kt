@@ -16,7 +16,7 @@ import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
-import com.hypertrack.android.ui.common.delegates.OrderAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.common.util.*
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
@@ -25,8 +25,8 @@ import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
-import com.hypertrack.android.utils.formatters.TimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
+import com.hypertrack.android.utils.formatters.TimeValueFormatter
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.inflate_current_trip.*
 import kotlinx.coroutines.GlobalScope
@@ -40,11 +40,11 @@ class CurrentTripViewModel(
     private val tripsUpdateTimerInteractor: TripsUpdateTimerInteractor,
     private val hyperTrackService: HyperTrackService,
     private val locationProvider: DeviceLocationProvider,
-    private val datetimeFormatter: DatetimeFormatter,
-    private val timeFormatter: TimeFormatter,
+    private val dateTimeFormatter: DateTimeFormatter,
+    private val timeFormatter: TimeValueFormatter,
 ) : BaseViewModel(baseDependencies) {
 
-    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, datetimeFormatter)
+    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, dateTimeFormatter)
 
     private val isTracking = MediatorLiveData<Boolean>().apply {
         addSource(hyperTrackService.isTracking) {
@@ -248,7 +248,7 @@ class CurrentTripViewModel(
         tripData.value!!.trip.views?.shareUrl?.let {
             osUtilsProvider.shareText(
                 text = it,
-                title = osUtilsProvider.getString(R.string.share_trip_via)
+                title = osUtilsProvider.stringFromResource(R.string.share_trip_via)
             )
         }
     }
@@ -300,7 +300,7 @@ class CurrentTripViewModel(
 
     fun createOrdersAdapter(): OrdersAdapter {
         return OrdersAdapter(
-            datetimeFormatter,
+            dateTimeFormatter,
             addressDelegate,
             showStatus = false
         )
@@ -344,7 +344,7 @@ class CurrentTripViewModel(
 
     inner class OrderData(val order: LocalOrder) {
         val address = addressDelegate.shortAddress(order)
-        val etaString = order.eta?.let { datetimeFormatter.formatTime(it) }
+        val etaString = order.eta?.let { dateTimeFormatter.formatTime(it) }
             ?: osUtilsProvider.stringFromResource(R.string.orders_list_eta_unavailable)
         val etaAvailable = order.eta != null
         val awayText = order.awaySeconds?.let { seconds ->

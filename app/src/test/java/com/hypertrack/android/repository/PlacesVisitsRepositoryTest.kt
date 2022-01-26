@@ -1,11 +1,14 @@
 package com.hypertrack.android.repository
 
-import com.hypertrack.android.api.*
+import com.hypertrack.android.api.graphql.DayRange
+import com.hypertrack.android.api.graphql.GraphQlApiClient
+import com.hypertrack.android.api.graphql.models.GraphQlDayVisitsStats
+import com.hypertrack.android.api.graphql.models.GraphQlGeofenceVisit
 import com.hypertrack.android.interactors.PlaceVisitsStats
 import com.hypertrack.android.interactors.PlacesVisitsRepository
-import com.hypertrack.android.mock.MockData
+import com.hypertrack.android.mock.TestMockData
 import com.hypertrack.android.utils.*
-import com.hypertrack.android.utils.formatters.toIso
+import com.hypertrack.android.utils.datetime.toIso
 import io.mockk.coEvery
 import io.mockk.mockk
 import junit.framework.TestCase
@@ -25,19 +28,19 @@ class PlacesVisitsRepositoryTest {
             mockk() {
                 coEvery { getPlaceVisitsStats(any()) } returns Success(
                     mapOf(
-                        dt.toDayRange() to RemoteDayVisitsStats(
+                        dt.toDayRange() to GraphQlDayVisitsStats(
                             listOf(
                                 createVisit(arrival = dt)
                             ),
                             100
                         ),
-                        dt.plusDays(1).toDayRange() to RemoteDayVisitsStats(
+                        dt.plusDays(1).toDayRange() to GraphQlDayVisitsStats(
                             listOf(
                                 createVisit(arrival = dt.plusDays(1))
                             ),
                             200
                         ),
-                        dt.plusDays(2).toDayRange() to RemoteDayVisitsStats(listOf(), 0)
+                        dt.plusDays(2).toDayRange() to GraphQlDayVisitsStats(listOf(), 0)
                     )
                 )
             }
@@ -46,7 +49,7 @@ class PlacesVisitsRepositoryTest {
 
         runBlocking {
             placesVisitsRepository.getPlaceVisitsStats()
-                .let { (it as Success<PlaceVisitsStats>).result }
+                .let { (it as Success<PlaceVisitsStats>).data }
                 .let {
                     val stats = it.data
                     //it should filter empty items
@@ -54,7 +57,7 @@ class PlacesVisitsRepositoryTest {
                     stats[dt.toLocalDate()]!!.let {
                         TestCase.assertEquals(
                             listOf(dt.toIso()),
-                            it.visits.map { it.arrival.toIso() })
+                            it.visits.map { it.arrival.value.toIso() })
                         TestCase.assertEquals(
                             100,
                             it.totalDriveDistance.meters
@@ -63,7 +66,7 @@ class PlacesVisitsRepositoryTest {
                     stats[dt.plusDays(1).toLocalDate()]!!.let {
                         TestCase.assertEquals(
                             listOf(dt.plusDays(1).toIso()),
-                            it.visits.map { it.arrival.toIso() })
+                            it.visits.map { it.arrival.value.toIso() })
                         TestCase.assertEquals(
                             200,
                             it.totalDriveDistance.meters
@@ -85,19 +88,19 @@ class PlacesVisitsRepositoryTest {
         val graphClient = mockk<GraphQlApiClient>() {
             coEvery { getPlaceVisitsStats(capture(slot)) } answers {
                 val res = mapOf(
-                    today.toLocalDate() to RemoteDayVisitsStats(
+                    today.toLocalDate() to GraphQlDayVisitsStats(
                         listOf(
                             createVisit(arrival = today)
                         ),
                         0
                     ),
-                    yesterday.toLocalDate() to RemoteDayVisitsStats(
+                    yesterday.toLocalDate() to GraphQlDayVisitsStats(
                         listOf(
                             createVisit(arrival = yesterday)
                         ),
                         0
                     ),
-                    longTimeAgo.toLocalDate() to RemoteDayVisitsStats(
+                    longTimeAgo.toLocalDate() to GraphQlDayVisitsStats(
                         listOf(
                             createVisit(arrival = longTimeAgo)
                         ),
@@ -105,14 +108,14 @@ class PlacesVisitsRepositoryTest {
                     )
                 )
 
-                Success(mutableMapOf<DayRange, RemoteDayVisitsStats>().apply {
+                Success(mutableMapOf<DayRange, GraphQlDayVisitsStats>().apply {
                     firstArg<List<DayRange>>().map { it.localDate }.forEach {
                         put(
                             it.toDayRange(),
                             if (res.containsKey(it)) {
                                 res.getValue(it)
                             } else {
-                                RemoteDayVisitsStats(listOf(), 0)
+                                GraphQlDayVisitsStats(listOf(), 0)
                             }
                         )
                     }
@@ -173,7 +176,7 @@ class PlacesVisitsRepositoryTest {
             arrival: ZonedDateTime = ZonedDateTime.now(),
             deviceId: String = "device_id"
         ): GraphQlGeofenceVisit {
-            return MockData.createGraphQlGeofenceVisit(arrival = arrival)
+            return TestMockData.createGraphQlGeofenceVisit(arrival = arrival)
         }
     }
 

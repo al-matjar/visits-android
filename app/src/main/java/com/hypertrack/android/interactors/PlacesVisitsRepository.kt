@@ -1,10 +1,10 @@
 package com.hypertrack.android.interactors
 
-import com.hypertrack.android.api.DayRange
-import com.hypertrack.android.api.RemoteDayVisitsStats
-import com.hypertrack.android.api.GraphQlApiClient
+import com.hypertrack.android.api.graphql.DayRange
+import com.hypertrack.android.api.graphql.GraphQlApiClient
+import com.hypertrack.android.api.graphql.models.GraphQlDayVisitsStats
 import com.hypertrack.android.models.local.LocalGeofenceVisit
-import com.hypertrack.android.ui.common.delegates.GraphQlGeofenceVisitAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.GraphQlGeofenceVisitAddressDelegate
 import com.hypertrack.android.utils.*
 import com.squareup.moshi.Moshi
 import java.time.LocalDate
@@ -19,12 +19,11 @@ class PlacesVisitsRepository(
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) {
 
-    //todo mutex
-    private val cache = mutableMapOf<LocalDate, RemoteDayVisitsStats>()
+    //todo check concurrency issues
+    private val cache = mutableMapOf<LocalDate, GraphQlDayVisitsStats>()
 
     @Suppress("ReplacePutWithAssignment")
     suspend fun getPlaceVisitsStats(): Result<PlaceVisitsStats> {
-        //todo handle timezone change
         return getAtLeastLastNMonthDates()
             .filter {
                 !shouldCacheDay(it) || !cache.contains(it)
@@ -33,7 +32,7 @@ class PlacesVisitsRepository(
             }.let { result ->
                 when (result) {
                     is Success -> {
-                        val loadedDays = result.result
+                        val loadedDays = result.data
                         handleSuccess(loadedDays)
                     }
                     is Failure -> Failure(result.exception)
@@ -41,8 +40,8 @@ class PlacesVisitsRepository(
             }
     }
 
-    private fun handleSuccess(loadedDays: Map<DayRange, RemoteDayVisitsStats>): Success<PlaceVisitsStats> {
-        return mutableMapOf<LocalDate, RemoteDayVisitsStats>()
+    private fun handleSuccess(loadedDays: Map<DayRange, GraphQlDayVisitsStats>): Success<PlaceVisitsStats> {
+        return mutableMapOf<LocalDate, GraphQlDayVisitsStats>()
             .also { res ->
                 loadedDays.forEach { (k, v) ->
                     cache.put(k.localDate, v)
@@ -59,7 +58,6 @@ class PlacesVisitsRepository(
                         LocalGeofenceVisit.fromGraphQlVisit(
                             it,
                             deviceId,
-                            osUtilsProvider,
                             crashReportsProvider,
                             GraphQlGeofenceVisitAddressDelegate(osUtilsProvider),
                             moshi

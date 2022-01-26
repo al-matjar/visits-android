@@ -24,6 +24,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
+        android:paddingRight="32dp"
         android:textSize="18dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/imageView3"
@@ -37,6 +38,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:layout_weight="1"
+        tools:visibility="visible"
         app:layout_constraintEnd_toEndOf="@+id/tvTitle"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/tvTitle"
@@ -78,7 +80,7 @@
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:visibility="visible"
-        app:layout_constraintEnd_toEndOf="@+id/tvDescription"
+        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
         app:layout_constraintTop_toBottomOf="@+id/tvPlaceAddress"
         app:srcCompat="@drawable/ic_copy"
         app:tint="#44000000"
@@ -89,7 +91,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="@+id/tvRouteTo"
-        app:layout_constraintStart_toStartOf="@+id/tvDescription"
+        app:layout_constraintStart_toStartOf="@+id/tvTitle"
         app:layout_constraintTop_toTopOf="@+id/tvRouteTo"
         app:srcCompat="@drawable/ic_ht_trip" />
 
@@ -104,13 +106,15 @@
         app:layout_constraintTop_toTopOf="@+id/tvVisitId" />
 
     <TextView
-        android:id="@+id/tvPlaceName"
+        android:id="@+id/tvPlaceIntegrationName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="@+id/tvDescription"
-        app:layout_constraintStart_toStartOf="@+id/tvDescription"
+        tools:visibility="visible"
+        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
+        app:layout_constraintStart_toEndOf="@+id/imageView3"
+        app:layout_constraintStart_toStartOf="@+id/tvTitle"
         app:layout_constraintTop_toBottomOf="@+id/tvDescription"
         tools:text="TextView" />
 
@@ -119,10 +123,20 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        tools:text="TextView"
-        app:layout_constraintEnd_toEndOf="@+id/tvPlaceName"
-        app:layout_constraintStart_toEndOf="@+id/tvPlaceName"
-        app:layout_constraintStart_toStartOf="@+id/tvPlaceName"
-        app:layout_constraintTop_toBottomOf="@+id/tvPlaceName" />
+        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
+        app:layout_constraintStart_toEndOf="@+id/tvPlaceIntegrationName"
+        app:layout_constraintStart_toStartOf="@+id/tvTitle"
+        app:layout_constraintTop_toBottomOf="@+id/tvPlaceIntegrationName"
+        tools:text="TextView" />
+
+    <ImageView
+        android:id="@+id/imageView4"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_ht_info" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

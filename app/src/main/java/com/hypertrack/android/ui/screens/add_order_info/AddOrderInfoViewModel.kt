@@ -13,7 +13,7 @@ import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.Tab
-import com.hypertrack.android.ui.common.delegates.GooglePlaceAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.screens.add_order.AddOrderFragmentDirections
 import com.hypertrack.android.utils.MyApplication
@@ -103,3 +103,5 @@ class AddOrderToTripParams(
     destinationData: DestinationData,
     val tripId: String
 ) : AddOrderParams(destinationData)
+
+

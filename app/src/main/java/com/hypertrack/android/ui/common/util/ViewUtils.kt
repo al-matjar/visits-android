@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.annotation.DrawableRes
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
@@ -117,7 +118,7 @@ fun TextView.textString(): String {
     return text.toString()
 }
 
-fun String?.toView(textView: TextView) {
+fun String.toView(textView: TextView) {
     textView.text = this
 }
 
@@ -129,6 +130,33 @@ fun Bitmap.toView(imageView: ImageView) {
     imageView.setImageBitmap(this)
 }
 
-fun Int?.toTextView(textView: TextView) {
-    textView.text = this?.toString() ?: ""
+fun Int.toTextView(textView: TextView) {
+    textView.text = this.toString()
+}
+
+fun ImageView.setImageResourceNullable(@DrawableRes res: Int?) {
+    if (res != null) {
+        setImageResource(res)
+    } else {
+        setImageDrawable(null)
+    }
+}
+
+fun TextView.setTextOrHideIfNull(text: String?) {
+    if (text != null) {
+        show()
+        setText(text)
+    } else {
+        hide()
+    }
+}
+
+fun String?.toViewOrHideIfNull(textView: TextView) {
+    if (this != null) {
+        textView.show()
+        textView.text = this
+    } else {
+        textView.hide()
+    }
+
 }

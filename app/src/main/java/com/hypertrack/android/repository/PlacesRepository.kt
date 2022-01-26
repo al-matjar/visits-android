@@ -13,6 +13,7 @@ import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.common.DataPage
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.DeviceId
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +38,7 @@ interface PlacesRepository {
 }
 
 class PlacesRepositoryImpl(
-    private val deviceId: String,
+    private val deviceId: DeviceId,
     private val apiClient: ApiClient,
     private val moshi: Moshi,
     private val osUtilsProvider: OsUtilsProvider,

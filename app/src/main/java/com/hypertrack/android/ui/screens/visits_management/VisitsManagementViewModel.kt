@@ -2,7 +2,7 @@ package com.hypertrack.android.ui.screens.visits_management
 
 import android.annotation.SuppressLint
 import androidx.lifecycle.*
-import com.hypertrack.android.interactors.HistoryInteractor
+import com.hypertrack.android.interactors.HistoryInteractorImpl
 import com.hypertrack.android.repository.AccessTokenRepository
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.ui.base.BaseViewModel
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("NullSafeMutableLiveData")
 class VisitsManagementViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val historyInteractor: HistoryInteractor,
+    private val historyInteractor: HistoryInteractorImpl,
     private val accountRepository: AccountRepository,
     private val hyperTrackService: HyperTrackService,
     accessTokenRepository: AccessTokenRepository

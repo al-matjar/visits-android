@@ -1,369 +1,453 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.history
 
-import android.content.Context
-import android.util.Log
 import androidx.lifecycle.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.Polyline
-import com.hypertrack.android.interactors.HistoryInteractor
+import com.hypertrack.android.interactors.history.HistoryInteractor
+import com.hypertrack.android.interactors.history.HistoryState
 import com.hypertrack.android.models.*
+import com.hypertrack.android.models.local.DeviceStatusMarkerActive
+import com.hypertrack.android.models.local.DeviceStatusMarkerInactive
+import com.hypertrack.android.models.local.LocalHistory
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.base.ErrorHandler
+import com.hypertrack.android.ui.base.Consumable
+import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.base.toConsumable
+import com.hypertrack.android.ui.common.delegates.DeviceStatusMarkerDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.GeotagDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.address.GeofenceVisitAddressDelegate
+import com.hypertrack.android.utils.toAddressString
+import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
-import com.hypertrack.android.ui.base.toConsumable
-import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragment
+import com.hypertrack.android.ui.common.util.LocationUtils
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.*
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
+import com.hypertrack.android.utils.formatters.TimeValueFormatter
 
 import com.hypertrack.logistics.android.github.R
+import kotlinx.coroutines.Dispatchers
+import java.lang.IllegalArgumentException
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 class HistoryViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val historyInteractor: HistoryInteractor,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val visitDisplayDelegate: GeofenceVisitDisplayDelegate,
+    private val statusMarkerDisplayDelegate: DeviceStatusMarkerDisplayDelegate,
+    private val geotagDisplayDelegate: GeotagDisplayDelegate,
+    private val timeValueFormatter: TimeValueFormatter,
     private val distanceFormatter: DistanceFormatter,
     private val deviceLocationProvider: DeviceLocationProvider,
+    private val mapItemsFactory: HypertrackMapItemsFactory,
+    val style: BaseHistoryStyle
 ) : BaseViewModel(baseDependencies) {
-    //todo remove legacy
-    private val timeDistanceFormatter = TimeDistanceFormatter(
-        datetimeFormatter,
-        distanceFormatter
+
+    private val geofenceVisitAddressDelegate = GeofenceVisitAddressDelegate(osUtilsProvider)
+
+    val timelineAdapter = TimelineTileItemAdapter(
+        osUtilsProvider
+    ) { onTileSelected(it) }
+
+    val errorTextState = MutableLiveData<ErrorMessage?>()
+    val daySummaryTexts = MutableLiveData<SummaryTexts>()
+    val currentDateText = MutableLiveData<String?>()
+    val showTimelineUpArrow = MutableLiveData<Boolean>()
+    val showAddGeotagButton = MutableLiveData<Boolean>()
+    val openDatePickerDialogEvent = MutableLiveData<Consumable<LocalDate>>()
+    val setBottomSheetOpenedEvent = MutableLiveData<Boolean>()
+    val openDialogEvent = MutableLiveData<Consumable<TimelineDialog>>()
+
+    private val stateMachine = StateMachine<Action, State, Effect>(
+        javaClass.simpleName,
+        Initial(LocalDate.now(), Loading(), null),
+        viewModelScope,
+        Dispatchers.Main,
+        this::handleAction,
+        this::applyEffects,
+        this::stateChangeEffects
     )
-
-    val style = BaseHistoryStyle(MyApplication.context)
-
-    override val errorHandler = ErrorHandler(
-        osUtilsProvider,
-        crashReportsProvider,
-        historyInteractor.errorFlow.asLiveData()
-    )
-
-    //value doesn't represent correct state
-    val bottomSheetOpened = MutableLiveData<Boolean>(false)
-
-    val tiles = MediatorLiveData<List<HistoryTile>>()
-
-    private val history = historyInteractor.todayHistory
-    private var userLocation: LatLng? = null
-    private var map: HypertrackMapWrapper? = null
-
-    private var selectedSegment: Polyline? = null
-    private var viewBounds: LatLngBounds? = null
-    private val activeMarkers = mutableListOf<Marker>()
-
-    private var firstMovePerformed = false
 
     init {
-        loadingState.postValue(true)
-
-        tiles.addSource(history) {
-            it?.let {
-                if (it.locationTimePoints.isNotEmpty()) {
-                    Log.d(TAG, "got new history $it")
-                    val asTiles = historyToTiles(it, timeDistanceFormatter)
-                    Log.d(TAG, "converted to tiles $asTiles")
-                    tiles.postValue(asTiles)
-                } else {
-                    Log.d(TAG, "Empty history")
-                    tiles.postValue(emptyList())
-                }
-            }
+        historyInteractor.history.observeManaged {
+            stateMachine.handleAction(HistoryUpdatedAction(it))
         }
 
-        history.observeManaged {
-            it?.let {
-                loadingState.postValue(false)
-                val map = this.map
-                if (map != null) {
-                    displayHistory(map, it)
-                    moveMap(map, it, userLocation)
-                }
+        deviceLocationProvider.getCurrentLocation { location ->
+            location?.let { latLng ->
+                stateMachine.handleAction(UserLocationReceived(latLng))
             }
         }
+    }
 
-        deviceLocationProvider.getCurrentLocation {
-            userLocation = it
-            history.value?.let { hist ->
-                map?.let { map ->
-                    moveMap(map, hist, it)
+    private fun handleAction(state: State, action: Action): ReducerResult<State, Effect> {
+        return when (action) {
+            is MapReadyAction -> {
+                when (state) {
+                    is Initial -> {
+                        MapReadyState(
+                            state.date,
+                            action.map,
+                            state.historyData,
+                            state.userLocation,
+                            false,
+                        ).withEffects(
+                            getMoveMapEffectIfNeeded(
+                                action.map,
+                                state.historyData,
+                                state.userLocation
+                            )
+                        )
+                    }
+                    is MapReadyState -> {
+                        //todo re-add map data?
+                        state.copy(map = action.map).asReducerResult()
+                    }
+                }
+            }
+            is HistoryUpdatedAction -> {
+                //todo handle selection inheritance
+                when (state) {
+                    is Initial -> {
+                        state.copy(historyData = getTodayHistory(state.date, action.history).map {
+                            mapHistoryToViewData(
+                                it,
+                                NotSelected
+                            )
+                        }).asReducerResult()
+                    }
+                    is MapReadyState -> {
+                        val historyData = getTodayHistory(state.date, action.history).map {
+                            mapHistoryToViewData(
+                                it,
+                                NotSelected
+                            )
+                        }
+                        state.copy(historyData = historyData).withEffects(
+                            getMoveMapEffectIfNeeded(
+                                state.map,
+                                historyData,
+                                state.userLocation
+                            )
+                        )
+                    }
+                }
+            }
+            is UserLocationReceived -> {
+                when (state) {
+                    is Initial -> state.copy(userLocation = action.userLocation).asReducerResult()
+                    is MapReadyState -> {
+                        state.copy(userLocation = action.userLocation)
+                            .withEffects(
+                                getMoveMapEffectIfNeeded(
+                                    state.map,
+                                    state.historyData,
+                                    action.userLocation
+                                )
+                            )
+                    }
+                }
+            }
+            is MapClickedAction -> {
+                when (state) {
+                    is Initial -> {
+                        state.withEffects(IllegalActionEffect(action, state))
+                    }
+                    is MapReadyState -> {
+                        when (state.historyData) {
+                            is LoadingSuccess -> {
+                                when (state.historyData.data.mapData.segmentSelection) {
+                                    is NotSelected -> {
+                                        state.withEffects(CloseBottomSheetEffect)
+                                    }
+                                    is SelectedSegment -> {
+                                        withSegmentSelection(state, state.historyData, NotSelected)
+                                            .asReducerResult()
+                                        //todo move map to whole history
+                                    }
+                                }
+                            }
+                            is Loading, is LoadingFailure -> {
+                                state.withEffects(IllegalActionEffect(action, state))
+                            }
+                        }
+
+                    }
+                }
+
+            }
+            is TimelineItemSelected -> {
+                when (state) {
+                    is Initial -> {
+                        state.withEffects(IllegalActionEffect(action, state))
+                    }
+                    is MapReadyState -> {
+                        when (state.historyData) {
+                            is LoadingSuccess -> {
+                                when (action.tile.payload) {
+                                    is GeofenceVisitTile -> state.withEffects(
+                                        OpenGeofenceVisitInfoDialogEffect(action.tile.payload.visit)
+                                    )
+                                    is GeotagTile -> state.withEffects(
+                                        OpenGeotagInfoDialogEffect(action.tile.payload.geotag)
+                                    )
+                                    is ActiveStatusTile -> state.asReducerResult()
+                                    is InactiveStatusTile -> state.asReducerResult()
+                                }
+                                //todo selection
+//                                withSegmentSelection(state, state.historyData, SelectedSegment(
+//                                    action.tile.locations
+//                                        .fold(PolylineOptions()) { options, loc ->
+//                                            options.add(
+//                                                loc
+//                                            )
+//                                        }
+//                                        .color(style.colorForStatus(action.tile.status))
+//                                        .clickable(true),
+//                                    getEdgeMarkers(action.tile)
+//                                )).withEffects(
+//                                    CloseBottomSheetEffect,
+//                                    MoveMapToBoundsEffect(
+//                                        state.map,
+//                                        action.tile.locations.boundRect(),
+//                                        style.mapPadding
+//                                    )
+//                                )
+                            }
+                            is Loading, is LoadingFailure -> {
+                                state.withEffects(IllegalActionEffect(action, state))
+                            }
+                        }
+                    }
+                }
+            }
+            SelectDateClickedAction -> {
+                when (state) {
+                    is Initial -> {
+                        state.withEffects(IllegalActionEffect(action, state))
+                    }
+                    is MapReadyState -> {
+                        state.withEffects(ShowDatePickerDialogEffect(state.date))
+                    }
+                }
+            }
+            is OnDateSelectedAction -> {
+                when (state) {
+                    is Initial -> {
+                        state.withEffects(IllegalActionEffect(action, state))
+                    }
+                    is MapReadyState -> {
+                        state.copy(date = action.date, historyData = Loading())
+                            .withEffects(LoadHistoryEffect(action.date))
+                    }
+                }
+            }
+            is OnBottomSheetStateChangedAction -> {
+                when (state) {
+                    is Initial -> {
+                        state.withEffects(IllegalActionEffect(action, state))
+                    }
+                    is MapReadyState -> {
+                        state.copy(bottomSheetExpanded = action.expanded).asReducerResult()
+                    }
+                }
+            }
+            OnBackPressedAction -> {
+                state.withEffects(CloseBottomSheetEffect)
+            }
+            is OnGeofenceClickAction -> {
+                state.withEffects(OpenGeofenceDetailsEffect(action.geofenceId))
+            }
+            is OnErrorAction -> {
+                when (state) {
+                    is Initial -> {
+                        state.copy(historyData = LoadingFailure(action.exception))
+                            .withEffects(SendErrorToCrashlytics(action.exception))
+                    }
+                    is MapReadyState -> {
+                        state.copy(historyData = LoadingFailure(action.exception))
+                            .withEffects(SendErrorToCrashlytics(action.exception))
+                    }
+                }
+            }
+            OnReloadPressedAction, OnResumeAction -> {
+                when (state) {
+                    is Initial -> state.withEffects(LoadHistoryEffect(state.date))
+                    is MapReadyState -> state.withEffects(LoadHistoryEffect(state.date))
                 }
             }
         }
     }
 
-    fun onMapReady(context: Context, googleMap: GoogleMap) {
-        firstMovePerformed = false
-        val style = BaseHistoryStyle(MyApplication.context)
-        this.map = HypertrackMapWrapper(
+    private fun applyEffects(effects: Set<Effect>) {
+        try {
+            effects.forEach { effect ->
+                when (effect) {
+                    is MoveMapEffect -> {
+                        when (effect.target) {
+                            is Either.Left -> effect.map.animateCamera(effect.target.left)
+                            is Either.Right -> effect.map.animateCameraToBounds(effect.target.right)
+                        } as Any?
+                    }
+                    is CloseBottomSheetEffect -> {
+                        setBottomSheetOpenedEvent.postValue(false)
+                    }
+                    is MoveMapToBoundsEffect -> {
+                        effect.map.moveCamera(
+                            CameraUpdateFactory.newLatLngBounds(
+                                effect.latLngBounds,
+                                effect.mapPadding
+                            )
+                        )
+                    }
+                    is UpdateMapEffect -> {
+                        effect.map.clear()
+                        effect.userLocation?.let {
+                            effect.map.addUserLocation(it)
+                        }
+                        effect.map.addPolyline(effect.mapHistoryData.historyPolyline.polylineOptions)
+                        effect.mapHistoryData.geotags.forEach { effect.map.addMarker(it.markerOptions) }
+                        effect.mapHistoryData.geofenceVisits.forEach { effect.map.addMarker(it.markerOptions) }
+                    }
+                    is UpdateViewStateEffect -> {
+                        displayViewState(effect.viewState)
+                    }
+                    is ShowDatePickerDialogEffect -> {
+                        openDatePickerDialogEvent.postValue(effect.date)
+                    }
+                    is LoadHistoryEffect -> {
+                        historyInteractor.loadHistory(effect.date)
+                    }
+                    is SendErrorToCrashlytics -> {
+                        crashReportsProvider.logException(effect.exception)
+                    }
+                    is OpenGeofenceVisitInfoDialogEffect -> {
+                        effect.visit.id?.let {
+                            openDialogEvent.postValue(
+                                GeofenceVisitDialog(
+                                    visitId = effect.visit.id,
+                                    geofenceId = effect.visit.geofenceId,
+                                    geofenceName = visitDisplayDelegate.getGeofenceName(effect.visit),
+                                    geofenceDescription = visitDisplayDelegate.getGeofenceDescription(
+                                        effect.visit
+                                    ),
+                                    integrationName = effect.visit.metadata?.integration?.name,
+                                    address = geofenceVisitAddressDelegate.shortAddress(effect.visit),
+                                    durationText = visitDisplayDelegate.getDurationText(effect.visit),
+                                    routeToText = visitDisplayDelegate.getRouteToText(effect.visit)
+                                )
+                            )
+                        }
+                    }
+                    is OpenGeotagInfoDialogEffect -> {
+                        openDialogEvent.postValue(
+                            GeotagDialog(
+                                geotagId = effect.geotag.id,
+                                title = geotagDisplayDelegate.getDescription(effect.geotag),
+                                metadataString = geotagDisplayDelegate.formatMetadata(effect.geotag),
+                                routeToText = geotagDisplayDelegate.getRouteToText(effect.geotag),
+                                address = effect.geotag.address
+                                    ?: osUtilsProvider.getPlaceFromCoordinates(effect.geotag.location)
+                                        ?.toAddressString(strictMode = false)
+                            )
+                        )
+                    }
+                    is OpenGeofenceDetailsEffect -> {
+                        destination.postValue(
+                            VisitsManagementFragmentDirections
+                                .actionVisitManagementFragmentToPlaceDetailsFragment(effect.geofenceId)
+                        )
+                    }
+                    is IllegalActionEffect -> {
+                        crashReportsProvider.logException(
+                            IllegalActionException(
+                                effect.action, effect.state
+                            )
+                        )
+                    }
+                } as Any?
+            }
+        } catch (e: Exception) {
+            stateMachine.handleAction(OnErrorAction(e))
+        }
+    }
+
+    private fun stateChangeEffects(newState: State): Set<Effect> {
+        return when (newState) {
+            is Initial -> setOf(
+                UpdateViewStateEffect(
+                    getViewStateForHistory(
+                        newState.date,
+                        true,
+                        newState.historyData
+                    )
+                )
+            )
+            is MapReadyState -> {
+                setOf(
+                    UpdateViewStateEffect(
+                        getViewStateForHistory(
+                            newState.date,
+                            !newState.bottomSheetExpanded,
+                            newState.historyData
+                        )
+                    ),
+                ) + getUpdateMapEffectIfNeeded(newState)
+            }
+        }
+    }
+
+    fun onMapReady(googleMap: GoogleMap) {
+        val map = HypertrackMapWrapper(
             googleMap, osUtilsProvider, crashReportsProvider, MapParams(
                 enableScroll = true,
                 enableZoomKeys = false,
-                enableMyLocationButton = true,
-                enableMyLocationIndicator = true
+                enableMyLocationButton = false,
+                enableMyLocationIndicator = false
             )
         )
-        val map = this.map!!
-
         map.setPadding(bottom = style.summaryPeekHeight)
         map.setOnMapClickListener {
-            bottomSheetOpened.postValue(false)
+            stateMachine.handleAction(MapClickedAction)
         }
-        history.value?.let { hist ->
-            displayHistory(map, hist)
-            moveMap(map, hist, userLocation)
-        }
+        stateMachine.handleAction(MapReadyAction(map))
     }
 
-    fun onTileSelected(tile: HistoryTile) {
-        try {
-            if (tile.tileType == HistoryTileType.SUMMARY) return
-
-            selectedSegment?.remove()
-            activeMarkers.forEach { it.remove() }
-            map?.googleMap?.let { googleMap ->
-                selectedSegment = googleMap.addPolyline(
-                    tile.locations
-                        .map { LatLng(it.latitude, it.longitude) }
-                        .fold(PolylineOptions()) { options, loc -> options.add(loc) }
-                        .color(style.colorForStatus(tile.status))
-                        .clickable(true)
-                )
-                tile.locations.firstOrNull()?.let {
-                    activeMarkers.add(addMarker(it, googleMap, tile.address, tile.status))
-                }
-                tile.locations.lastOrNull()?.let {
-                    activeMarkers.add(addMarker(it, googleMap, tile.address, tile.status))
-                }
-                //newLatLngBounds can cause crash if called before layout without map size
-                googleMap.animateCamera(
-                    CameraUpdateFactory.newLatLngBounds(
-                        tile.locations.boundRect(),
-                        style.mapPadding
-                    )
-                )
-                googleMap.setOnMapClickListener {
-                    selectedSegment?.remove()
-                    activeMarkers.forEach { it.remove() }
-                    activeMarkers.clear()
-                    selectedSegment = null
-                    viewBounds?.let { bounds ->
-                        //newLatLngBounds can cause crash if called before layout without map size
-                        googleMap.animateCamera(
-                            CameraUpdateFactory.newLatLngBounds(
-                                bounds,
-                                style.mapPadding
-                            )
-                        )
-                    }
-                }
-            }
-            bottomSheetOpened.postValue(false)
-        } catch (e: Exception) {
-            errorHandler.postException(e)
-        }
+    private fun onTileSelected(tile: TimelineTile) {
+        stateMachine.handleAction(TimelineItemSelected(tile))
     }
 
     fun onResume() {
-        historyInteractor.refreshTodayHistory()
+        stateMachine.handleAction(OnResumeAction)
     }
 
-    private fun displayHistory(map: HypertrackMapWrapper, history: History) {
-        errorHandler.handle {
-            map.showHistory(history, style)
+    private fun getUpdateMapEffectIfNeeded(newState: MapReadyState): Set<Effect> {
+        return when (newState.historyData) {
+            is LoadingSuccess -> setOf(
+                newState.historyData.data.mapData.let {
+                    UpdateMapEffect(newState.map, newState.userLocation, it)
+                }
+            )
+            is Loading, is LoadingFailure -> setOf()
         }
     }
 
-    private fun addMarker(
-        location: Location,
-        map: GoogleMap,
-        address: CharSequence?,
+    private fun createOptionsForEdgeMarker(
+        latLng: LatLng,
+        address: String?,
         status: Status
-    ): Marker {
-        val markerOptions = MarkerOptions().position(LatLng(location.latitude, location.longitude))
+    ): MarkerOptions {
+        return MarkerOptions().position(LatLng(latLng.latitude, latLng.longitude))
             .icon(BitmapDescriptorFactory.fromBitmap(style.markerForStatus(status)))
-        address?.let { markerOptions.title(it.toString()) }
-        return map.addMarker(markerOptions)
-    }
-
-    private fun moveMap(map: HypertrackMapWrapper, history: History, userLocation: LatLng?) {
-        if (!firstMovePerformed) {
-            if (history.locationTimePoints.isEmpty()) {
-                userLocation?.let { map.moveCamera(it) }
-            } else {
-                val viewBounds = history.locationTimePoints.map { it.first }.boundRect().let {
-                    if (userLocation != null) {
-                        it.including(userLocation)
-                    } else it
-                }
-                //newLatLngBounds can cause crash if called before layout without map size
-                try {
-                    map.googleMap.animateCamera(
-                        CameraUpdateFactory.newLatLngBounds(
-                            viewBounds,
-                            style.mapPadding
-                        )
-                    )
-                } catch (e: Exception) {
-                    userLocation?.let { map.moveCamera(it) }
-                }
+            .also { markerOptions ->
+                address?.let { markerOptions.title(it) }
             }
-            firstMovePerformed = true
-        }
-    }
-
-    private fun historyToTiles(
-        history: History,
-        timeDistanceFormatter: TimeDistanceFormatter
-    ): List<HistoryTile> {
-        with(history) {
-            val result = mutableListOf<HistoryTile>()
-            var startMarker = true
-            var ongoingStatus = Status.UNKNOWN
-            for (marker in markers.sortedBy { it.timestamp }) {
-                when (marker) {
-                    is StatusMarker -> {
-                        val tile = HistoryTile(
-                            marker.status,
-                            marker.asDescription(timeDistanceFormatter),
-                            if (marker.status == Status.OUTAGE) {
-                                mapInactiveReason(marker.reason)
-                            } else {
-                                marker.address
-                            },
-                            marker.timeFrame(timeDistanceFormatter),
-                            historyTileType(startMarker, marker.status),
-                            filterMarkerLocations(
-                                marker.startLocationTimestamp ?: marker.startTimestamp,
-                                marker.endLocationTimestamp ?: marker.endTimestamp
-                                ?: marker.startTimestamp,
-                                locationTimePoints
-                            )
-                        )
-                        ongoingStatus = marker.status
-                        result.add(tile)
-                    }
-                    is GeoTagMarker -> {
-                        marker.location?.let { geotagLocation ->
-                            val tile = HistoryTile(
-                                ongoingStatus,
-                                marker.asDescription(), null,
-                                timeDistanceFormatter.formatTime(marker.timestamp),
-                                historyTileType(startMarker, ongoingStatus),
-                                listOf(geotagLocation), false
-                            )
-                            result.add(tile)
-                        }
-                    }
-                    is GeofenceMarker -> {
-                        val tile = HistoryTile(
-                            ongoingStatus,
-                            marker.asDescription(), null,
-                            marker.asTimeFrame(timeDistanceFormatter),
-                            historyTileType(startMarker, ongoingStatus),
-                            filterMarkerLocations(
-                                marker.arrivalTimestamp ?: marker.timestamp,
-                                marker.exitTimestamp ?: marker.timestamp,
-                                locationTimePoints
-                            ), false
-                        )
-                        result.add(tile)
-                    }
-                }
-                startMarker = result.isEmpty()
-
-            }
-
-            val summaryTile = HistoryTile(
-                Status.UNKNOWN,
-                "${formatDuration(summary.totalDuration)} • ${
-                    timeDistanceFormatter.formatDistance(
-                        summary.totalDistance
-                    )
-                }",
-                null, "", HistoryTileType.SUMMARY
-            )
-
-            return result.apply { add(0, summaryTile) }
-        }
-    }
-
-    private fun GeofenceMarker.asDescription(): String {
-        //todo string res
-        return (metadata["name"]
-            ?: metadata["address"]
-            ?: metadata
-                ).let {
-                "$it"
-            }
-    }
-
-    private fun StatusMarker.asDescription(timeDistanceFormatter: TimeDistanceFormatter): String =
-        when (status) {
-            Status.DRIVE -> formatDriveStats(timeDistanceFormatter)
-            Status.WALK -> formatWalkStats()
-            else -> formatDuration(duration)
-        }
-
-    private fun StatusMarker.formatDriveStats(timeDistanceFormatter: TimeDistanceFormatter) =
-        "${formatDuration(duration)} • ${timeDistanceFormatter.formatDistance(distance ?: 0)}"
-
-    private fun StatusMarker.formatWalkStats() =
-        "${formatDuration(duration)}  • ${stepsCount ?: 0} steps"
-
-    private fun formatDuration(duration: Int) = when {
-        duration / 3600 < 1 -> "${duration / 60} min"
-        duration / 3600 == 1 -> "1 hour ${duration % 3600 / 60} min"
-        else -> "${duration / 3600} hours ${duration % 3600 / 60} min"
-    }
-
-    private fun StatusMarker.timeFrame(timeFormatter: TimeDistanceFormatter): String {
-        if (endTimestamp == null) return timeFormatter.formatTime(startTimestamp)
-        return "${timeFormatter.formatTime(startTimestamp)} : ${
-            timeFormatter.formatTime(
-                endTimestamp
-            )
-        }"
-    }
-
-    private fun GeofenceMarker.asTimeFrame(formatter: TimeDistanceFormatter): String {
-        val from = timestamp
-        val upTo = exitTimestamp ?: timestamp
-        return if (from == upTo)
-            formatter.formatTime(timestamp)
-        else
-            "${formatter.formatTime(from)} : ${formatter.formatTime(upTo)}"
-    }
-
-    private fun historyTileType(
-        startMarker: Boolean,
-        status: Status
-    ): HistoryTileType {
-        return when {
-            startMarker && status in listOf(
-                Status.OUTAGE,
-                Status.INACTIVE
-            ) -> HistoryTileType.OUTAGE_START
-            startMarker -> HistoryTileType.ACTIVE_START
-            status in listOf(Status.OUTAGE, Status.INACTIVE) -> HistoryTileType.OUTAGE
-            else -> HistoryTileType.ACTIVE
-        }
-    }
-
-    //todo string res
-    private fun GeoTagMarker.asDescription(): String = when {
-        metadata.containsValue(Constants.CLOCK_IN) -> "Clock In"
-        metadata.containsValue(Constants.CLOCK_OUT) -> "Clock Out"
-        metadata.containsValue(Constants.PICK_UP) -> "Pick Up"
-        metadata.containsValue(Constants.VISIT_MARKED_CANCELED) -> "Visit Marked Cancelled"
-        metadata.containsValue(Constants.VISIT_MARKED_COMPLETE) -> "Visit Marked Complete"
-        else -> "Geotag $metadata"
     }
 
     private fun filterMarkerLocations(
@@ -380,42 +464,9 @@ class HistoryViewModel(
 
         // Snap to adjacent
         val sorted = locationTimePoints.sortedBy { it.second }
-        Log.v(TAG, "Got sorted $sorted")
         val startLocation = sorted.lastOrNull { (_, time) -> time < from }
         val endLocation = sorted.firstOrNull { (_, time) -> time > upTo }
-        Log.v(TAG, "Got start $startLocation, end $endLocation")
         return listOfNotNull(startLocation?.first, endLocation?.first)
-
-    }
-
-    private fun mapInactiveReason(reason: String?): String? {
-        return when (reason) {
-            "location_permissions_denied" -> {
-                osUtilsProvider.getString(R.string.timeline_inactive_reason_location_permissions_denied)
-            }
-            "location_services_disabled" -> {
-                osUtilsProvider.getString(R.string.timeline_inactive_reason_location_services_disabled)
-            }
-            "motion_activity_permissions_denied" -> {
-                osUtilsProvider.getString(R.string.timeline_inactive_reason_motion_activity_permissions_denied)
-            }
-            "motion_activity_services_disabled" -> {
-                osUtilsProvider.getString(R.string.timeline_inactive_reason_motion_activity_services_disabled)
-            }
-            "motion_activity_services_unavailable" -> {
-                osUtilsProvider.getString(R.string.timeline_inactive_reason_motion_activity_services_unavailable)
-            }
-            "tracking_stopped" -> {
-                osUtilsProvider.getString(R.string.timeline_inactive_reason_tracking_stopped)
-            }
-            "tracking_service_terminated" -> {
-                osUtilsProvider.getString(R.string.timeline_inactive_reason_tracking_service_terminated)
-            }
-            "unexpected" -> {
-                osUtilsProvider.getString(R.string.timeline_inactive_reason_unexpected)
-            }
-            else -> reason
-        }
     }
 
     fun onAddGeotagClick() {
@@ -425,26 +476,316 @@ class HistoryViewModel(
         )
     }
 
+    private fun getViewStateForHistory(
+        date: LocalDate,
+        showAddGeotagButton: Boolean,
+        historyData: LoadingState<HistoryData>
+    ): ViewState {
+        return when (historyData) {
+            is LoadingSuccess -> {
+                val summary = historyData.data.summary
+                ViewState(
+                    date = date,
+                    showProgressbar = false,
+                    errorText = null,
+                    tiles = historyData.data.timelineTiles,
+                    showAddGeotagButton = showAddGeotagButton,
+                    showTimelineRecyclerView = !summary.isZero(),
+                    showUpArrow = !historyData.data.timelineTiles.isEmpty(),
+                    totalDriveDurationText = if (!summary.isZero()) {
+                        timeValueFormatter.formatTimeValue(summary.totalDriveDuration).let {
+                            osUtilsProvider.stringFromResource(
+                                R.string.timeline_summary_template_duration,
+                                it
+                            )
+                        }
+                    } else null,
+                    totalDriveDistanceText = if (!summary.isZero()) {
+                        distanceFormatter.formatDistance(summary.totalDriveDistance).let {
+                            osUtilsProvider.stringFromResource(
+                                R.string.timeline_summary_template_distance,
+                                it
+                            )
+                        }
+                    } else null,
+                    daySummaryTitle = osUtilsProvider.stringFromResource(
+                        if (!summary.isZero()) {
+                            R.string.timeline_summary
+                        } else {
+                            R.string.timeline_empty_summary
+                        }
+                    )
+                )
+            }
+            is Loading -> {
+                ViewState(
+                    date = null,
+                    showProgressbar = true,
+                    errorText = null,
+                    tiles = listOf(),
+                    daySummaryTitle = null,
+                    showTimelineRecyclerView = false,
+                    showUpArrow = false,
+                    showAddGeotagButton = true,
+                    totalDriveDurationText = null,
+                    totalDriveDistanceText = null,
+                )
+            }
+            is LoadingFailure -> {
+                ViewState(
+                    date = null,
+                    showProgressbar = false,
+                    errorText = osUtilsProvider.getErrorMessage(historyData.exception),
+                    tiles = listOf(),
+                    daySummaryTitle = null,
+                    showTimelineRecyclerView = false,
+                    showUpArrow = false,
+                    showAddGeotagButton = true,
+                    totalDriveDurationText = null,
+                    totalDriveDistanceText = null,
+                )
+            }
+        }
+    }
+
+    private fun displayViewState(viewState: ViewState) {
+        loadingState.postValue(viewState.showProgressbar)
+        errorTextState.postValue(viewState.errorText)
+        currentDateText.postValue(
+            viewState.date?.format(
+                DateTimeFormatter.ofLocalizedDate(
+                    FormatStyle.MEDIUM
+                )
+            )
+        )
+        timelineAdapter.updateItems(viewState.tiles)
+        daySummaryTexts.postValue(
+            SummaryTexts(
+                title = viewState.daySummaryTitle,
+                totalDriveDistance = viewState.totalDriveDistanceText,
+                totalDriveDuration = viewState.totalDriveDurationText,
+            )
+        )
+        showTimelineUpArrow.postValue(viewState.showUpArrow)
+        showAddGeotagButton.postValue(viewState.showAddGeotagButton)
+    }
+
+    private fun mapHistoryToTiles(localHistory: LocalHistory): List<TimelineTile> {
+        return mutableListOf<TimelineTile>()
+            .apply {
+                addAll(localHistory.visits.map {
+                    TimelineTile(
+                        it.arrival.value,
+                        GeofenceVisitTile(it),
+                        isStart = false,
+                        isOutage = false,
+                        description = visitDisplayDelegate.getGeofenceName(it),
+                        timeString = visitDisplayDelegate.getVisitTimeTextForTimeline(it),
+                        address = visitDisplayDelegate.getAddress(it),
+                        locations = listOf()
+                    )
+                })
+                addAll(localHistory.geotags.map {
+                    TimelineTile(
+                        it.createdAt,
+                        GeotagTile(it),
+                        isStart = false,
+                        isOutage = false,
+                        description = osUtilsProvider.stringFromResource(R.string.geotag),
+                        address = geotagDisplayDelegate.formatMetadata(it),
+                        timeString = geotagDisplayDelegate.getTimeTextForTimeline(it),
+                        locations = listOf(),
+                    )
+                })
+                addAll(localHistory.deviceStatusMarkers.map {
+                    TimelineTile(
+                        it.ongoingStatus.getDateTimeRange().start.value,
+                        when (it) {
+                            is DeviceStatusMarkerActive -> ActiveStatusTile(it.activity)
+                            is DeviceStatusMarkerInactive -> InactiveStatusTile(it.reason)
+                        },
+                        isStart = false,
+                        isOutage = false,
+                        description = statusMarkerDisplayDelegate.getDescription(it),
+                        address = statusMarkerDisplayDelegate.getAddress(it),
+                        timeString = statusMarkerDisplayDelegate.getTimeStringForTimeline(it),
+                        locations = listOf()
+                    )
+                })
+            }
+            .sortedBy { tile -> tile.datetime }
+            .toMutableList()
+            .apply {
+                firstOrNull()?.let { this[0] = this[0].copy(isStart = true) }
+            }
+    }
+
+    private fun mapHistoryToViewData(
+        localHistory: LocalHistory,
+        selection: SegmentSelection
+    ): HistoryData {
+        return HistoryData(
+            MapHistoryData(
+                localHistory.visits.mapNotNull {
+                    it.location?.let(mapItemsFactory::createGeofenceVisitMarker)
+                },
+                localHistory.geotags.map {
+                    mapItemsFactory.createGeotagMarker(it.location)
+                },
+                mapItemsFactory.createHistoryPolyline(localHistory.locations),
+                selection
+            ),
+            mapHistoryToTiles(localHistory),
+            DaySummary(
+                localHistory.totalDriveDistance,
+                localHistory.totalDriveDuration,
+            )
+        )
+    }
+
+    private fun getTodayHistory(
+        date: LocalDate,
+        history: HistoryState
+    ): LoadingState<LocalHistory> {
+        return history.days[date] ?: LoadingFailure(
+            IllegalStateException("Today history is null")
+        )
+    }
+
+//    private fun getEdgeMarkers(tile: TimelineTile): List<MarkerOptions> {
+//        return mutableListOf<MarkerOptions>().also { markers ->
+//            tile.locations.firstOrNull()?.let {
+//                createOptionsForEdgeMarker(
+//                    it.toLatLng(),
+//                    tile.address.toString(),
+//                    tile.status
+//                ).let { marker ->
+//                    markers.add(marker)
+//                }
+//            }
+//            tile.locations.lastOrNull()?.let {
+//                createOptionsForEdgeMarker(
+//                    it.toLatLng(),
+//                    tile.address.toString(),
+//                    tile.status
+//                ).let { marker ->
+//                    markers.add(marker)
+//                }
+//            }
+//        }
+//    }
+
+    fun onSelectDateClick() {
+        stateMachine.handleAction(SelectDateClickedAction)
+    }
+
+    fun onDateSelected(date: LocalDate) {
+        stateMachine.handleAction(OnDateSelectedAction(date))
+    }
+
+    private fun getMoveMapEffectIfNeeded(
+        map: HypertrackMapWrapper,
+        historyData: LoadingState<HistoryData>,
+        userLocation: LatLng?
+    ): Set<Effect> {
+        val history = when (historyData) {
+            is Loading, is LoadingFailure -> null
+            is LoadingSuccess -> historyData.data
+        }
+
+        return if (history != null) {
+            try {
+                LatLngBounds.builder().apply {
+                    history.mapData.historyPolyline.polylineOptions.points.forEach {
+                        include(it)
+                    }
+                    userLocation?.let { include(it) }
+                }.build().let {
+                    if (LocationUtils.distanceMeters(it.northeast, it.southwest) ?: 0
+                        > ZOOM_RADIUS_THRESHOLD.meters
+                    ) {
+                        setOf(MoveMapEffect(map, Either.Right(it)))
+                    } else {
+                        setOf(MoveMapEffect(map, Either.Left(it.center)))
+                    }
+                }
+            } catch (e: Exception) {
+                (userLocation?.let { setOf(MoveMapEffect(map, Either.Left(it))) } ?: setOf()) +
+                        setOf(SendErrorToCrashlytics(e))
+            }
+        } else {
+            userLocation?.let { setOf(MoveMapEffect(map, Either.Left(it))) } ?: setOf()
+        }
+    }
+
+    fun onBottomSheetStateChanged(newState: Int) {
+        try {
+            val state = BottomSheetState.fromInt(newState)
+            when (state) {
+                Expanded -> {
+                    stateMachine.handleAction(OnBottomSheetStateChangedAction(true))
+                }
+                Collapsed -> {
+                    stateMachine.handleAction(OnBottomSheetStateChangedAction(false))
+                }
+                Dragging, HalfExpanded, Hidden, Settling -> {
+                }
+            }
+        } catch (e: IllegalArgumentException) {
+            stateMachine.handleAction(OnErrorAction(e))
+        }
+    }
+
+    fun onCopyClick(id: String) {
+        osUtilsProvider.copyToClipboard(id)
+    }
+
+    fun onGeofenceClick(geofenceId: String) {
+        stateMachine.handleAction(OnGeofenceClickAction(geofenceId))
+    }
+
+    fun onBackPressed(): Boolean {
+        return when (val state = stateMachine.state) {
+            is Initial -> false
+            is MapReadyState -> if (state.bottomSheetExpanded) {
+                stateMachine.handleAction(OnBackPressedAction)
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    fun onError(e: Exception) {
+        stateMachine.handleAction(OnErrorAction(e))
+    }
+
+    fun onReloadClicked() {
+        stateMachine.handleAction(OnReloadPressedAction)
+    }
+
     companion object {
-        const val TAG = "HistoryViewModel"
+        val ZOOM_RADIUS_THRESHOLD = 500.toMeters()
     }
 }
 
-class TimeDistanceFormatter(
-    val datetimeFormatter: DatetimeFormatter,
-    val distanceFormatter: DistanceFormatter
-) {
-    fun formatTime(timestamp: String): String {
-        return datetimeFormatter.formatTime(datetimeFromString(timestamp))
-    }
+data class SummaryTexts(
+    val title: String?,
+    val totalDriveDistance: String?,
+    val totalDriveDuration: String?,
+)
 
-    fun formatDistance(totalDistance: Int): String {
-        return distanceFormatter.formatDistance(totalDistance)
-    }
+fun State.asReducerResult(): ReducerResult<State, Effect> {
+    return ReducerResult(this)
 }
 
-private fun Iterable<Location>.boundRect(): LatLngBounds {
-    return fold(LatLngBounds.builder()) { builder, point ->
-        builder.include(point.toLatLng())
-    }.build()
+fun State.withEffects(effects: Set<Effect>): ReducerResult<State, Effect> {
+    return ReducerResult(this, effects)
+}
+
+fun State.withEffects(vararg effect: Effect): ReducerResult<State, Effect> {
+    return ReducerResult(
+        this,
+        effect.toMutableSet()
+    )
 }

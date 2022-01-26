@@ -2,7 +2,7 @@ package com.hypertrack.android.ui.screens.add_geotag
 
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
-import com.hypertrack.android.ui.common.util.ErrorMessage
+import com.hypertrack.android.utils.ErrorMessage
 
 sealed class State(val viewState: ViewState)
 

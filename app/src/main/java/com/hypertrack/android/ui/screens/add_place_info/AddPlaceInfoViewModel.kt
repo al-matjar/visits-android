@@ -27,7 +27,7 @@ import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
-import com.hypertrack.android.ui.common.delegates.GooglePlaceAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.add_place.AddPlaceFragmentDirections
 import com.hypertrack.android.utils.*

@@ -29,11 +29,7 @@ class HyperTrackService(
 
     val deviceId: String
         get() {
-            return if (!MyApplication.MOCK_MODE) {
-                sdkInstance.deviceID
-            } else {
-                sdkInstance.deviceID
-            }
+            return sdkInstance.deviceID
         }
 
     val state: LiveData<TrackingStateValue>

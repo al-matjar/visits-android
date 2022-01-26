@@ -6,24 +6,24 @@ import com.hypertrack.android.interactors.PlaceVisitsStats
 import com.hypertrack.android.interactors.PlacesVisitsInteractor
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.base.*
+import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.Meters
 import com.hypertrack.android.utils.Success
+import com.hypertrack.android.utils.datetime.prettyFormat
 
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
-import com.hypertrack.android.utils.formatters.TimeFormatter
-import com.hypertrack.android.utils.formatters.prettyFormat
 import kotlinx.coroutines.*
 import java.time.LocalDate
 
 class PlacesVisitsViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val placesVisitsInteractor: PlacesVisitsInteractor,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val displayDelegate: GeofenceVisitDisplayDelegate,
+    private val dateTimeFormatter: DateTimeFormatter,
     private val distanceFormatter: DistanceFormatter,
-    private val timeFormatter: TimeFormatter,
 ) : BaseViewModel(baseDependencies) {
 
     val visitsStats = MutableLiveData<List<VisitItem>>()
@@ -40,9 +40,9 @@ class PlacesVisitsViewModel(
     fun createVisitsAdapter(): AllPlacesVisitsAdapter {
         return AllPlacesVisitsAdapter(
             osUtilsProvider,
-            datetimeFormatter,
-            distanceFormatter,
-            timeFormatter
+            displayDelegate,
+            dateTimeFormatter,
+            distanceFormatter
         ) {
             osUtilsProvider.copyToClipboard(it)
         }.apply {
@@ -60,8 +60,12 @@ class PlacesVisitsViewModel(
             placesVisitsInteractor.getPlaceVisitsStats().let {
                 loadingState.postValue(false)
                 when (it) {
-                    is Success -> visitsStats.postValue(mapListData(it.result))
-                    is Failure -> errorHandler.postException(it.exception)
+                    is Success -> {
+                        visitsStats.postValue(mapListData(it.data))
+                    }
+                    is Failure -> {
+                        errorHandler.postException(it.exception)
+                    }
                 }
             }
         }

@@ -1,22 +1,20 @@
 package com.hypertrack.android.models.local
 
-import android.os.Parcelable
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.Geofence
 import com.hypertrack.android.api.Polygon
 import com.hypertrack.android.models.*
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.DeviceId
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.android.utils.datetimeFromString
+import com.hypertrack.android.utils.datetime.dateTimeFromString
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import kotlinx.android.parcel.Parcelize
 import java.time.ZonedDateTime
 
 @JsonClass(generateAdapter = true)
 data class LocalGeofence(
-    val currentDeviceId: String,
     val geofence: Geofence,
     val name: String?,
     val address: String?,
@@ -42,11 +40,11 @@ data class LocalGeofence(
         visits.firstOrNull()
     }
 
-    val createdAt: ZonedDateTime = datetimeFromString(geofence.created_at)
+    val createdAt: ZonedDateTime = dateTimeFromString(geofence.created_at)
 
     companion object {
         fun fromGeofence(
-            currentDeviceId: String,
+            currentDeviceId: DeviceId,
             geofence: Geofence,
             moshi: Moshi,
             osUtilsProvider: OsUtilsProvider,
@@ -79,7 +77,6 @@ data class LocalGeofence(
 
 
             return LocalGeofence(
-                currentDeviceId = currentDeviceId,
                 geofence = geofence,
                 name = metadata.remove(GeofenceMetadata.KEY_NAME) as String?,
                 address = address,
@@ -94,7 +91,7 @@ data class LocalGeofence(
                 integration = integration,
                 metadata = metadata.filter { it.value is String } as Map<String, String>,
                 visits = (geofence.marker?.visits
-                    ?.filter { it.deviceId == currentDeviceId }
+                    ?.filter { it.deviceId == currentDeviceId.value }
                     ?.sortedByDescending { it.arrival!!.recordedAt }
                     ?: listOf())
                     .map {
@@ -112,16 +109,5 @@ data class LocalGeofence(
             //todo merge with Intersect
             return polygon.map { osUtilsProvider.distanceMeters(latLng, it) }.maxOrNull()!!
         }
-    }
-}
-
-@Parcelize
-class LocalGeofenceJson(private val jsonString: String) : Parcelable {
-    constructor(moshi: Moshi, localGeofence: LocalGeofence) : this(
-        moshi.adapter(LocalGeofence::class.java).toJson(localGeofence)
-    )
-
-    fun getValue(moshi: Moshi): LocalGeofence {
-        return moshi.adapter(LocalGeofence::class.java).fromJson(jsonString)!!
     }
 }

@@ -4,7 +4,7 @@ import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.DeviceLocationProvider
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
 
 import kotlinx.coroutines.CancellationException
@@ -17,7 +17,7 @@ class PlacesViewModel(
     private val placesInteractor: PlacesInteractor,
     private val locationProvider: DeviceLocationProvider,
     private val distanceFormatter: DistanceFormatter,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val dateTimeFormatter: DateTimeFormatter,
 ) : BaseViewModel(baseDependencies) {
 
     private var nextPageToken: String? = null
@@ -45,7 +45,7 @@ class PlacesViewModel(
             osUtilsProvider,
             locationProvider,
             distanceFormatter,
-            datetimeFormatter
+            dateTimeFormatter
         )
     }
 

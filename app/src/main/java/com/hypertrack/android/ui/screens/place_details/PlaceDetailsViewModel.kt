@@ -21,28 +21,27 @@ import com.hypertrack.android.ui.base.ZipNotNullableLiveData
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
-import com.hypertrack.android.ui.common.delegates.GeofenceAddressDelegate
+import com.hypertrack.android.ui.common.delegates.address.GeofenceAddressDelegate
+import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.common.util.format
 
-import com.hypertrack.android.utils.MyApplication
-import com.hypertrack.android.utils.formatters.DatetimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
-import com.hypertrack.android.utils.formatters.TimeFormatter
+import com.hypertrack.android.utils.formatters.TimeValueFormatter
 import com.hypertrack.logistics.android.github.R
-import com.squareup.moshi.Moshi
 import kotlinx.coroutines.launch
 
 class PlaceDetailsViewModel(
     private val geofenceId: String,
     private val placesInteractor: PlacesInteractor,
-    private val datetimeFormatter: DatetimeFormatter,
+    private val addressDelegate: GeofenceAddressDelegate,
+    private val visitDisplayDelegate: GeofenceVisitDisplayDelegate,
+    private val dateTimeFormatter: DateTimeFormatter,
     private val distanceFormatter: DistanceFormatter,
-    private val timeFormatter: TimeFormatter,
-    private val moshi: Moshi,
+    private val timeFormatter: TimeValueFormatter,
     baseDependencies: BaseViewModelDependencies
 ) : BaseViewModel(baseDependencies) {
 
-    private val addressDelegate = GeofenceAddressDelegate(osUtilsProvider)
 
     private val mapWrapper = MutableLiveData<HypertrackMapWrapper>()
 
@@ -73,7 +72,7 @@ class PlaceDetailsViewModel(
             )
             put(
                 osUtilsProvider.stringFromResource(R.string.created_at),
-                datetimeFormatter.formatDatetime(geofence.createdAt)
+                dateTimeFormatter.formatDateTime(geofence.createdAt)
             )
             put(
                 osUtilsProvider.stringFromResource(R.string.coordinates),
@@ -162,10 +161,7 @@ class PlaceDetailsViewModel(
 
     fun createVisitsAdapter(): PlaceVisitsAdapter {
         return PlaceVisitsAdapter(
-            MyApplication.injector.getOsUtilsProvider(MyApplication.context),
-            datetimeFormatter,
-            distanceFormatter,
-            timeFormatter
+            visitDisplayDelegate,
         ) {
             onCopyVisitIdClick(it)
         }

@@ -37,10 +37,11 @@ class ParamViewModelFactory<T>(
             PlaceDetailsViewModel::class.java -> PlaceDetailsViewModel(
                 geofenceId = param as String,
                 userScopeProvider.get().placesInteractor,
-                appScope.datetimeFormatter,
+                appScope.geofenceAddressDelegate,
+                appScope.geofenceVisitDisplayDelegate,
+                appScope.dateTimeFormatter,
                 appScope.distanceFormatter,
                 appScope.timeFormatter,
-                moshi,
                 baseDependencies
             ) as T
             OrderDetailsViewModel::class.java -> OrderDetailsViewModel(
@@ -49,7 +50,7 @@ class ParamViewModelFactory<T>(
                 userScopeProvider.get().tripsInteractor,
                 userScopeProvider.get().photoUploadQueueInteractor,
                 accountRepository,
-                appScope.datetimeFormatter,
+                appScope.dateTimeFormatter,
             ) as T
             AddPlaceInfoViewModel::class.java -> (param as DestinationData).let { destinationData ->
                 AddPlaceInfoViewModel(
