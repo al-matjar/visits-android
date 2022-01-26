@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.1] - 2021-01-26
+
+### Fixed
+
+- Remove timeline tile notch
+
 ## [0.13.0] - 2021-01-26
 
 ### Added
