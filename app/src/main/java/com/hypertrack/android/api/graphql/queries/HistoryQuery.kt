@@ -53,8 +53,3 @@ class HistoryQuery(
         """.trimIndent()
     }
 }
-
-/*
-
-
-*/

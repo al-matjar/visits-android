@@ -11,14 +11,13 @@ import java.time.ZonedDateTime
 @JsonClass(generateAdapter = true)
 class GraphQlGeotagMarker(
     @field:Json(name = "id") val id: String,
-    @field:Json(name = "recorded_at") val _recorded_at: String,
-    @field:Json(name = "location") val _location: RemoteLocation,
+    @field:Json(name = "recorded_at") val recordedAtString: String,
+    @field:Json(name = "location") val remoteLocation: RemoteLocation,
     @field:Json(name = "metadata") val metadata: JsonObjectString,
 ) {
-    val createdAt: ZonedDateTime = dateTimeFromString(_recorded_at)
+    val createdAt: ZonedDateTime = dateTimeFromString(recordedAtString)
 
-    val location: LatLng
-        get() = _location.coordinate.toLatLng()
+    val location = remoteLocation.coordinate.toLatLng()
 
     companion object {
         const val FIELDS_QUERY = """

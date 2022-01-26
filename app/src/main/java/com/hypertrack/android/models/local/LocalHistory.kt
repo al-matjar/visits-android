@@ -47,7 +47,7 @@ class LocalHistory(
                     Geotag.fromGraphQlGeotagMarker(it, moshi)
                 },
                 gqlHistory.locations
-                    .sortedBy { it._recordedAt }
+                    .sortedBy { it.recordedAt }
                     .map { it.coordinate.toLatLng() },
                 gqlHistory.deviceStatusMarkers.map {
                     DeviceStatusMarker.fromGraphQl(it)

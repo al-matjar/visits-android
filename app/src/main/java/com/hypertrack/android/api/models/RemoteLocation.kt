@@ -9,12 +9,12 @@ import java.time.ZonedDateTime
 @JsonClass(generateAdapter = true)
 data class RemoteLocation(
     @field:Json(name = "coordinate") val coordinate: Coordinate,
-    @field:Json(name = "recorded_at") val _recordedAt: String,
+    @field:Json(name = "recorded_at") val recordedAtString: String,
 ) {
     fun toLatLng() = coordinate.toLatLng()
 
     val recordedAt: ZonedDateTime
-        get() = dateTimeFromString(_recordedAt)
+        get() = dateTimeFromString(recordedAtString)
 
     companion object {
         const val FIELDS_QUERY = """

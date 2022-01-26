@@ -44,13 +44,13 @@ class GeofenceVisitDisplayDelegate(
 
     fun getRouteToText(item: LocalGeofenceVisit): String? {
         return item.routeTo?.let {
-            if (it.distance == null) return@let null
-            if (it.duration == null) return@let null
-            MyApplication.context.getString(
-                R.string.place_route_ro,
-                distanceFormatter.formatDistance(it.distance),
-                timeValueFormatter.formatSeconds(it.duration)
-            )
+            if (it.distance != null && it.duration != null) {
+                osUtilsProvider.stringFromResource(
+                    R.string.place_route_ro,
+                    distanceFormatter.formatDistance(it.distance),
+                    timeValueFormatter.formatSeconds(it.duration)
+                )
+            } else null
         }
     }
 
