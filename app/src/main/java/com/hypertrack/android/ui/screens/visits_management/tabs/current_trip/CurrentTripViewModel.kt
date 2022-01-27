@@ -187,13 +187,11 @@ class CurrentTripViewModel(
             placesInteractor,
             osUtilsProvider,
             {
-                it.snippet.nullIfEmpty()?.let { snippet ->
-                    destination.postValue(
-                        VisitsManagementFragmentDirections.actionVisitManagementFragmentToPlaceDetailsFragment(
-                            snippet
-                        )
+                destination.postValue(
+                    VisitsManagementFragmentDirections.actionVisitManagementFragmentToPlaceDetailsFragment(
+                        geofenceId = it.value
                     )
-                }
+                )
             }
         ) {
             override fun updateGeofencesOnMap(

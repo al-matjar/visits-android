@@ -2,7 +2,7 @@ package com.fonfon.kgeohash
 
 import android.location.Location
 import android.os.Bundle
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.runner.AndroidJUnit4
 
 import org.junit.Before
 import org.junit.Test
@@ -10,7 +10,6 @@ import org.junit.runner.RunWith
 
 import org.junit.Assert.assertEquals
 
-@RunWith(AndroidJUnit4::class)
 class BoundingBoxTest {
 
     companion object {

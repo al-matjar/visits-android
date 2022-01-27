@@ -13,21 +13,17 @@ import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.ManagedObserver
 import com.hypertrack.android.ui.common.util.toLatLng
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.logistics.android.github.R
-import net.sharewire.googlemapsclustering.*
+import com.hypertrack.android.utils.TypeWrapper
 
 open class GeofencesMapDelegate(
     private val context: Context,
     private val mapWrapper: HypertrackMapWrapper,
     private val placesInteractor: PlacesInteractor,
     private val osUtilsProvider: OsUtilsProvider,
-    private val onMarkerClickListener: (GeofenceClusterItem) -> Unit
+    private val onMarkerClickListener: (GeofenceId) -> Unit
 ) {
 
     private val managedObserver = ManagedObserver()
-
-    private val clusterIcon = GeofenceClusterItem.createClusterIcon(osUtilsProvider)
-    private val clusterManager = createClusterManager()
 
     init {
         placesInteractor.geofences.value?.let {
@@ -47,7 +43,6 @@ open class GeofencesMapDelegate(
 
     open fun onCameraIdle() {
         placesInteractor.loadGeofencesForMap(mapWrapper.googleMap.cameraPosition.target)
-        clusterManager.onCameraIdle()
     }
 
     protected open fun updateGeofencesOnMap(
@@ -59,66 +54,12 @@ open class GeofencesMapDelegate(
         geofences.forEach {
             mapWrapper.addGeofenceMarker(it)
         }
+        // todo check conflicts with other map click listeners
         mapWrapper.googleMap.setOnMarkerClickListener {
-            it.snippet?.let {
-                placesInteractor.geofences.value?.get(it)?.let {
-                    onMarkerClickListener.invoke(GeofenceClusterItem(it))
-                }
+            it.snippet?.let { geofenceId ->
+                onMarkerClickListener.invoke(GeofenceId(geofenceId))
             }
             return@setOnMarkerClickListener true
-        }
-
-//        clusterManager.setItems(geofences.map {
-//            GeofenceClusterItem(it)
-//        })
-
-//        if (MyApplication.DEBUG_MODE.not() || !SHOW_DEBUG_DATA) {
-//            clusterManager.setItems(placesInteractor.geofences.value!!.values.map {
-//                GeofenceClusterItem(
-//                    it
-//                )
-//            })
-//        } else {
-//            googleMap.clear()
-//            showMapDebugData(googleMap)
-//            placesInteractor.geofences.value!!.values.forEach {
-//                googleMap.addMarker(
-//                    MarkerOptions().icon(
-//                        icon
-//                    ).position(it.latLng)
-//                )
-//            }
-//        }
-    }
-
-    private fun createClusterManager(): ClusterManager<GeofenceClusterItem> {
-        return ClusterManager<GeofenceClusterItem>(
-            context,
-            mapWrapper.googleMap,
-            object : ClusterRenderer<GeofenceClusterItem>(context, mapWrapper.googleMap) {
-
-            }).apply {
-            setMinClusterSize(10)
-            setIconGenerator(object : IconGenerator<GeofenceClusterItem> {
-                override fun getClusterIcon(cluster: Cluster<GeofenceClusterItem>): BitmapDescriptor {
-                    return clusterIcon
-                }
-
-                override fun getClusterItemIcon(clusterItem: GeofenceClusterItem): BitmapDescriptor {
-                    return mapWrapper.geofenceMarkerIcon
-                }
-            })
-            setCallbacks(object : ClusterManager.Callbacks<GeofenceClusterItem> {
-                override fun onClusterClick(cluster: Cluster<GeofenceClusterItem>): Boolean {
-                    //todo
-                    return true
-                }
-
-                override fun onClusterItemClick(clusterItem: GeofenceClusterItem): Boolean {
-                    onMarkerClickListener.invoke(clusterItem)
-                    return true
-                }
-            })
         }
     }
 
@@ -162,7 +103,7 @@ open class GeofencesMapDelegate(
     private fun createPureTextIcon(text: String?): BitmapDescriptor? {
         val textPaint = Paint().apply {
             textSize = 50f
-        } // Adapt to your needs
+        }
         val textWidth: Float = textPaint.measureText(text)
         val textHeight: Float = textPaint.getTextSize()
         val width = textWidth.toInt()
@@ -170,7 +111,6 @@ open class GeofencesMapDelegate(
         val image: Bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(image)
         canvas.translate(0f, height.toFloat())
-//        canvas.drawColor(Color.LTGRAY)
         canvas.drawText(text ?: "null", 0f, 0f, textPaint)
         return BitmapDescriptorFactory.fromBitmap(image)
     }
@@ -181,26 +121,4 @@ open class GeofencesMapDelegate(
 
 }
 
-class GeofenceClusterItem(
-    private val geofence: LocalGeofence
-) : ClusterItem {
-
-    override fun getLatitude(): Double = geofence.latLng.latitude
-
-    override fun getLongitude(): Double = geofence.latLng.longitude
-
-    override fun getTitle() = geofence.name
-
-    override fun getSnippet() = geofence.id
-
-    companion object {
-        fun createClusterIcon(osUtilsProvider: OsUtilsProvider): BitmapDescriptor {
-            return BitmapDescriptorFactory.fromBitmap(
-                osUtilsProvider.bitmapFromResource(
-                    R.drawable.ic_cluster
-                )
-            )
-        }
-    }
-}
-
+class GeofenceId(id: String) : TypeWrapper<String>(id)

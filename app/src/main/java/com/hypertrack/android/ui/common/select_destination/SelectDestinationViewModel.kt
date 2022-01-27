@@ -9,11 +9,12 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.hypertrack.android.interactors.GooglePlacesInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
+import com.hypertrack.android.models.local.LocalGeofence
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.SingleLiveEvent
 import com.hypertrack.android.ui.base.postValue
-import com.hypertrack.android.ui.common.delegates.GeofenceClusterItem
+import com.hypertrack.android.ui.common.delegates.GeofenceId
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
@@ -216,13 +217,11 @@ open class SelectDestinationViewModel(
         }
 
         geofencesMapDelegate = createGeofencesMapDelegate(context, wrapper) {
-            it.snippet.nullIfEmpty()?.let { snippet ->
-                destination.postValue(
-                    AddPlaceFragmentDirections.actionGlobalPlaceDetailsFragment(
-                        snippet
-                    )
+            destination.postValue(
+                AddPlaceFragmentDirections.actionGlobalPlaceDetailsFragment(
+                    geofenceId = it.value
                 )
-            }
+            )
         }
         sendAction(MapReadyAction(
             wrapper,
@@ -294,7 +293,7 @@ open class SelectDestinationViewModel(
     protected open fun createGeofencesMapDelegate(
         context: Context,
         wrapper: HypertrackMapWrapper,
-        markerClickListener: (GeofenceClusterItem) -> Unit
+        markerClickListener: (GeofenceId) -> Unit
     ): GeofencesMapDelegate {
         return GeofencesMapDelegate(
             context,

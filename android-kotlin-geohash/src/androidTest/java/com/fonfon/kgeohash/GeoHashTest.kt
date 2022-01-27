@@ -2,14 +2,13 @@ package com.fonfon.kgeohash
 
 import android.location.Location
 import android.os.Bundle
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.runner.AndroidJUnit4
 import junit.framework.TestCase.*
 
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class GeoHashTest {
 
     private var location = Location(GeoHashTest::javaClass.name).apply {
