@@ -135,6 +135,7 @@ class UserScopeViewModelFactory(
                 driverRepository,
                 hyperTrackService,
                 accountRepository,
+                appScope.distanceFormatter
             ) as T
             SelectTripDestinationViewModel::class.java -> SelectTripDestinationViewModel(
                 baseDependencies,

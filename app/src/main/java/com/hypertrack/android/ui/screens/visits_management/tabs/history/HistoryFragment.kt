@@ -33,6 +33,7 @@ import android.view.LayoutInflater
 import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.toView
 import com.hypertrack.android.ui.common.util.toViewOrHideIfNull
+import com.hypertrack.android.utils.createDatePickerDialog
 import kotlinx.android.synthetic.main.fragment_history.lError
 import kotlinx.android.synthetic.main.fragment_history.lTimeline
 import kotlinx.android.synthetic.main.inflate_error.view.bReload
@@ -203,13 +204,12 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
     }
 
     private fun showDatePickerDialog(date: LocalDate) {
-        DatePickerDialog(
+        createDatePickerDialog(
             requireContext(),
-            R.style.DatePickerTheme,
-            { _, year, month, dayOfMonth ->
-                vm.onDateSelected(LocalDate.of(year, month, dayOfMonth))
-            }, date.year, date.monthValue, date.dayOfMonth
-        ).show()
+            date
+        ) {
+            vm.onDateSelected(it)
+        }.show()
     }
 
     private fun displayLoadingState(isLoading: Boolean) {

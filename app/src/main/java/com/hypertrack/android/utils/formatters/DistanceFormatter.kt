@@ -16,7 +16,8 @@ interface DistanceFormatter {
 open class LocalizedDistanceFormatter(
     private val osUtilsProvider: OsUtilsProvider,
 ) : DistanceFormatter {
-    private val shouldUseImperial = Locale.getDefault().country in listOf("US", "LR", "MM")
+    private val shouldUseImperial: Boolean
+        get() = Locale.getDefault().country in listOf("US", "LR", "MM")
 
     override fun formatDistance(meters: Int): String {
         return if (shouldUseImperial) {

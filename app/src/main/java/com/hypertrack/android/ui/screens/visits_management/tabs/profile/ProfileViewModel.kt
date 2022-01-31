@@ -1,5 +1,7 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.profile
 
+import android.text.TextUtils.split
+import android.view.Gravity.apply
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.messaging.VisitsMessagingService
@@ -11,15 +13,18 @@ import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.*
+import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.logistics.android.github.BuildConfig
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.launch
+import java.util.*
 
 class ProfileViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val driverRepository: DriverRepository,
     private val hyperTrackService: HyperTrackService,
     private val accountRepository: AccountRepository,
+    private val distanceFormatter: DistanceFormatter
 ) : BaseViewModel(baseDependencies) {
 
     val profile = MutableLiveData<List<KeyValueItem>>()
@@ -87,6 +92,20 @@ class ProfileViewModel(
                 )
             }
 
+            add(
+                KeyValueItem(
+                    "Locale",
+                    Locale.getDefault().displayName
+                )
+            )
+
+            add(
+                KeyValueItem(
+                    "Distance units",
+                    distanceFormatter.formatDistance(EXAMPLE_DISTANCE)
+                )
+            )
+
             if (MyApplication.DEBUG_MODE) {
                 add(KeyValueItem("Firebase token (debug)", firebaseToken))
 
@@ -100,6 +119,10 @@ class ProfileViewModel(
         }
 
         profile.postValue(items)
+    }
+
+    companion object {
+        val EXAMPLE_DISTANCE = 2010.toMeters()
     }
 
 }

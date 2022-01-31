@@ -78,9 +78,11 @@ abstract class BaseFragment<T : Activity>(layoutId: Int) : Fragment(layoutId) {
     }
 
     open fun onBackPressed(): Boolean {
-        delegates.forEach {
-            if (it.onBackPressed()) {
-                return true
+        if (isAdded) {
+            delegates.forEach {
+                if (it.onBackPressed()) {
+                    return true
+                }
             }
         }
         return false

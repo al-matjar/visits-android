@@ -62,7 +62,9 @@ abstract class BaseAdapter<T : Any, VH : BaseAdapter.BaseVh<T>> : RecyclerView.A
 
         init {
             view.setOnClickListener {
-                clickListener.invoke(bindingAdapterPosition)
+                if (bindingAdapterPosition != RecyclerView.NO_POSITION) {
+                    clickListener.invoke(bindingAdapterPosition)
+                }
             }
         }
 
