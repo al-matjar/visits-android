@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.2] - 2021-02-04
+
+### Fixed
+
+- Bug with wrong month in date picker
+
 ## [0.13.1] - 2021-01-26
 
 ### Fixed
