@@ -7,9 +7,10 @@ import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.ServiceLocator
 import com.squareup.moshi.JsonClass
 import java.util.*
+import javax.inject.Provider
 
 class DriverRepository(
-    private val accountRepository: AccountRepository,
+    private val accountRepositoryProvider: Provider<AccountRepository>,
     private val serviceLocator: ServiceLocator,
     private val accountDataStorage: AccountDataStorage,
     private val osUtilsProvider: OsUtilsProvider,
@@ -47,7 +48,7 @@ class DriverRepository(
         ).also {
             accountDataStorage.saveUser(it)
         }
-        serviceLocator.getHyperTrackService(accountRepository.publishableKey).apply {
+        serviceLocator.getHyperTrackService(accountRepositoryProvider.get().publishableKey).apply {
             val name = metadata?.get("name").stringOrNull()
                 ?: email?.split("@")?.first()?.capitalize(Locale.ROOT)
                 ?: phoneNumber

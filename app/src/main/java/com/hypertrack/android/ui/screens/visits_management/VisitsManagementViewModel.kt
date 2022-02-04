@@ -12,12 +12,13 @@ import com.hypertrack.android.utils.*
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import javax.inject.Provider
 
 @SuppressLint("NullSafeMutableLiveData")
 class VisitsManagementViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val historyInteractor: HistoryInteractorImpl,
-    private val accountRepository: AccountRepository,
+    private val accountRepositoryProvider: Provider<AccountRepository>,
     private val hyperTrackService: HyperTrackService,
     accessTokenRepository: AccessTokenRepository
 ) : BaseViewModel(baseDependencies) {
@@ -33,9 +34,9 @@ class VisitsManagementViewModel(
     }
 
     init {
-        if (accountRepository.shouldStartTracking) {
+        if (accountRepositoryProvider.get().shouldStartTracking) {
             hyperTrackService.startTracking()
-            accountRepository.shouldStartTracking = false
+            accountRepositoryProvider.get().shouldStartTracking = false
         }
     }
 

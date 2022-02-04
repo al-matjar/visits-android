@@ -7,7 +7,9 @@ import com.hypertrack.android.api.LiveAccountApi
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.repository.DriverRepository
 import com.hypertrack.android.utils.*
+import com.squareup.moshi.Moshi
 import java.util.*
+import javax.inject.Provider
 
 interface LoginInteractor {
     suspend fun signIn(email: String, password: String): LoginResult
@@ -37,7 +39,10 @@ interface LoginInteractor {
 class LoginInteractorImpl(
     private val driverRepository: DriverRepository,
     private val cognito: CognitoAccountLoginProvider,
-    private val accountRepository: AccountRepository,
+    private val crashReportsProvider: CrashReportsProvider,
+    private val moshi: Moshi,
+    private val accountRepositoryProvider: Provider<AccountRepository>,
+    private val serviceLocator: ServiceLocator,
     private val tokenService: TokenForPublishableKeyExchangeService,
     private val liveAccountUrlService: LiveAccountApi,
     private val servicesApiKey: String,
@@ -64,9 +69,21 @@ class LoginInteractorImpl(
     }
 
     private suspend fun loginWithPublishableKey(key: String, email: String): Boolean {
-        val pkValid = accountRepository.onKeyReceived(key = key, checkInEnabled = true)
+        val pkValid =
+            accountRepositoryProvider.get().onKeyReceived(key = key, checkInEnabled = true)
         return if (pkValid) {
             driverRepository.setUserData(email = email)
+            crashReportsProvider.setUserIdentifier(
+                moshi.adapter(UserIdentifier::class.java).toJson(
+                    UserIdentifier(
+                        deviceId = serviceLocator.getHyperTrackService(
+                            accountRepositoryProvider.get().publishableKey
+                        ).deviceId,
+                        driverId = driverRepository.username,
+                        pubKey = accountRepositoryProvider.get().publishableKey,
+                    )
+                )
+            )
             true
         } else {
             false

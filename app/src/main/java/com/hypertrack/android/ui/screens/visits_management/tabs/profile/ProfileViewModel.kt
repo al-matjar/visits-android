@@ -18,12 +18,13 @@ import com.hypertrack.logistics.android.github.BuildConfig
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.launch
 import java.util.*
+import javax.inject.Provider
 
 class ProfileViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val driverRepository: DriverRepository,
     private val hyperTrackService: HyperTrackService,
-    private val accountRepository: AccountRepository,
+    private val accountRepositoryProvider: Provider<AccountRepository>,
     private val distanceFormatter: DistanceFormatter
 ) : BaseViewModel(baseDependencies) {
 
@@ -112,7 +113,7 @@ class ProfileViewModel(
                 add(
                     KeyValueItem(
                         "Publishable key (debug)",
-                        accountRepository.publishableKey
+                        accountRepositoryProvider.get().publishableKey
                     )
                 )
             }

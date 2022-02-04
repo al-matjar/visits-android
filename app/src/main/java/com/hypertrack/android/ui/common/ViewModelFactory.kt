@@ -22,9 +22,6 @@ import com.squareup.moshi.Moshi
 class ViewModelFactory(
     private val appScope: AppScope,
     private val permissionsInteractor: PermissionsInteractor,
-    private val loginInteractor: LoginInteractor,
-    private val accountRepository: AccountRepository,
-    private val driverRepository: DriverRepository,
     private val crashReportsProvider: CrashReportsProvider,
     private val osUtilsProvider: OsUtilsProvider,
     private val moshi: Moshi,
@@ -39,12 +36,12 @@ class ViewModelFactory(
         return when (modelClass) {
             ConfirmEmailViewModel::class.java -> ConfirmEmailViewModel(
                 baseDependencies,
-                loginInteractor,
+                appScope.loginInteractor,
                 permissionsInteractor,
             ) as T
             SignInViewModel::class.java -> SignInViewModel(
                 baseDependencies,
-                loginInteractor,
+                appScope.loginInteractor,
                 permissionsInteractor,
                 appScope.deeplinkInteractor,
                 appScope.deeplinkProcessor,
@@ -52,7 +49,7 @@ class ViewModelFactory(
             ) as T
             SignUpViewModel::class.java -> SignUpViewModel(
                 baseDependencies,
-                loginInteractor,
+                appScope.loginInteractor,
             ) as T
             SplashScreenViewModel::class.java -> SplashScreenViewModel(
                 baseDependencies,

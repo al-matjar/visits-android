@@ -644,7 +644,8 @@ class SplashScreenViewModelTest {
             accountRepository: AccountRepository = createAccountRepo(loggedIn),
             deeplinkInteractor: DeeplinkInteractor = DeeplinkInteractor(
                 driverRepository,
-                accountRepository,
+                { accountRepository },
+                mockk(relaxed = true),
                 mockk(relaxed = true),
                 Injector.getMoshi()
             ),

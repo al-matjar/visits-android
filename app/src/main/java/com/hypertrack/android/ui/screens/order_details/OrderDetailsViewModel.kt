@@ -10,7 +10,6 @@ import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.models.local.OrderStatus
-import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
@@ -32,9 +31,11 @@ class OrderDetailsViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val tripsInteractor: TripsInteractor,
     private val photoUploadInteractor: PhotoUploadQueueInteractor,
-    private val accountRepository: AccountRepository,
     private val dateTimeFormatter: DateTimeFormatter,
 ) : BaseViewModel(baseDependencies) {
+    //todo remove legacy
+    private val isPickUpAllowed = false
+
     private val addressDelegate = OrderAddressDelegate(osUtilsProvider, dateTimeFormatter)
 
     override val errorHandler =
@@ -86,7 +87,7 @@ class OrderDetailsViewModel(
                     osUtilsProvider.stringFromResource(R.string.coordinates),
                     order.destinationLatLng.format()
                 )
-                if (accountRepository.isPickUpAllowed && order.status == OrderStatus.ONGOING) {
+                if (isPickUpAllowed && order.status == OrderStatus.ONGOING) {
                     put(
                         osUtilsProvider.stringFromResource(R.string.order_picked_up),
                         order.isPickedUp.toString()
@@ -109,7 +110,7 @@ class OrderDetailsViewModel(
         it.status == OrderStatus.ONGOING
     }
     val showPickUpButton = Transformations.map(order) {
-        it.legacy && !it.isPickedUp && it.status == OrderStatus.ONGOING && accountRepository.isPickUpAllowed
+        it.legacy && !it.isPickedUp && it.status == OrderStatus.ONGOING && isPickUpAllowed
     }
     val showSnoozeButton = Transformations.map(order) {
         !it.legacy && it.status == OrderStatus.ONGOING

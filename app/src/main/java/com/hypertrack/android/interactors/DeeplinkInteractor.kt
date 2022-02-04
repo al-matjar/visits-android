@@ -9,11 +9,13 @@ import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.utils.*
 import com.squareup.moshi.Moshi
+import javax.inject.Provider
 
 class DeeplinkInteractor(
     private val driverRepository: DriverRepository,
-    private val accountRepository: AccountRepository,
+    private val accountRepositoryProvider: Provider<AccountRepository>,
     private val crashReportsProvider: CrashReportsProvider,
+    private val serviceLocator: ServiceLocator,
     private val moshi: Moshi
 ) {
 
@@ -33,7 +35,7 @@ class DeeplinkInteractor(
                 }
             }
             NoDeeplink -> {
-                if (accountRepository.isLoggedIn) {
+                if (accountRepositoryProvider.get().isLoggedIn) {
                     AlreadyLoggedIn(null)
                 } else {
                     UserNotLoggedIn(null)
@@ -101,7 +103,7 @@ class DeeplinkInteractor(
         check(email != null || phoneNumber != null || driverId != null)
         return try {
             //todo handle connection error
-            val correctKey = accountRepository.onKeyReceived(publishableKey)
+            val correctKey = accountRepositoryProvider.get().onKeyReceived(publishableKey)
             // Log.d(TAG, "onKeyReceived finished")
             if (correctKey) {
                 // Log.d(TAG, "Key validated successfully")
@@ -111,7 +113,6 @@ class DeeplinkInteractor(
                         metadata = metadata,
                         deeplinkWithoutGetParams = deeplinkWithoutGetParams
                     )
-                    UserLoggedIn
                 } else {
                     driverRepository.setUserData(
                         email = email,
@@ -122,8 +123,21 @@ class DeeplinkInteractor(
                         metadata = metadata,
                         deeplinkWithoutGetParams = deeplinkWithoutGetParams
                     )
-                    UserLoggedIn
                 }
+
+                crashReportsProvider.setUserIdentifier(
+                    moshi.adapter(UserIdentifier::class.java).toJson(
+                        UserIdentifier(
+                            deviceId = serviceLocator.getHyperTrackService(
+                                accountRepositoryProvider.get().publishableKey
+                            ).deviceId,
+                            driverId = driverRepository.username,
+                            pubKey = accountRepositoryProvider.get().publishableKey,
+                        )
+                    )
+                )
+
+                UserLoggedIn
             } else {
                 throw Exception("Unable to validate publishable_key")
             }
@@ -133,7 +147,7 @@ class DeeplinkInteractor(
     }
 
     private fun proceedWithLoggedInCheck(failure: DeeplinkFailure?): HandleDeeplinkResult {
-        return if (accountRepository.isLoggedIn) {
+        return if (accountRepositoryProvider.get().isLoggedIn) {
             AlreadyLoggedIn(failure)
         } else {
             UserNotLoggedIn(failure)

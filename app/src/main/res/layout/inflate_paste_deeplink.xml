@@ -32,7 +32,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            tools:text="dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf "
             android:textColor="#fe4d5f"
             android:textSize="14sp"
             android:visibility="gone"
@@ -41,6 +40,7 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintStart_toStartOf="@+id/etDeeplink"
             app:layout_constraintTop_toBottomOf="@+id/etDeeplink"
+            tools:text="dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf "
             tools:visibility="visible" />
 
         <EditText
@@ -52,6 +52,7 @@
             android:ems="10"
             android:hint="@string/sign_in_deeplink_hint"
             android:inputType="textMultiLine"
+            android:maxLines="5"
             android:minLines="2"
             app:layout_constraintEnd_toStartOf="@+id/bClose"
             app:layout_constraintHorizontal_bias="0.5"

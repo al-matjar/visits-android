@@ -84,21 +84,7 @@ class OrdersDetailsViewModelTest {
                 assertEquals(expected, getFromMetadata(key, md)?.toLowerCase())
             }
 
-            var isPickUpAllowed = true
-            createVm("ONGOING", tripsInteractor, isPickUpAllowed).let {
-                assertEquals(true, it.isNoteEditable.observeAndGetValue())
-                assertEquals(true, it.showCompleteButtons.observeAndGetValue())
-                assertEquals(false, it.showPickUpButton.observeAndGetValue())
-                assertEquals(true, it.showAddPhoto.observeAndGetValue())
-                assertEquals(true, it.showSnoozeButton.observeAndGetValue())
-                assertEquals(false, it.showUnsnoozeButton.observeAndGetValue())
-                val md = it.metadata.observeAndGetValue()
-                assertMetadata(OrderStatus.ONGOING.value, "order_status", md)
-                assertMetadata("false", "order_picked_up", md)
-            }
-
-            isPickUpAllowed = false
-            createVm("ONGOING", tripsInteractor, isPickUpAllowed).let {
+            createVm("ONGOING", tripsInteractor).let {
                 assertEquals(true, it.isNoteEditable.observeAndGetValue())
                 assertEquals(true, it.showCompleteButtons.observeAndGetValue())
                 assertEquals(false, it.showPickUpButton.observeAndGetValue())
@@ -109,7 +95,7 @@ class OrdersDetailsViewModelTest {
                 assertMetadata(OrderStatus.ONGOING.value, "order_status", md)
             }
 
-            createVm("COMPLETED", tripsInteractor, isPickUpAllowed).let {
+            createVm("COMPLETED", tripsInteractor).let {
                 assertEquals(false, it.isNoteEditable.observeAndGetValue())
                 assertEquals(false, it.showCompleteButtons.observeAndGetValue())
                 assertEquals(false, it.showPickUpButton.observeAndGetValue())
@@ -120,7 +106,7 @@ class OrdersDetailsViewModelTest {
                 assertMetadata(OrderStatus.COMPLETED.value, "order_status", md)
             }
 
-            createVm("CANCELED", tripsInteractor, isPickUpAllowed).let {
+            createVm("CANCELED", tripsInteractor).let {
                 assertEquals(false, it.isNoteEditable.observeAndGetValue())
                 assertEquals(false, it.showCompleteButtons.observeAndGetValue())
                 assertEquals(false, it.showPickUpButton.observeAndGetValue())
@@ -131,7 +117,7 @@ class OrdersDetailsViewModelTest {
                 assertMetadata(OrderStatus.CANCELED.value, "order_status", md)
             }
 
-            createVm("SNOOZED", tripsInteractor, isPickUpAllowed).let {
+            createVm("SNOOZED", tripsInteractor).let {
                 assertEquals(false, it.isNoteEditable.observeAndGetValue())
                 assertEquals(false, it.showCompleteButtons.observeAndGetValue())
                 assertEquals(false, it.showPickUpButton.observeAndGetValue())
@@ -154,10 +140,9 @@ class OrdersDetailsViewModelTest {
         )
 
         var allowRefresh = true
-        val pickUpAllowed = true
         val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = backendOrders)),
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns pickUpAllowed }
+            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         ) {
             allowRefresh
         }
@@ -165,7 +150,7 @@ class OrdersDetailsViewModelTest {
             tripsInteractor.refreshTrips()
             allowRefresh = false
 
-            createVm("ONGOING", tripsInteractor, pickUpAllowed).let {
+            createVm("ONGOING", tripsInteractor).let {
                 it.onCompleteClicked()
 
                 assertEquals(
@@ -191,10 +176,9 @@ class OrdersDetailsViewModelTest {
         )
 
         var allowRefresh = true
-        val pickUpAllowed = true
         val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = backendOrders)),
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns pickUpAllowed }
+            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         ) {
             allowRefresh
         }
@@ -202,7 +186,7 @@ class OrdersDetailsViewModelTest {
             tripsInteractor.refreshTrips()
             allowRefresh = false
 
-            createVm("ONGOING", tripsInteractor, pickUpAllowed).let {
+            createVm("ONGOING", tripsInteractor).let {
                 it.onCancelClicked()
 
                 assertEquals(
@@ -228,10 +212,9 @@ class OrdersDetailsViewModelTest {
         )
 
         var allowRefresh = true
-        val pickUpAllowed = true
         val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = backendOrders)),
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns pickUpAllowed }
+            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         ) {
             allowRefresh
         }
@@ -239,7 +222,7 @@ class OrdersDetailsViewModelTest {
             tripsInteractor.refreshTrips()
             allowRefresh = false
 
-            createVm("ONGOING", tripsInteractor, pickUpAllowed).let {
+            createVm("ONGOING", tripsInteractor).let {
                 it.onCancelClicked()
 
                 assertEquals(
@@ -257,14 +240,13 @@ class OrdersDetailsViewModelTest {
 
     @Test
     fun `it should save note on exit`() {
-        val pickUpAllowed = true
         val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = listOf(createBaseOrder().copy(id = "1")))),
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns pickUpAllowed }
+            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         )
 
         runBlocking {
-            val vm = createVm("1", tripsInteractor, pickUpAllowed)
+            val vm = createVm("1", tripsInteractor)
             tripsInteractor.refreshTrips()
 
             vm.let {
@@ -340,7 +322,7 @@ class OrdersDetailsViewModelTest {
             tripsInteractor.refreshTrips()
 
 
-            createVm("1", tripsInteractor, false, queueInteractor).let {
+            createVm("1", tripsInteractor, queueInteractor).let {
                 it.onAddPhotoClicked(mockk(relaxed = true), "")
                 it.onActivityResult(
                     REQUEST_IMAGE_CAPTURE,
@@ -366,7 +348,6 @@ class OrdersDetailsViewModelTest {
 
     @Test
     fun `it should show local note`() {
-        val pickUpAllowed = true
         val order = createBaseOrder().copy(
             id = "1",
             _metadata = mapOf(Metadata.VISITS_APP_KEY to mapOf("note" to "Note"))
@@ -395,11 +376,11 @@ class OrdersDetailsViewModelTest {
                 )
                 coEvery { saveTrips(any()) } returns Unit
             },
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns pickUpAllowed }
+            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         )
 
         runBlocking {
-            val vm = createVm("1", tripsInteractor, pickUpAllowed)
+            val vm = createVm("1", tripsInteractor)
             tripsInteractor.refreshTrips()
 
             vm.let {
@@ -411,7 +392,6 @@ class OrdersDetailsViewModelTest {
 
     @Test
     fun `it should set local note to remote if local is null`() {
-        val pickUpAllowed = true
         val order = createBaseOrder().copy(
             id = "1",
             _metadata = mapOf(Metadata.VISITS_APP_KEY to mapOf("note" to "Note"))
@@ -440,11 +420,11 @@ class OrdersDetailsViewModelTest {
                 )
                 coEvery { saveTrips(any()) } returns Unit
             },
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns pickUpAllowed }
+            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         )
 
         runBlocking {
-            val vm = createVm("1", tripsInteractor, pickUpAllowed)
+            val vm = createVm("1", tripsInteractor)
             tripsInteractor.refreshTrips()
 
             vm.let {
@@ -508,7 +488,7 @@ class OrdersDetailsViewModelTest {
             tripsInteractor.refreshTrips()
 
 
-            createVm("1", tripsInteractor, false, queueInteractor).let {
+            createVm("1", tripsInteractor, queueInteractor).let {
                 val activity = mockk<Activity>(relaxed = true)
 
                 it.onAddPhotoClicked(activity, "Note")
@@ -591,7 +571,7 @@ class OrdersDetailsViewModelTest {
                     )
                 )
             })
-            createVm("1", tripsInteractor, false, queueInteractor).let {
+            createVm("1", tripsInteractor, queueInteractor).let {
                 it.photos.observeAndGetValue().let {
                     assertEquals(3, it.size)
                     assertEquals(PhotoUploadingState.ERROR, it.first { it.photoId == "1" }.state)
@@ -644,7 +624,6 @@ class OrdersDetailsViewModelTest {
         fun createVm(
             id: String,
             tripsInteractor: TripsInteractor,
-            pickUpAllowed: Boolean = false,
             photoUploadInteractor: PhotoUploadQueueInteractor = mockk(relaxed = true),
             ordersInteractor: TripsInteractor = mockk(),
         ): OrderDetailsViewModel {
@@ -660,7 +639,6 @@ class OrdersDetailsViewModelTest {
                 },
                 tripsInteractor,
                 photoUploadInteractor,
-                mockk() { coEvery { isPickUpAllowed } returns pickUpAllowed },
                 mockk(relaxed = true),
             )
         }

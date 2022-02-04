@@ -22,7 +22,6 @@ class ParamViewModelFactory<T>(
     private val appScope: AppScope,
     private val userScopeProvider: Provider<UserScope>,
     private val osUtilsProvider: OsUtilsProvider,
-    private val accountRepository: AccountRepository,
     private val moshi: Moshi,
     private val crashReportsProvider: CrashReportsProvider,
 ) : ViewModelProvider.Factory {
@@ -49,7 +48,6 @@ class ParamViewModelFactory<T>(
                 baseDependencies,
                 userScopeProvider.get().tripsInteractor,
                 userScopeProvider.get().photoUploadQueueInteractor,
-                accountRepository,
                 appScope.dateTimeFormatter,
             ) as T
             AddPlaceInfoViewModel::class.java -> (param as DestinationData).let { destinationData ->

@@ -49,6 +49,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.Executors.newSingleThreadExecutor
+import javax.inject.Provider
 import kotlin.coroutines.CoroutineContext
 
 
@@ -91,9 +92,16 @@ object Injector {
 
     private fun createAppScope(context: Context): AppScope {
         val crashReportsProvider = this.crashReportsProvider
+        val serviceLocator = serviceLocator
         val osUtilsProvider = OsUtilsProvider(context, crashReportsProvider)
-        val driverRepository = getDriverRepo()
-        val accountRepository = getAccountRepo(context)
+        val accountRepositoryProvider = { getAccountRepo(context) }
+        val driverRepository = DriverRepository(
+            accountRepositoryProvider,
+            serviceLocator,
+            getMyPreferences(MyApplication.context),
+            osUtilsProvider,
+            crashReportsProvider,
+        )
         val moshi = getMoshi()
         val datetimeFormatter = DateTimeFormatterImpl()
         val distanceFormatter = LocalizedDistanceFormatter(osUtilsProvider)
@@ -104,15 +112,29 @@ object Injector {
             osUtilsProvider,
             datetimeFormatter
         )
+        val loginInteractor = LoginInteractorImpl(
+            driverRepository,
+            getCognitoLoginProvider(MyApplication.context),
+            crashReportsProvider,
+            moshi,
+            accountRepositoryProvider,
+            serviceLocator,
+            tokenForPublishableKeyExchangeService,
+            liveAccountUrlService,
+            MyApplication.SERVICES_API_KEY
+        )
         return AppScope(
             MyApplication.context,
+            driverRepository,
             DeeplinkInteractor(
                 driverRepository,
-                accountRepository,
+                accountRepositoryProvider,
                 crashReportsProvider,
+                serviceLocator,
                 moshi
             ),
             NotificationsInteractor(),
+            loginInteractor,
             crashReportsProvider,
             osUtilsProvider,
             datetimeFormatter,
@@ -144,6 +166,7 @@ object Injector {
                 BranchWrapper()
             ),
             HypertrackMapItemsFactory(osUtilsProvider),
+            accountRepositoryProvider,
             moshi,
             CoroutineScope(SupervisorJob()),
             newSingleThreadExecutor().asCoroutineDispatcher()
@@ -177,9 +200,6 @@ object Injector {
         return ViewModelFactory(
             appScope,
             getPermissionInteractor(),
-            getLoginInteractor(),
-            getAccountRepo(context),
-            getDriverRepo(),
             crashReportsProvider,
             getOsUtilsProvider(MyApplication.context),
             appScope.moshi
@@ -193,7 +213,6 @@ object Injector {
             appScope,
             { getUserScope() },
             getOsUtilsProvider(MyApplication.context),
-            getAccountRepo(MyApplication.context),
             appScope.moshi,
             crashReportsProvider
         )
@@ -223,9 +242,7 @@ object Injector {
     private fun createUserScope(
         publishableKey: String,
         appScope: AppScope,
-        accountRepository: AccountRepository,
         accessTokenRepository: BasicAuthAccessTokenRepository,
-        driverRepository: DriverRepository,
         permissionsInteractor: PermissionsInteractor,
         osUtilsProvider: OsUtilsProvider,
         crashReportsProvider: CrashReportsProvider,
@@ -294,7 +311,7 @@ object Injector {
             myPreferences,
             hyperTrackService,
             GlobalScope,
-            accountRepository.isPickUpAllowed
+            false
         )
 
         val tripsInteractor = TripsInteractorImpl(
@@ -385,30 +402,15 @@ object Injector {
                 placesInteractor,
                 feedbackInteractor,
                 integrationsRepository,
-                driverRepository,
-                accountRepository,
                 crashReportsProvider,
                 hyperTrackService,
                 permissionsInteractor,
                 accessTokenRepository,
-                apiClient,
                 osUtilsProvider,
-                placesClient,
                 deviceLocationProvider,
             ),
             deviceLocationProvider
         )
-
-        crashReportsProvider.setUserIdentifier(
-            moshi.adapter(UserIdentifier::class.java).toJson(
-                UserIdentifier(
-                    deviceId = deviceId.value,
-                    driverId = driverRepository.username,
-                    pubKey = accountRepository.publishableKey,
-                )
-            )
-        )
-
         return userScope
     }
 
@@ -421,9 +423,7 @@ object Injector {
             userScope = createUserScope(
                 publishableKey,
                 appScope,
-                getAccountRepo(MyApplication.context),
                 accessTokenRepository(MyApplication.context),
-                getDriverRepo(),
                 getPermissionInteractor(),
                 getOsUtilsProvider(MyApplication.context),
                 appScope.crashReportsProvider,
@@ -493,16 +493,6 @@ object Injector {
         Places.createClient(MyApplication.context)
     }
 
-    private fun getDriverRepo(): DriverRepository {
-        return DriverRepository(
-            getAccountRepo(MyApplication.context),
-            serviceLocator,
-            getMyPreferences(MyApplication.context),
-            getOsUtilsProvider(MyApplication.context),
-            crashReportsProvider,
-        )
-    }
-
     private fun getFileRepository(): FileRepository {
         return FileRepositoryImpl()
     }
@@ -524,17 +514,6 @@ object Injector {
             .addConverterFactory(MoshiConverterFactory.create(getMoshi()))
             .build()
         return@lazy retrofit.create(LiveAccountApi::class.java)
-    }
-
-    private fun getLoginInteractor(): LoginInteractor {
-        return LoginInteractorImpl(
-            getDriverRepo(),
-            getCognitoLoginProvider(MyApplication.context),
-            getAccountRepo(MyApplication.context),
-            tokenForPublishableKeyExchangeService,
-            liveAccountUrlService,
-            MyApplication.SERVICES_API_KEY
-        )
     }
 
     private fun getMyPreferences(context: Context): MyPreferences =
@@ -562,7 +541,7 @@ object Injector {
 
     fun getPushReceiver(): PushReceiver {
         return PushReceiver(
-            getAccountRepo(MyApplication.context),
+            { getAccountRepo(MyApplication.context) },
             { getUserScope().tripsInteractor },
             appScope.notificationsInteractor,
             crashReportsProvider,
@@ -599,11 +578,12 @@ class UserScope(
     }
 }
 
-//todo move app scope dependencies here
 class AppScope(
     val appContext: Context,
+    val driverRepository: DriverRepository,
     val deeplinkInteractor: DeeplinkInteractor,
     val notificationsInteractor: NotificationsInteractor,
+    val loginInteractor: LoginInteractor,
     val crashReportsProvider: CrashReportsProvider,
     val osUtilsProvider: OsUtilsProvider,
     val dateTimeFormatter: DateTimeFormatter,
@@ -615,6 +595,7 @@ class AppScope(
     val geotagDisplayDelegate: GeotagDisplayDelegate,
     val deeplinkProcessor: DeeplinkProcessor,
     val mapItemsFactory: HypertrackMapItemsFactory,
+    val accountRepositoryProvider: Provider<AccountRepository>,
     val moshi: Moshi,
     val appCoroutineScope: CoroutineScope,
     val stateMachineContext: CoroutineContext

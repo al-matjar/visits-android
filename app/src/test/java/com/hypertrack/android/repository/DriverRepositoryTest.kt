@@ -11,7 +11,9 @@ class DriverRepositoryTest {
     fun `it should correctly set device name`() {
         val slot = mutableListOf<String>()
         val driverRepository = DriverRepository(
-            mockk(relaxed = true),
+            accountRepositoryProvider = mockk(relaxed = true) {
+                every { get() } returns mockk(relaxed = true)
+            },
             mockk(relaxed = true) {
                 every { getHyperTrackService(any()) } returns mockk(relaxed = true) {
                     every {
@@ -54,7 +56,9 @@ class DriverRepositoryTest {
     fun `pick up device name from metadata`() {
         val slot = mutableListOf<String>()
         val driverRepository = DriverRepository(
-            mockk(relaxed = true),
+            accountRepositoryProvider = mockk(relaxed = true) {
+                every { get() } returns mockk(relaxed = true)
+            },
             mockk(relaxed = true) {
                 every { getHyperTrackService(any()) } returns mockk(relaxed = true) {
                     every {

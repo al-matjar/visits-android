@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Provider
 
 class PushReceiver(
-    private val accountRepo: AccountRepository,
+    private val accountRepoProvider: Provider<AccountRepository>,
     private val tripsInteractorProvider: Provider<TripsInteractor>,
     private val notificationsInteractor: NotificationsInteractor,
     private val crashReportsProvider: CrashReportsProvider,
@@ -37,7 +37,7 @@ class PushReceiver(
 
 //        Log.d("hypertrack-verbose", "Got push ${data}")
         if (data["visits"] != null) {
-            if (accountRepo.isLoggedIn) {
+            if (accountRepoProvider.get().isLoggedIn) {
                 notificationsInteractor.sendNewTripNotification(context)
                 GlobalScope.launch {
                     try {

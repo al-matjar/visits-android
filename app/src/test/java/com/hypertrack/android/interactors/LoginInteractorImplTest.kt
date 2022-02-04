@@ -52,11 +52,13 @@ class LoginInteractorImplTest {
     }
     private var accountRepository: AccountRepository = mockk {
         coEvery { onKeyReceived("pk", any(), any()) } returns true
+        coEvery { publishableKey } returns "pk"
     }
     private var driverRepository: DriverRepository = mockk {
         coEvery {
             setUserData(any(), any(), any(), any())
         } returns Unit
+        every { username } returns "username"
     }
     private var tokenService = mockk<TokenForPublishableKeyExchangeService> {
         coEvery { getPublishableKey("cognito token") } returns Response.success(
@@ -84,7 +86,10 @@ class LoginInteractorImplTest {
         loginInteractor = LoginInteractorImpl(
             driverRepository,
             accountLoginProvider,
-            accountRepository,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            { accountRepository },
+            mockk(relaxed = true),
             tokenService,
             liveAccountUrlService,
             "services api key"

@@ -37,15 +37,11 @@ class UserScopeViewModelFactory(
     private val placesInteractor: PlacesInteractor,
     private val feedbackInteractor: FeedbackInteractor,
     private val integrationsRepository: IntegrationsRepository,
-    private val driverRepository: DriverRepository,
-    private val accountRepository: AccountRepository,
     private val crashReportsProvider: CrashReportsProvider,
     private val hyperTrackService: HyperTrackService,
     private val permissionsInteractor: PermissionsInteractor,
     private val accessTokenRepository: AccessTokenRepository,
-    private val apiClient: ApiClient,
     private val osUtilsProvider: OsUtilsProvider,
-    private val placesClient: PlacesClient,
     private val deviceLocationProvider: DeviceLocationProvider,
 ) : ViewModelProvider.Factory {
 
@@ -126,15 +122,15 @@ class UserScopeViewModelFactory(
             VisitsManagementViewModel::class.java -> VisitsManagementViewModel(
                 baseDependencies,
                 userScopeProvider.get().historyInteractorLegacy,
-                accountRepository,
+                appScope.accountRepositoryProvider,
                 hyperTrackService,
                 accessTokenRepository
             ) as T
             ProfileViewModel::class.java -> ProfileViewModel(
                 baseDependencies,
-                driverRepository,
+                appScope.driverRepository,
                 hyperTrackService,
-                accountRepository,
+                appScope.accountRepositoryProvider,
                 appScope.distanceFormatter
             ) as T
             SelectTripDestinationViewModel::class.java -> SelectTripDestinationViewModel(
