@@ -1,10 +1,23 @@
 # Changelog
 
+## [0.13.3] - 2021-02-04
+
+### Fixed
+
+- Sign in screen showing when login via deeplink for the first time
+- Layout issue in Deeplink issues dialog
+
 ## [0.13.2] - 2021-02-04
 
 ### Fixed
 
 - Bug with wrong month in date picker
+- Crash with NO_POSITION in RecyclerView
+- Crash when onBackPressed called on detached fragment
+
+## Added
+
+- Showing locale and measurement units for debug on Profile screen
 
 ## [0.13.1] - 2021-01-26
 
