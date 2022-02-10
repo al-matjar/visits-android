@@ -10,7 +10,7 @@ import com.hypertrack.android.models.local.Stop
 import com.hypertrack.android.models.local.UnknownActivity
 import com.hypertrack.android.models.local.Walk
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.android.utils.TimeValue
+import com.hypertrack.android.utils.datetime.TimeValue
 import com.hypertrack.android.utils.datetime.OpenDateTimeRange
 import com.hypertrack.android.utils.datetime.timeBetween
 import com.hypertrack.android.utils.formatters.DistanceFormatter

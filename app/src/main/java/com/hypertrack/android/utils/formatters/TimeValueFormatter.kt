@@ -1,13 +1,10 @@
 package com.hypertrack.android.utils.formatters
 
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.android.utils.PositiveSeconds
-import com.hypertrack.android.utils.TimeValue
-import com.hypertrack.android.utils.TimeValue.Companion.MINUTES_IN_HOUR
-import com.hypertrack.android.utils.TimeValue.Companion.SECONDS_IN_MINUTE
-import com.hypertrack.android.utils.toSeconds
+import com.hypertrack.android.utils.datetime.PositiveSeconds
+import com.hypertrack.android.utils.datetime.TimeValue
+import com.hypertrack.android.utils.datetime.toSeconds
 import com.hypertrack.logistics.android.github.R
-import kotlin.math.abs
 
 interface TimeValueFormatter {
     fun formatTimeValue(timeValue: TimeValue): String

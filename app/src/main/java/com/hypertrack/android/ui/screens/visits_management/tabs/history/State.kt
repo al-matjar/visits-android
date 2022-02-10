@@ -10,7 +10,7 @@ import com.hypertrack.android.ui.common.map.entities.HistoryPolyline
 import com.hypertrack.android.utils.DistanceValue
 import com.hypertrack.android.utils.LoadingState
 import com.hypertrack.android.utils.LoadingSuccess
-import com.hypertrack.android.utils.TimeValue
+import com.hypertrack.android.utils.datetime.TimeValue
 import java.time.LocalDate
 
 sealed class State {
@@ -41,7 +41,7 @@ data class DaySummary(
     val totalDriveDistance: DistanceValue,
     val totalDriveDuration: TimeValue
 ) {
-    fun isZero() = totalDriveDistance.meters == 0 && totalDriveDuration.seconds == 0L
+    fun isZero() = totalDriveDistance.meters == 0 && totalDriveDuration.totalSeconds == 0L
 }
 
 data class MapHistoryData(

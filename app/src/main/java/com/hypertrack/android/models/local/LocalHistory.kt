@@ -6,9 +6,9 @@ import com.hypertrack.android.ui.common.delegates.address.GraphQlGeofenceVisitAd
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.DistanceValue
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.android.utils.TimeValue
+import com.hypertrack.android.utils.datetime.TimeValue
 import com.hypertrack.android.utils.toMeters
-import com.hypertrack.android.utils.toSeconds
+import com.hypertrack.android.utils.datetime.toSeconds
 import com.squareup.moshi.Moshi
 import java.time.LocalDate
 
