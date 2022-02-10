@@ -6,6 +6,8 @@ import com.hypertrack.android.api.graphql.models.GraphQlHistory
 import com.hypertrack.android.api.graphql.queries.HistoryQuery
 import com.hypertrack.android.api.graphql.queries.PlacesVisitsQuery
 import com.hypertrack.android.api.graphql.queries.QueryBody
+import com.hypertrack.android.models.local.DeviceId
+import com.hypertrack.android.models.local.PublishableKey
 import com.hypertrack.android.utils.*
 import com.squareup.moshi.Moshi
 import retrofit2.HttpException

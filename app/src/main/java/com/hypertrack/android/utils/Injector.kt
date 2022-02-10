@@ -17,6 +17,9 @@ import com.hypertrack.android.repository.*
 import com.hypertrack.android.deeplink.BranchIoDeepLinkProcessor
 import com.hypertrack.android.deeplink.BranchWrapper
 import com.hypertrack.android.deeplink.DeeplinkProcessor
+import com.hypertrack.android.models.local.DeviceId
+import com.hypertrack.android.models.local.PublishableKey
+import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.ui.common.ParamViewModelFactory
 import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.UserScopeViewModelFactory
@@ -95,10 +98,12 @@ object Injector {
         val serviceLocator = serviceLocator
         val osUtilsProvider = OsUtilsProvider(context, crashReportsProvider)
         val accountRepositoryProvider = { getAccountRepo(context) }
+        val myPreferences = getMyPreferences(context)
+        val preferencesRepository = PreferencesRepository(myPreferences)
         val driverRepository = DriverRepository(
             accountRepositoryProvider,
             serviceLocator,
-            getMyPreferences(MyApplication.context),
+            myPreferences,
             osUtilsProvider,
             crashReportsProvider,
         )
@@ -126,6 +131,7 @@ object Injector {
         return AppScope(
             MyApplication.context,
             driverRepository,
+            preferencesRepository,
             DeeplinkInteractor(
                 driverRepository,
                 accountRepositoryProvider,
@@ -240,7 +246,8 @@ object Injector {
     }
 
     private fun createUserScope(
-        publishableKey: String,
+        publishableKey: PublishableKey,
+        hyperTrackService: HyperTrackService,
         appScope: AppScope,
         accessTokenRepository: BasicAuthAccessTokenRepository,
         permissionsInteractor: PermissionsInteractor,
@@ -289,7 +296,6 @@ object Injector {
             Intersect(),
             GlobalScope
         )
-        val hyperTrackService = serviceLocator.getHyperTrackService(publishableKey)
 
         val photoUploadQueueInteractor = PhotoUploadQueueInteractorImpl(
             myPreferences,
@@ -337,7 +343,7 @@ object Injector {
         val graphQlApi = createGraphQlApi(GRAPHQL_API_URL, moshi)
         val graphQlApiClient = GraphQlApiClient(
             graphQlApi,
-            PublishableKey(publishableKey),
+            publishableKey,
             deviceId,
             moshi,
             crashReportsProvider
@@ -416,12 +422,14 @@ object Injector {
 
     private fun getUserScope(): UserScope {
         if (userScope == null) {
-            val myPreferences = getMyPreferences(MyApplication.context)
-            val publishableKey = myPreferences.getAccountData().publishableKey
+            val publishableKey: RealPublishableKey = appScope.preferencesRepository.publishableKey
                 ?: throw IllegalStateException("No publishableKey saved")
+
+            val hyperTrackService = serviceLocator.getHyperTrackService(publishableKey.value)
 
             userScope = createUserScope(
                 publishableKey,
+                hyperTrackService,
                 appScope,
                 accessTokenRepository(MyApplication.context),
                 getPermissionInteractor(),
@@ -581,6 +589,7 @@ class UserScope(
 class AppScope(
     val appContext: Context,
     val driverRepository: DriverRepository,
+    val preferencesRepository: PreferencesRepository,
     val deeplinkInteractor: DeeplinkInteractor,
     val notificationsInteractor: NotificationsInteractor,
     val loginInteractor: LoginInteractor,
@@ -611,9 +620,6 @@ interface AccountPreferencesProvider {
     val isPickUpAllowed: Boolean
     var shouldStartTracking: Boolean
 }
-
-data class DeviceId(val value: String)
-data class PublishableKey(val value: String)
 
 const val BASE_URL = "https://live-app-backend.htprod.hypertrack.com/"
 const val LIVE_API_URL_BASE = "https://live-api.htprod.hypertrack.com/"

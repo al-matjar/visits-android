@@ -5,6 +5,7 @@ import com.hypertrack.android.utils.AccountPreferencesProvider
 import com.hypertrack.android.utils.ServiceLocator
 import kotlin.IllegalStateException
 
+@Deprecated("needs refactoring")
 class AccountRepository(
     private val serviceLocator: ServiceLocator,
     private val accountData: AccountData,

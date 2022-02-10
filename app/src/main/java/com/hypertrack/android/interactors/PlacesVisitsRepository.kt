@@ -3,6 +3,7 @@ package com.hypertrack.android.interactors
 import com.hypertrack.android.api.graphql.DayRange
 import com.hypertrack.android.api.graphql.GraphQlApiClient
 import com.hypertrack.android.api.graphql.models.GraphQlDayVisitsStats
+import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.common.delegates.address.GraphQlGeofenceVisitAddressDelegate
 import com.hypertrack.android.utils.*

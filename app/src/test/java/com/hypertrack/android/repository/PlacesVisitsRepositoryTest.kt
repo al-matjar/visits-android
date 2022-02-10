@@ -7,6 +7,7 @@ import com.hypertrack.android.api.graphql.models.GraphQlGeofenceVisit
 import com.hypertrack.android.interactors.PlaceVisitsStats
 import com.hypertrack.android.interactors.PlacesVisitsRepository
 import com.hypertrack.android.mock.TestMockData
+import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.datetime.toIso
 import io.mockk.coEvery

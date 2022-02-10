@@ -6,7 +6,6 @@ import com.hypertrack.android.api.Polygon
 import com.hypertrack.android.models.*
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.DeviceId
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.datetime.dateTimeFromString
 import com.squareup.moshi.JsonClass

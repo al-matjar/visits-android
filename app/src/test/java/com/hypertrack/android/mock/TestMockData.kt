@@ -13,11 +13,12 @@ import com.hypertrack.android.api.graphql.models.GraphQlPointGeometry
 import com.hypertrack.android.api.models.Coordinate
 import com.hypertrack.android.api.models.RemoteLocation
 import com.hypertrack.android.models.*
+import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.utils.Injector
 import com.hypertrack.android.ui.common.util.copy
-import com.hypertrack.android.utils.DeviceId
+
 import com.hypertrack.android.utils.createAnyMapAdapter
 import com.hypertrack.android.utils.datetime.toIso
 import java.time.LocalDate

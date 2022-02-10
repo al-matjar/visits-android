@@ -6,8 +6,8 @@ import com.hypertrack.android.api.graphql.models.GraphQlGeofenceVisit
 import com.hypertrack.android.api.graphql.models.GraphQlGeotagMarker
 import com.hypertrack.android.api.graphql.models.GraphQlHistory
 import com.hypertrack.android.api.models.RemoteLocation
-import com.hypertrack.android.utils.DeviceId
-import com.hypertrack.android.utils.PublishableKey
+import com.hypertrack.android.models.local.DeviceId
+import com.hypertrack.android.models.local.PublishableKey
 import com.hypertrack.android.utils.datetime.toIso
 
 import com.squareup.moshi.JsonClass

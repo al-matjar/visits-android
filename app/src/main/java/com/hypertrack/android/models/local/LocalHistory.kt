@@ -4,7 +4,6 @@ import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.graphql.models.GraphQlHistory
 import com.hypertrack.android.ui.common.delegates.address.GraphQlGeofenceVisitAddressDelegate
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.DeviceId
 import com.hypertrack.android.utils.DistanceValue
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.TimeValue

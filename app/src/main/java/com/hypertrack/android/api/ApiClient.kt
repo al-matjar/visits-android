@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.models.*
+import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.repository.AccessTokenRepository
 import com.hypertrack.android.utils.*

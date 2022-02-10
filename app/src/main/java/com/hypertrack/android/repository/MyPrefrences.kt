@@ -19,6 +19,7 @@ interface TripsStorage {
     suspend fun getTrips(): List<LocalTrip>
 }
 
+@Deprecated("use PreferencesRepository")
 class MyPreferences(context: Context, private val moshi: Moshi) :
     AccountDataStorage, TripsStorage, PhotoUploadQueueStorage {
 
@@ -58,7 +59,7 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
     override fun getAccountData(): AccountData {
         return try {
             moshi.adapter(AccountData::class.java)
-                    .fromJson(sharedPreferences.getString(ACCOUNT_KEY, "{}")!!) ?: AccountData()
+                .fromJson(sharedPreferences.getString(ACCOUNT_KEY, "{}")!!) ?: AccountData()
         } catch (ignored: Throwable) {
             AccountData()
         }
@@ -66,15 +67,15 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
 
     override fun saveAccountData(accountData: AccountData) {
         sharedPreferences.edit()
-                ?.putString(ACCOUNT_KEY, moshi.adapter(AccountData::class.java).toJson(accountData))
-                ?.apply()
+            ?.putString(ACCOUNT_KEY, moshi.adapter(AccountData::class.java).toJson(accountData))
+            ?.apply()
     }
 
     override fun restoreRepository(): BasicAuthAccessTokenRepository? {
         sharedPreferences.getString(ACCESS_REPO_KEY, null)?.let {
             try {
                 val config = moshi.adapter(BasicAuthAccessTokenConfig::class.java).fromJson(it)
-                        ?: return null
+                    ?: return null
                 return BasicAuthAccessTokenRepository(config)
             } catch (ignored: Throwable) {
 
@@ -85,12 +86,12 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
 
     override fun persistRepository(repo: AccessTokenRepository) {
         sharedPreferences.edit()
-                ?.putString(
-                        ACCESS_REPO_KEY,
-                        moshi
-                                .adapter(BasicAuthAccessTokenConfig::class.java)
-                                .toJson(repo.getConfig() as BasicAuthAccessTokenConfig)
-                )?.apply()
+            ?.putString(
+                ACCESS_REPO_KEY,
+                moshi
+                    .adapter(BasicAuthAccessTokenConfig::class.java)
+                    .toJson(repo.getConfig() as BasicAuthAccessTokenConfig)
+            )?.apply()
     }
 
     override suspend fun saveTrips(trips: List<LocalTrip>) {

@@ -6,7 +6,6 @@ import com.hypertrack.android.api.graphql.models.GraphQlGeofenceVisit
 import com.hypertrack.android.models.GeofenceMetadata
 import com.hypertrack.android.ui.common.delegates.address.GraphQlGeofenceVisitAddressDelegate
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.DeviceId
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.datetime.EndDateTime
 import com.hypertrack.android.utils.datetime.StartDateTime

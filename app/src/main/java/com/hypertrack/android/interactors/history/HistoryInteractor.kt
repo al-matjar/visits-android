@@ -4,10 +4,10 @@ import androidx.lifecycle.MutableLiveData
 import com.hypertrack.android.api.graphql.DayRange
 import com.hypertrack.android.api.graphql.GraphQlApiClient
 import com.hypertrack.android.api.graphql.models.GraphQlHistory
+import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.LocalHistory
 import com.hypertrack.android.ui.common.delegates.address.GraphQlGeofenceVisitAddressDelegate
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.DeviceId
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.Loading
 import com.hypertrack.android.utils.LoadingFailure
