@@ -28,7 +28,6 @@ import kotlinx.android.synthetic.main.fragment_history.progress
 import kotlinx.android.synthetic.main.fragment_history.scrim
 import kotlinx.android.synthetic.main.progress_bar.*
 
-import android.app.DatePickerDialog
 import android.view.LayoutInflater
 import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.toView
@@ -39,6 +38,7 @@ import kotlinx.android.synthetic.main.fragment_history.lTimeline
 import kotlinx.android.synthetic.main.inflate_error.view.bReload
 import kotlinx.android.synthetic.main.inflate_error.view.tvErrorMessage
 import kotlinx.android.synthetic.main.inflate_timeline.ivTimelineArrowUp
+import kotlinx.android.synthetic.main.inflate_timeline.lTimelineHeader
 import kotlinx.android.synthetic.main.inflate_timeline.rvTimeline
 import kotlinx.android.synthetic.main.inflate_timeline.tvSummaryDistance
 import kotlinx.android.synthetic.main.inflate_timeline.tvSummaryDuration
@@ -79,7 +79,10 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
                 displayLoadingState(it)
             }
 
-            vm.setBottomSheetOpenedEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            vm.setBottomSheetExpandedEvent.observeWithErrorHandling(
+                viewLifecycleOwner,
+                vm::onError
+            ) {
                 bottomSheetBehavior.state = if (it) {
                     BottomSheetBehavior.STATE_EXPANDED
                 } else {
@@ -123,8 +126,23 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
                 bSelectDate.setGoneState(it == null)
             }
 
-            vm.showTimelineUpArrow.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            vm.showTimelineArrow.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+                ivTimelineArrowUp.clearAnimation()
                 ivTimelineArrowUp.setGoneState(!it)
+            }
+
+            vm.timelineArrowDirectionDown.observeWithErrorHandling(
+                viewLifecycleOwner,
+                vm::onError
+            ) { down ->
+                ivTimelineArrowUp.clearAnimation()
+                ivTimelineArrowUp.animate().apply {
+                    if (down) {
+                        rotation(180f)
+                    } else {
+                        rotation(0f)
+                    }
+                }.setDuration(ANIMATION_DURATION).start()
             }
 
             vm.showAddGeotagButton.observeWithErrorHandling(
@@ -135,12 +153,8 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
                 bAddGeotag.apply {
                     if (show) {
                         show()
-                        alpha = 0f
-                        animate().alpha(1f).setDuration(FADE_DURATION).start()
                     } else {
-                        alpha = 1f
-                        animate().alpha(0f).setDuration(FADE_DURATION).withEndAction { hide() }
-                            .start()
+                        hide()
                     }
                 }
             }
@@ -184,7 +198,14 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
         rvTimeline.adapter = vm.timelineAdapter
         rvTimeline.layoutManager = LinearLayoutManager(MyApplication.context)
 
-        scrim.setOnClickListener { bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED }
+        scrim.setOnClickListener {
+            vm.onScrimClick()
+        }
+
+        lTimelineHeader.setOnClickListener {
+            vm.onTimelineHeaderClick()
+        }
+
         bottomSheetBehavior.addBottomSheetCallback(object :
             BottomSheetBehavior.BottomSheetCallback() {
             override fun onSlide(bottomSheet: View, slideOffset: Float) {
@@ -305,7 +326,7 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
     }
 
     companion object {
-        const val FADE_DURATION = 200L
+        const val ANIMATION_DURATION = 200L
     }
 }
 

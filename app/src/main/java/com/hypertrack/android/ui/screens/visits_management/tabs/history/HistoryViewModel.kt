@@ -58,10 +58,11 @@ class HistoryViewModel(
     val errorTextState = MutableLiveData<ErrorMessage?>()
     val daySummaryTexts = MutableLiveData<SummaryTexts>()
     val currentDateText = MutableLiveData<String?>()
-    val showTimelineUpArrow = MutableLiveData<Boolean>()
+    val showTimelineArrow = MutableLiveData<Boolean>()
+    val timelineArrowDirectionDown = MutableLiveData<Boolean>()
     val showAddGeotagButton = MutableLiveData<Boolean>()
     val openDatePickerDialogEvent = MutableLiveData<Consumable<LocalDate>>()
-    val setBottomSheetOpenedEvent = MutableLiveData<Boolean>()
+    val setBottomSheetExpandedEvent = MutableLiveData<Boolean>()
     val openDialogEvent = MutableLiveData<Consumable<TimelineDialog>>()
 
     private val stateMachine = StateMachine<Action, State, Effect>(
@@ -164,7 +165,7 @@ class HistoryViewModel(
                             is LoadingSuccess -> {
                                 when (state.historyData.data.mapData.segmentSelection) {
                                     is NotSelected -> {
-                                        state.withEffects(CloseBottomSheetEffect)
+                                        state.withEffects(SetBottomSheetStateEffect(expanded = false))
                                     }
                                     is SelectedSegment -> {
                                         withSegmentSelection(state, state.historyData, NotSelected)
@@ -259,7 +260,7 @@ class HistoryViewModel(
                 }
             }
             OnBackPressedAction -> {
-                state.withEffects(CloseBottomSheetEffect)
+                state.withEffects(SetBottomSheetStateEffect(expanded = false))
             }
             is OnGeofenceClickAction -> {
                 state.withEffects(OpenGeofenceDetailsEffect(action.geofenceId))
@@ -282,6 +283,41 @@ class HistoryViewModel(
                     is MapReadyState -> state.withEffects(LoadHistoryEffect(state.date))
                 }
             }
+            OnTimelineHeaderClickAction -> {
+                when (state) {
+                    is Initial -> {
+                        state.withEffects(IllegalActionEffect(action, state))
+                    }
+                    is MapReadyState -> {
+                        when (state.historyData) {
+                            is Loading, is LoadingFailure -> {
+                                state.asReducerResult()
+                            }
+                            is LoadingSuccess -> {
+                                if (state.historyData.data.timelineTiles.isNotEmpty()) {
+                                    state.withEffects(
+                                        SetBottomSheetStateEffect(
+                                            expanded = !state.bottomSheetExpanded
+                                        )
+                                    )
+                                } else {
+                                    state.asReducerResult()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            OnScrimClickAction -> {
+                when (state) {
+                    is Initial -> {
+                        state.withEffects(IllegalActionEffect(action, state))
+                    }
+                    is MapReadyState -> {
+                        state.withEffects(SetBottomSheetStateEffect(expanded = false))
+                    }
+                }
+            }
         }
     }
 
@@ -295,8 +331,9 @@ class HistoryViewModel(
                             is Either.Right -> effect.map.animateCameraToBounds(effect.target.right)
                         } as Any?
                     }
-                    is CloseBottomSheetEffect -> {
-                        setBottomSheetOpenedEvent.postValue(false)
+                    is SetBottomSheetStateEffect -> {
+                        setBottomSheetExpandedEvent.postValue(effect.expanded)
+                        timelineArrowDirectionDown.postValue(effect.expanded)
                     }
                     is MoveMapToBoundsEffect -> {
                         effect.map.moveCamera(
@@ -491,7 +528,7 @@ class HistoryViewModel(
                     tiles = historyData.data.timelineTiles,
                     showAddGeotagButton = showAddGeotagButton,
                     showTimelineRecyclerView = !summary.isZero(),
-                    showUpArrow = !historyData.data.timelineTiles.isEmpty(),
+                    showUpArrow = historyData.data.timelineTiles.isNotEmpty(),
                     totalDriveDurationText = if (!summary.isZero()) {
                         timeValueFormatter.formatTimeValue(summary.totalDriveDuration).let {
                             osUtilsProvider.stringFromResource(
@@ -566,7 +603,7 @@ class HistoryViewModel(
                 totalDriveDuration = viewState.totalDriveDurationText,
             )
         )
-        showTimelineUpArrow.postValue(viewState.showUpArrow)
+        showTimelineArrow.postValue(viewState.showUpArrow)
         showAddGeotagButton.postValue(viewState.showAddGeotagButton)
     }
 
@@ -762,6 +799,14 @@ class HistoryViewModel(
 
     fun onReloadClicked() {
         stateMachine.handleAction(OnReloadPressedAction)
+    }
+
+    fun onScrimClick() {
+        stateMachine.handleAction(OnScrimClickAction)
+    }
+
+    fun onTimelineHeaderClick() {
+        stateMachine.handleAction(OnTimelineHeaderClickAction)
     }
 
     companion object {

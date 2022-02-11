@@ -21,5 +21,7 @@ data class OnBottomSheetStateChangedAction(val expanded: Boolean) : Action()
 data class OnErrorAction(val exception: Exception) : Action()
 object OnBackPressedAction : Action()
 object OnReloadPressedAction : Action()
+object OnTimelineHeaderClickAction : Action()
+object OnScrimClickAction : Action()
 object OnResumeAction : Action()
 

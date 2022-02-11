@@ -32,7 +32,7 @@ data class MoveMapToBoundsEffect(
     val mapPadding: Int
 ) : Effect()
 
-object CloseBottomSheetEffect : Effect()
+class SetBottomSheetStateEffect(val expanded: Boolean) : Effect()
 
 data class UpdateMapEffect(
     val map: HypertrackMapWrapper,
