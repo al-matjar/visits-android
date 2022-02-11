@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.13.4] - 2021-02-11
+
+### Added
+
+- History timeline header arrow is now clickable (click opens the timeline)
+
+### Fixed
+
+- Wrong minutes value in timeline drive duration field
+
 ## [0.13.3] - 2021-02-04
 
 ### Fixed
