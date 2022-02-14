@@ -5,11 +5,9 @@ buildscript {
     versions.target_sdk = 31
     versions.min_sdk = 21
 
-    versions.hypertrack_sdk = "5.4.5"
-    versions.hypertrack_views = "0.8.6"
-    versions.hypertrack_maps_google = "0.1.8"
+    versions.hypertrack_sdk = "13.13.13-alpha.13"
 
-    versions.build_gradle = "4.2.2"
+    versions.build_gradle = "7.0.3"
     versions.firebase_crashlytics_gradle = "2.6.1"
     versions.google_services = "4.3.10"
 
@@ -27,14 +25,14 @@ buildscript {
     versions.firebase_appindexing = "20.0.0"
     versions.google_places = "2.5.0"
     versions.kotlinx_coroutines = "1.5.2"
-    versions.kotlin_version = "1.4.31"
+    versions.kotlin_version = "1.6.10"
     versions.lifecycle_livedata_ktx = "2.4.0"
     versions.lifecycle_viewmodel_ktx = "2.4.0"
     versions.lifecycle_extensions = "2.2.0"
     versions.logging_interceptor = "4.4.0"
     versions.lottie = "3.1.0"
     versions.material = "1.5.0"
-    versions.moshi = "1.11.0"
+    versions.moshi = "1.13.0"
     versions.nav_version = "2.3.5"
     versions.okhttp = "4.9.3"
     versions.play_services_location = "19.0.1"
@@ -64,6 +62,7 @@ buildscript {
 
     repositories {
         google()
+        maven { url 'https://s3.us-west-2.amazonaws.com/m2.hypertrack.com/' }
         mavenCentral()
     }
     dependencies {
@@ -73,14 +72,6 @@ buildscript {
         classpath "com.google.gms:google-services:${versions.google_services}"
         classpath "com.google.firebase:firebase-crashlytics-gradle:${versions.firebase_crashlytics_gradle}"
      }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        
-    }
 }
 
 task clean(type: Delete) {

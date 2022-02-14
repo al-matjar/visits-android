@@ -23,8 +23,8 @@ android {
         resValue "string", "awsLoginTestUserName", rootProject.properties.awsLoginTestUserName
         resValue "string", "awsLoginTestUserPwd", rootProject.properties.awsLoginTestUserPwd
         resValue "string", "awsLoginTestExpectedPk", rootProject.properties.awsLoginTestExpectedPk
-        if(rootProject.properties.servicesApiKey == null) throw new Exception("SERVICES_API_KEY is null")
-        if(rootProject.properties.graphqlApiKey == null) throw new Exception("GRAPHQL_API_KEY is null")
+        if (rootProject.properties.servicesApiKey == null) throw new Exception("SERVICES_API_KEY is null")
+        if (rootProject.properties.graphqlApiKey == null) throw new Exception("GRAPHQL_API_KEY is null")
         buildConfigField("String", "SERVICES_API_KEY", "\"${rootProject.properties.servicesApiKey}\"")
         buildConfigField("String", "GRAPHQL_API_KEY", "\"${rootProject.properties.graphqlApiKey}\"")
     }
@@ -62,21 +62,12 @@ android {
     }
 }
 
-repositories {
-    maven {
-        name 'hypertrack'
-        url 'http://m2.hypertrack.com'
-    }
-}
-
 dependencies {
     implementation "com.hypertrack:hypertrack:${versions.hypertrack_sdk}"
-    implementation "com.hypertrack:hypertrack-views:${versions.hypertrack_views}"
-    implementation "com.hypertrack:maps-google:${versions.hypertrack_maps_google}"
     implementation project(path: ':android-kotlin-geohash')
 
     kapt "com.squareup.moshi:moshi-kotlin-codegen:${versions.moshi}"
-    kaptTest  "com.squareup.moshi:moshi-kotlin-codegen:${versions.moshi}"
+    kaptTest "com.squareup.moshi:moshi-kotlin-codegen:${versions.moshi}"
 
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:${versions.desugar_jdk_libs}"
 
@@ -150,13 +141,13 @@ def codeFromVersionString(versionString) {
         def featureSuffix = 0
         if (match.group('rc')) {
             featureSuffice += 30
-            featureSuffix += (match.group('rcVersion')?:"0").toInteger()
+            featureSuffix += (match.group('rcVersion') ?: "0").toInteger()
         } else if (match.group('beta')) {
             featureSuffix += 20
-            featureSuffix += (match.group('betaVersion')?:"0").toInteger()
+            featureSuffix += (match.group('betaVersion') ?: "0").toInteger()
         } else if (match.group('alpha')) {
             featureSuffix += 10
-            featureSuffix += (match.group('alphaVersion')?:"0").toInteger()
+            featureSuffix += (match.group('alphaVersion') ?: "0").toInteger()
         } else if (match.group('snapshot'))
             featureSuffix = 5
         return versionMajor * 1000000 + versionMinor * 10000 + versionPatch * 100 + featureSuffix

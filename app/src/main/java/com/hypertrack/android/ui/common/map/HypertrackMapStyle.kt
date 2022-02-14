@@ -18,7 +18,7 @@ class HypertrackMapStyle(
     }
 
     val routeColor: Int by lazy {
-        osUtilsProvider.colorFromResource(com.hypertrack.maps.google.R.color.ht_route)
+        osUtilsProvider.colorFromResource(R.color.colorHyperTrackGreen)
     }
 
     val geofenceMarkerIcon: BitmapDescriptor by lazy {

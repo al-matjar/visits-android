@@ -55,10 +55,10 @@ class HypertrackMapWrapper(
         )
     }
     private val tripStartIcon = osUtilsProvider.bitmapDescriptorFromResource(
-        com.hypertrack.maps.google.R.drawable.starting_position
+        R.drawable.starting_position
     )
     private val activeOrderIcon = osUtilsProvider.bitmapDescriptorFromResource(
-        com.hypertrack.maps.google.R.drawable.destination
+        R.drawable.destination
     )
     private val completedOrderIcon = osUtilsProvider.bitmapDescriptorFromVectorResource(
         R.drawable.ic_order_completed
