@@ -1,6 +1,12 @@
 # Changelog
 
-## [0.13.4] - 2021-02-11
+## [0.14.0] - 2022-02-16
+
+### Changed
+
+- Hypertrack SDK 6.0.0-beta.2
+
+## [0.13.4] - 2022-02-11
 
 ### Added
 
@@ -10,14 +16,14 @@
 
 - Wrong minutes value in timeline drive duration field
 
-## [0.13.3] - 2021-02-04
+## [0.13.3] - 2022-02-04
 
 ### Fixed
 
 - Sign in screen showing when login via deeplink for the first time
 - Layout issue in Deeplink issues dialog
 
-## [0.13.2] - 2021-02-04
+## [0.13.2] - 2022-02-04
 
 ### Fixed
 
@@ -29,25 +35,25 @@
 
 - Showing locale and measurement units for debug on Profile screen
 
-## [0.13.1] - 2021-01-26
+## [0.13.1] - 2022-01-26
 
 ### Fixed
 
 - Remove timeline tile notch
 
-## [0.13.0] - 2021-01-26
+## [0.13.0] - 2022-01-26
 
 ### Added
 
 - Showing history for different date
 
-## [0.12.2] - 2021-01-17
+## [0.12.2] - 2022-01-17
 
 ### Added
 
 - Deeplink error reporting
 
-## [0.12.1] - 2021-01-10
+## [0.12.1] - 2022-01-10
 
 ### Fixed
 
