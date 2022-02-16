@@ -14,7 +14,7 @@ android {
         applicationId "com.hypertrack.logistics.android.github"
         minSdkVersion versions.min_sdk
         targetSdkVersion versions.target_sdk
-        versionName "0.14.0"
+        versionName "0.15.0-SNAPSHOT"
         versionCode codeFromVersionString(versionName)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
