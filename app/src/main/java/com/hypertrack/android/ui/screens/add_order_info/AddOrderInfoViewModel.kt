@@ -10,6 +10,8 @@ import com.hypertrack.android.interactors.AddOrderError
 import com.hypertrack.android.interactors.AddOrderSuccess
 import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.TripsInteractor
+import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.CreateTripCreationScopeAction
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
@@ -18,17 +20,19 @@ import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDele
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.screens.add_order.AddOrderFragmentDirections
 import com.hypertrack.android.utils.MyApplication
-import com.hypertrack.android.utils.TripCreationScope
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
+@FlowPreview
 class AddOrderInfoViewModel(
     private val params: AddOrderParams,
     baseDependencies: BaseViewModelDependencies,
+    private val appInteractor: AppInteractor,
     private val tripsInteractor: TripsInteractor,
     private val geocodingInteractor: GeocodingInteractor,
 ) : BaseViewModel(baseDependencies) {
@@ -81,7 +85,7 @@ class AddOrderInfoViewModel(
                     }
                 }
                 is NewTripParams -> {
-                    MyApplication.injector.tripCreationScope = TripCreationScope(destinationData)
+                    appInteractor.handleAction(CreateTripCreationScopeAction(destinationData))
                     destination.postValue(
                         AddOrderFragmentDirections
                             .actionGlobalVisitManagementFragment(Tab.CURRENT_TRIP)

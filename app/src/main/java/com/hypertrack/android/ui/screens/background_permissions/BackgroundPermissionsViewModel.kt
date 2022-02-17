@@ -6,7 +6,9 @@ import com.hypertrack.android.interactors.PermissionsInteractor
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
+import kotlinx.coroutines.FlowPreview
 
+@FlowPreview
 class BackgroundPermissionsViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val permissionsInteractor: PermissionsInteractor
@@ -30,7 +32,7 @@ class BackgroundPermissionsViewModel(
                 destination.postValue(BackgroundPermissionsFragmentDirections.actionGlobalVisitManagementFragment())
             }
         }
-
     }
 
 }
+

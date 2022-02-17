@@ -4,6 +4,7 @@ import android.location.Location
 import android.os.Build
 import com.hypertrack.android.models.*
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.Visit
+import com.hypertrack.android.utils.FirebaseCrashReportsProviderTest.Companion.crashReportsProvider
 import com.hypertrack.sdk.HyperTrack
 import io.mockk.every
 import io.mockk.mockk
@@ -13,11 +14,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-@RunWith(RobolectricTestRunner::class) //Location class in Android
-@Config(sdk = [Build.VERSION_CODES.P])
 class HyperTrackServiceTest {
 
     @Test
@@ -27,7 +27,10 @@ class HyperTrackServiceTest {
 
         val map = mapOf("1" to 1, "2" to mapOf("a" to "b"))
 
-        val hyperTrackService = HyperTrackService(listener, sdk)
+        val hyperTrackService = HyperTrackService(
+            sdk = sdk,
+            crashReportsProvider = crashReportsProvider()
+        )
         hyperTrackService.setDeviceInfo(
             name = "name",
             email = "email",
@@ -61,7 +64,10 @@ class HyperTrackServiceTest {
             "phone_number" to "metadata phone",
         )
 
-        val hyperTrackService = HyperTrackService(listener, sdk)
+        val hyperTrackService = HyperTrackService(
+            sdk = sdk,
+            crashReportsProvider = crashReportsProvider()
+        )
         hyperTrackService.setDeviceInfo(
             name = "name",
             email = "email",

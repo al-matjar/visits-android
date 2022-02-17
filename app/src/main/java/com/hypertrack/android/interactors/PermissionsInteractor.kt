@@ -2,6 +2,7 @@ package com.hypertrack.android.interactors
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -19,7 +20,8 @@ interface PermissionsInteractor {
 }
 
 class PermissionsInteractorImpl(
-    private val hyperTrackProvider: Provider<HyperTrackService>
+    private val appContext: Context,
+    private val hyperTrackService: HyperTrackService
 ) : PermissionsInteractor {
 
 
@@ -58,7 +60,7 @@ class PermissionsInteractorImpl(
     }
 
     override fun requestRequiredPermissions(activity: Activity) {
-        hyperTrackProvider.get().showPermissionsPrompt()
+        hyperTrackService.showPermissionsPrompt()
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -68,7 +70,7 @@ class PermissionsInteractorImpl(
     }
 
     private fun hasPermission(permission: String) =
-        MyApplication.context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+        appContext.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
 
 }

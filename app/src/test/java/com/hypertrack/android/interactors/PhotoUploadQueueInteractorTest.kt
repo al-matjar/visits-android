@@ -7,7 +7,6 @@ import com.hypertrack.android.api.ApiClient
 import com.hypertrack.android.repository.FileRepository
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.ImageDecoder
-import com.hypertrack.android.utils.MAX_IMAGE_SIDE_LENGTH_PX
 import com.hypertrack.android.utils.RetryParams
 import io.mockk.coEvery
 import io.mockk.coVerifyAll
@@ -32,6 +31,7 @@ import org.robolectric.annotation.LooperMode
 import retrofit2.HttpException
 import retrofit2.Response
 import com.hypertrack.android.TestApplication
+import com.hypertrack.android.interactors.PhotoUploadQueueInteractorImpl.Companion.MAX_IMAGE_SIDE_LENGTH_PX
 
 @ExperimentalCoroutinesApi
 @RunWith(RobolectricTestRunner::class)

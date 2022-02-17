@@ -1,12 +1,12 @@
 package com.hypertrack.android.interactors
 
+import com.hypertrack.android.TestInjector
 import com.hypertrack.android.api.ApiClient
 import com.hypertrack.android.mock.TestMockData
 import com.hypertrack.android.models.GeofenceMetadata
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.repository.PlacesRepositoryImpl
 
-import com.hypertrack.android.utils.Injector
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -33,7 +33,7 @@ class PlacesInteractorTest {
             PlacesRepositoryImpl(
                 DeviceId("1"),
                 apiClient,
-                Injector.getMoshi(),
+                TestInjector.getMoshi(),
                 mockk(relaxed = true),
                 mockk(relaxed = true),
             ),

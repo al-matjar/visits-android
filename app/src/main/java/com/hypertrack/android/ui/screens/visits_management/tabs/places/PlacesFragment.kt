@@ -6,11 +6,11 @@ import android.util.Log
 import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.*
 import com.hypertrack.android.ui.common.util.*
-import com.hypertrack.android.utils.Injector
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_places.*
 

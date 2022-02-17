@@ -14,6 +14,7 @@ import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.*
+import com.hypertrack.android.use_case.sdk.TrackingStarted
 import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.JustSuccess
 import io.mockk.*
@@ -26,7 +27,7 @@ import org.junit.Rule
 import org.junit.Test
 import retrofit2.Response
 
-@Suppress("EXPERIMENTAL_API_USAGE")
+@Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class TripInteractorTest {
 
     @get:Rule
@@ -368,6 +369,7 @@ class TripInteractorTest {
                 coEvery { getTrips() } returns backendTrips
                 coEvery { completeOrder(any(), any()) } returns OrderCompletionSuccess
                 coEvery { cancelOrder(any(), any()) } returns OrderCompletionSuccess
+                coEvery { snoozeOrder(any(), any()) } returns JustSuccess
                 coEvery { updateOrderMetadata(any(), any(), any()) } answers {
                     var trip = backendTrips.first { it.orders!!.any { it.id == firstArg() } }.copy()
                     trip = trip.copy(orders = trip.orders!!.map {
@@ -387,15 +389,13 @@ class TripInteractorTest {
         }
 
         fun createTripInteractorImpl(
-            tripStorage: TripsStorage = mockk() {
+            tripStorage: TripsStorage = mockk {
                 coEvery { getTrips() } returns listOf()
                 coEvery { saveTrips(any()) } returns Unit
             },
             backendTrips: List<Trip> = listOf(),
             apiClient: ApiClient = createMockApiClient(backendTrips),
-            hyperTrackService: HyperTrackService = mockk(relaxed = true) {
-                every { isTracking } returns MutableLiveData(true)
-            },
+            hyperTrackService: HyperTrackService = mockk(),
             queueInteractor: PhotoUploadQueueInteractor = mockk(relaxed = true) {},
             tripsRepository: TripsRepository = TripsRepositoryImpl(
                 apiClient,
@@ -407,9 +407,13 @@ class TripInteractorTest {
             allowRefresh: () -> Boolean = { true }
         ): TripsInteractorImpl {
             return object : TripsInteractorImpl(
+                mockk {
+                    every { value } returns mockk {
+                        every { isSdkTracking() } returns true
+                    }
+                },
                 tripsRepository,
                 apiClient,
-                hyperTrackService,
                 queueInteractor,
                 mockk(relaxed = true) {},
                 mockk(relaxed = true) {},

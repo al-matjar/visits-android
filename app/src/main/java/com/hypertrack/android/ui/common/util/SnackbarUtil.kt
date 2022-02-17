@@ -4,11 +4,28 @@ import android.view.View
 import android.widget.TextView
 import com.google.android.material.snackbar.Snackbar
 import com.hypertrack.android.ui.base.Consumable
+import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 
 
 object SnackbarUtil {
+
+    fun showErrorMessageSnackbar(view: View, consumable: Consumable<ErrorMessage>) {
+        consumable.consume { errorMessage ->
+            showErrorSnackbar(view, errorMessage)
+        }
+    }
+
+    fun showErrorSnackbar(view: View, errorTextConsumable: Consumable<String>) {
+        errorTextConsumable.consume {
+            showErrorSnackbar(view, it)
+        }
+    }
+
+    fun showErrorSnackbar(view: View, errorMessage: ErrorMessage) {
+        showErrorSnackbar(view, errorMessage.text)
+    }
 
     fun showErrorSnackbar(view: View, errorText: String?) {
         errorText.toString().let { text ->
@@ -33,10 +50,5 @@ object SnackbarUtil {
         }
     }
 
-    fun showErrorSnackbar(view: View, errorTextConsumable: Consumable<String>) {
-        errorTextConsumable.consume {
-            showErrorSnackbar(view, it)
-        }
-    }
 
 }

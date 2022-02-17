@@ -2,62 +2,45 @@ package com.hypertrack.android.ui.common
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.hypertrack.android.interactors.PermissionsInteractor
+import com.hypertrack.android.di.AppScope
+import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.screens.background_permissions.BackgroundPermissionsViewModel
 import com.hypertrack.android.ui.screens.confirm_email.ConfirmEmailViewModel
 import com.hypertrack.android.ui.screens.sign_in.SignInViewModel
-import com.hypertrack.android.ui.screens.sign_up.SignUpViewModel
-import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
-import com.hypertrack.android.utils.AppScope
-import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.HyperTrackService
-import com.hypertrack.android.utils.OsUtilsProvider
-import com.squareup.moshi.Moshi
+import com.hypertrack.android.use_case.app.UseCases
 
+// todo set separate factories for all vms
 @Suppress("UNCHECKED_CAST")
 class ViewModelFactory(
+    private val appInteractor: AppInteractor,
     private val appScope: AppScope,
-    private val permissionsInteractor: PermissionsInteractor,
-    private val crashReportsProvider: CrashReportsProvider,
-    private val osUtilsProvider: OsUtilsProvider,
-    private val moshi: Moshi,
-    private val hyperTrackServiceProvider: () -> HyperTrackService?
+    private val useCases: UseCases
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val baseDependencies = BaseViewModelDependencies(
-            osUtilsProvider,
-            osUtilsProvider,
-            crashReportsProvider
+        val baseViewModelDependencies = BaseViewModelDependencies(
+            appScope.osUtilsProvider,
+            appScope.osUtilsProvider,
+            appScope.crashReportsProvider
         )
         return when (modelClass) {
             ConfirmEmailViewModel::class.java -> ConfirmEmailViewModel(
-                baseDependencies,
-                appScope.loginInteractor,
-                permissionsInteractor,
+                baseViewModelDependencies,
+                appInteractor,
+                useCases.verifyByOtpCodeUseCase,
+                useCases.resendExceptionToCrashlyticsUseCase,
+                useCases.loadUserStateAfterSignInUseCase,
             ) as T
             SignInViewModel::class.java -> SignInViewModel(
-                baseDependencies,
-                appScope.loginInteractor,
-                permissionsInteractor,
-                appScope.deeplinkInteractor,
-                appScope.deeplinkProcessor,
+                baseViewModelDependencies,
+                appInteractor,
+                useCases.signInUseCase,
+                useCases.loginWithDeeplinkUseCase,
+                useCases.loadUserStateAfterSignInUseCase,
+                useCases.logExceptionToCrashlyticsUseCase,
+                useCases.logMessageToCrashlyticsUseCase,
+                appScope.branchWrapper,
                 appScope.moshi
-            ) as T
-            SignUpViewModel::class.java -> SignUpViewModel(
-                baseDependencies,
-                appScope.loginInteractor,
-            ) as T
-            SplashScreenViewModel::class.java -> SplashScreenViewModel(
-                baseDependencies,
-                appScope.deeplinkInteractor,
-                permissionsInteractor,
-                hyperTrackServiceProvider
-            ) as T
-            BackgroundPermissionsViewModel::class.java -> BackgroundPermissionsViewModel(
-                baseDependencies,
-                permissionsInteractor
             ) as T
             else -> throw IllegalArgumentException("Can't instantiate class $modelClass")
         }

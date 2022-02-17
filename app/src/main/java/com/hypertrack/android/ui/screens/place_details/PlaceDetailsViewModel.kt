@@ -33,7 +33,7 @@ import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
 
-@Suppress("EXPERIMENTAL_API_USAGE")
+@Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class PlaceDetailsViewModel(
     private val geofenceId: String,
     private val placesInteractor: PlacesInteractor,

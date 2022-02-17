@@ -5,18 +5,16 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.gms.maps.SupportMapFragment
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
-import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.*
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.stringFromResource
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_add_place_info.*
@@ -30,7 +28,7 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
 
     private val args: AddPlaceInfoFragmentArgs by navArgs()
     private val vm: AddPlaceInfoViewModel by viewModels {
-        MyApplication.injector.provideParamVmFactory(
+        Injector.provideUserScopeParamViewModelFactory(
             args.destinationData
         )
     }

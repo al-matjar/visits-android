@@ -11,17 +11,17 @@ sealed class OutageType(val name: String) {
 }
 
 object ServiceTerminated : OutageType(
-    OUTAGE_GROUP_SERVICE_TERMINATED
+    OUTAGE_TYPE_SERVICE_TERMINATED
 )
 
 object ServiceTerminatedByUser : OutageType(
-    OUTAGE_GROUP_SERVICE_TERMINATED_BY_USER
+    OUTAGE_TYPE_SERVICE_TERMINATED_BY_USER
 )
 
 object ServiceTerminatedByOs : OutageType(
-    OUTAGE_GROUP_SERVICE_TERMINATED_BY_OS
+    OUTAGE_TYPE_SERVICE_TERMINATED_BY_OS
 )
 
-private const val OUTAGE_GROUP_SERVICE_TERMINATED = "service_terminated"
-private const val OUTAGE_GROUP_SERVICE_TERMINATED_BY_USER = "service_terminated_by_user"
-private const val OUTAGE_GROUP_SERVICE_TERMINATED_BY_OS = "service_terminated_by_os"
+private const val OUTAGE_TYPE_SERVICE_TERMINATED = "service_terminated"
+private const val OUTAGE_TYPE_SERVICE_TERMINATED_BY_USER = "service_terminated_by_user"
+private const val OUTAGE_TYPE_SERVICE_TERMINATED_BY_OS = "service_terminated_by_os"

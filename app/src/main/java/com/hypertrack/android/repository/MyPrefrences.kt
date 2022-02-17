@@ -8,11 +8,11 @@ import com.hypertrack.android.interactors.PhotoForUpload
 import com.hypertrack.android.interactors.PhotoUploadQueueStorage
 import com.hypertrack.android.interactors.PhotoUploadingState
 import com.hypertrack.android.models.local.LocalTrip
-import com.hypertrack.android.ui.screens.visits_management.tabs.places.Visit
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jetbrains.annotations.TestOnly
 
 interface TripsStorage {
     suspend fun saveTrips(trips: List<LocalTrip>)
@@ -26,32 +26,7 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
     val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("hyper_track_pref", Context.MODE_PRIVATE)
 
-    override fun saveUser(user: User) {
-        moshi.adapter(User::class.java).toJson(user).let {
-            sharedPreferences.edit()?.putString(USER_KEY, it)?.apply()
-        }
-    }
-
-    override fun loadUser(): User? {
-        return sharedPreferences.getString(USER_KEY, null)?.let {
-            moshi.adapter(User::class.java).fromJson(it)
-        }
-    }
-
-    override fun saveDriver(driverModel: Driver) {
-        val serializedModel = moshi.adapter(Driver::class.java).toJson(driverModel)
-        sharedPreferences.edit()?.putString(DRIVER_KEY, serializedModel)?.apply()
-    }
-
-    override fun getDriverValue(): Driver {
-        val driverDetails = sharedPreferences.getString(DRIVER_KEY, null)
-        driverDetails?.let {
-            return moshi.adapter(Driver::class.java).fromJson(driverDetails) ?: Driver("")
-        }
-        return Driver("")
-
-    }
-
+    @TestOnly
     fun clearPreferences() {
         sharedPreferences.edit()?.clear()?.apply()
     }
@@ -69,29 +44,6 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
         sharedPreferences.edit()
             ?.putString(ACCOUNT_KEY, moshi.adapter(AccountData::class.java).toJson(accountData))
             ?.apply()
-    }
-
-    override fun restoreRepository(): BasicAuthAccessTokenRepository? {
-        sharedPreferences.getString(ACCESS_REPO_KEY, null)?.let {
-            try {
-                val config = moshi.adapter(BasicAuthAccessTokenConfig::class.java).fromJson(it)
-                    ?: return null
-                return BasicAuthAccessTokenRepository(config)
-            } catch (ignored: Throwable) {
-
-            }
-        }
-        return null
-    }
-
-    override fun persistRepository(repo: AccessTokenRepository) {
-        sharedPreferences.edit()
-            ?.putString(
-                ACCESS_REPO_KEY,
-                moshi
-                    .adapter(BasicAuthAccessTokenConfig::class.java)
-                    .toJson(repo.getConfig() as BasicAuthAccessTokenConfig)
-            )?.apply()
     }
 
     override suspend fun saveTrips(trips: List<LocalTrip>) {
@@ -177,7 +129,6 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
         const val USER_KEY = "com.hypertrack.android.utils.user"
         const val ACCESS_REPO_KEY = "com.hypertrack.android.utils.access_token_repo"
         const val ACCOUNT_KEY = "com.hypertrack.android.utils.accountKey"
-        const val VISITS_KEY = "com.hypertrack.android.utils.deliveries"
         const val TRIPS_KEY = "com.hypertrack.android.utils.trips"
         const val PHOTOS_KEY = "com.hypertrack.android.utils.photos"
         const val UPLOADING_PHOTOS_KEY = "com.hypertrack.android.utils.uploading_photos"

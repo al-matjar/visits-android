@@ -16,7 +16,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 
-@Suppress("EXPERIMENTAL_API_USAGE")
+@Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class OrdersListViewModelTest {
 
     @get:Rule

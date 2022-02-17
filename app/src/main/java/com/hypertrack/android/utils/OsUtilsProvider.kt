@@ -49,6 +49,8 @@ interface ResourceProvider {
         @DrawableRes res: Int,
         @ColorRes color: Int? = null
     ): BitmapDescriptor
+
+    fun getErrorMessage(e: Exception): ErrorMessage
 }
 
 public class OsUtilsProvider(
@@ -256,7 +258,7 @@ public class OsUtilsProvider(
         return Uri.parse(link)
     }
 
-    fun getErrorMessage(e: Exception): ErrorMessage {
+    override fun getErrorMessage(e: Exception): ErrorMessage {
         //todo NonReportableException
         return when (e) {
             is HttpException -> {
@@ -290,10 +292,17 @@ public class OsUtilsProvider(
     }
 }
 
-fun Exception.format() = this.let { e ->
-    "${e::class.java.simpleName}${e.message?.let { ": $it" }.orEmpty()}"
+fun Exception.format(): String {
+    return if (this is SimpleException) {
+        message ?: javaClass.simpleName
+    } else {
+        "${javaClass.simpleName}${message?.let { ": $it" }.orEmpty()}"
+    }
 }
 
 fun Int.stringFromResource(): String {
     return MyApplication.context.getString(this)
 }
+
+// todo change Exception to SimpleException
+class SimpleException(message: String) : Exception(message)

@@ -27,22 +27,6 @@
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_cross" />
 
-        <TextView
-            android:id="@+id/tvDeeplinkError"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="#fe4d5f"
-            android:textSize="14sp"
-            android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@+id/bDeeplinkLogin"
-            app:layout_constraintEnd_toEndOf="@+id/etDeeplink"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintStart_toStartOf="@+id/etDeeplink"
-            app:layout_constraintTop_toBottomOf="@+id/etDeeplink"
-            tools:text="dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf dfsdf "
-            tools:visibility="visible" />
-
         <EditText
             android:id="@+id/etDeeplink"
             android:layout_width="0dp"
@@ -64,13 +48,13 @@
             style="@style/ActionButtonStyle"
             android:layout_width="231dp"
             android:layout_height="48dp"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="16dp"
             android:layout_marginBottom="32dp"
             android:text="@string/log_in"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvDeeplinkError" />
+            app:layout_constraintTop_toBottomOf="@+id/etDeeplink" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

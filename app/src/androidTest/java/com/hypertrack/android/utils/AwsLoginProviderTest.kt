@@ -1,12 +1,8 @@
 package com.hypertrack.android.utils
 
-import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
-import com.hypertrack.android.repository.Active
-import com.hypertrack.android.repository.Unknown
 import com.hypertrack.logistics.android.github.R
 import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import retrofit2.Retrofit

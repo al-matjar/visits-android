@@ -11,6 +11,8 @@ import com.hypertrack.android.utils.MyApplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.IOError
+import java.io.IOException
 import kotlin.coroutines.suspendCoroutine
 
 class GeocodingInteractor(
@@ -31,9 +33,20 @@ class GeocodingInteractor(
                     latLng.latitude,
                     latLng.longitude,
                     1
-                )?.get(0)
+                )?.firstOrNull()
             } catch (e: Exception) {
-                crashReportsProvider.logException(e)
+                when (e) {
+                    is IOException -> {
+                        if (e.message?.contains("grpc failed") == true) {
+                            // ignore
+                        } else {
+                            crashReportsProvider.logException(e)
+                        }
+                    }
+                    else -> {
+                        crashReportsProvider.logException(e)
+                    }
+                }
                 null
             }
         }

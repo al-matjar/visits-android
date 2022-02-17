@@ -1,16 +1,12 @@
 package com.hypertrack.android.ui.common
 
+import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.google.android.libraries.places.api.net.PlacesClient
-import com.hypertrack.android.api.ApiClient
-import com.hypertrack.android.interactors.FeedbackInteractor
-import com.hypertrack.android.interactors.PermissionsInteractor
-import com.hypertrack.android.interactors.PlacesInteractor
-import com.hypertrack.android.interactors.TripsInteractor
-import com.hypertrack.android.repository.*
+import com.hypertrack.android.di.AppScope
+import com.hypertrack.android.di.UserScope
+import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
 import com.hypertrack.android.ui.screens.add_integration.AddIntegrationViewModel
 import com.hypertrack.android.ui.screens.add_place.AddPlaceViewModel
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementViewModel
@@ -20,6 +16,7 @@ import com.hypertrack.android.ui.screens.permission_request.PermissionRequestVie
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModel
 import com.hypertrack.android.ui.screens.add_geotag.AddGeotagViewModel
 import com.hypertrack.android.ui.screens.outage.OutageViewModel
+import com.hypertrack.android.ui.screens.background_permissions.BackgroundPermissionsViewModel
 import com.hypertrack.android.ui.screens.select_trip_destination.SelectTripDestinationViewModel
 import com.hypertrack.android.ui.screens.send_feedback.SendFeedbackViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
@@ -27,31 +24,20 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.history.BaseHist
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersListViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesVisitsViewModel
-import com.hypertrack.android.utils.*
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryViewModel
-import javax.inject.Provider
 
 @Suppress("UNCHECKED_CAST")
 class UserScopeViewModelFactory(
+    private val appInteractor: AppInteractor,
     private val appScope: AppScope,
-    private val userScopeProvider: Provider<UserScope>,
-    private val tripsInteractor: TripsInteractor,
-    private val placesInteractor: PlacesInteractor,
-    private val feedbackInteractor: FeedbackInteractor,
-    private val integrationsRepository: IntegrationsRepository,
-    private val crashReportsProvider: CrashReportsProvider,
-    private val hyperTrackService: HyperTrackService,
-    private val permissionsInteractor: PermissionsInteractor,
-    private val accessTokenRepository: AccessTokenRepository,
-    private val osUtilsProvider: OsUtilsProvider,
-    private val deviceLocationProvider: DeviceLocationProvider,
+    private val userScope: UserScope,
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         val baseDependencies = BaseViewModelDependencies(
-            osUtilsProvider,
-            osUtilsProvider,
-            crashReportsProvider
+            appScope.osUtilsProvider,
+            appScope.osUtilsProvider,
+            appScope.crashReportsProvider
         )
         return when (modelClass) {
             OutageViewModel::class.java -> OutageViewModel(
@@ -59,48 +45,49 @@ class UserScopeViewModelFactory(
             ) as T
             SendFeedbackViewModel::class.java -> SendFeedbackViewModel(
                 baseDependencies,
-                feedbackInteractor,
+                userScope.feedbackInteractor,
             ) as T
             OrdersListViewModel::class.java -> OrdersListViewModel(
                 baseDependencies,
-                tripsInteractor,
-                userScopeProvider.get().tripsUpdateTimerInteractor,
+                userScope.tripsInteractor,
+                userScope.tripsUpdateTimerInteractor,
                 appScope.dateTimeFormatter,
                 appScope.orderAddressDelegate,
             ) as T
             AddIntegrationViewModel::class.java -> AddIntegrationViewModel(
                 baseDependencies,
-                integrationsRepository
+                userScope.integrationsRepository
             ) as T
             AddPlaceViewModel::class.java -> AddPlaceViewModel(
                 baseDependencies,
-                userScopeProvider.get().placesInteractor,
-                userScopeProvider.get().googlePlacesInteractor,
+                userScope.placesInteractor,
+                userScope.googlePlacesInteractor,
                 appScope.geocodingInteractor,
-                deviceLocationProvider,
+                userScope.deviceLocationProvider,
             ) as T
             CurrentTripViewModel::class.java -> CurrentTripViewModel(
                 baseDependencies,
-                tripsInteractor,
-                placesInteractor,
+                appInteractor.appState,
+                appScope.appCoroutineScope,
+                userScope.tripsInteractor,
+                userScope.placesInteractor,
                 appScope.geocodingInteractor,
-                userScopeProvider.get().tripsUpdateTimerInteractor,
-                hyperTrackService,
-                deviceLocationProvider,
+                userScope.tripsUpdateTimerInteractor,
+                userScope.deviceLocationProvider,
                 appScope.dateTimeFormatter,
                 appScope.timeFormatter
             ) as T
             SelectDestinationViewModel::class.java -> SelectDestinationViewModel(
                 baseDependencies,
-                userScopeProvider.get().placesInteractor,
-                userScopeProvider.get().googlePlacesInteractor,
+                userScope.placesInteractor,
+                userScope.googlePlacesInteractor,
                 appScope.geocodingInteractor,
-                deviceLocationProvider,
+                userScope.deviceLocationProvider,
             ) as T
             PlacesViewModel::class.java -> PlacesViewModel(
                 baseDependencies,
-                userScopeProvider.get().placesInteractor,
-                deviceLocationProvider,
+                userScope.placesInteractor,
+                userScope.deviceLocationProvider,
                 appScope.distanceFormatter,
                 appScope.dateTimeFormatter,
                 appScope.geofenceAddressDelegate,
@@ -108,18 +95,18 @@ class UserScopeViewModelFactory(
             ) as T
             PermissionRequestViewModel::class.java -> PermissionRequestViewModel(
                 baseDependencies,
-                permissionsInteractor,
-                hyperTrackService
+                userScope.permissionsInteractor,
+                userScope.hyperTrackService
             ) as T
             SummaryViewModel::class.java -> SummaryViewModel(
                 baseDependencies,
-                userScopeProvider.get().summaryInteractor,
+                userScope.summaryInteractor,
                 appScope.distanceFormatter,
                 appScope.timeFormatter
             ) as T
             HistoryViewModel::class.java -> HistoryViewModel(
                 baseDependencies,
-                userScopeProvider.get().historyInteractor,
+                userScope.historyInteractor,
                 appScope.geocodingInteractor,
                 appScope.geofenceVisitAddressDelegate,
                 appScope.geofenceVisitDisplayDelegate,
@@ -127,42 +114,45 @@ class UserScopeViewModelFactory(
                 appScope.geotagDisplayDelegate,
                 appScope.timeFormatter,
                 appScope.distanceFormatter,
-                deviceLocationProvider,
+                userScope.deviceLocationProvider,
                 appScope.mapItemsFactory,
-                //todo inject context from AppScope (these changes are in the other PR)
-                BaseHistoryStyle(MyApplication.context)
+                BaseHistoryStyle(appScope.appContext)
             ) as T
             VisitsManagementViewModel::class.java -> VisitsManagementViewModel(
                 baseDependencies,
-                userScopeProvider.get().historyInteractorLegacy,
-                appScope.accountRepositoryProvider,
-                hyperTrackService,
-                accessTokenRepository
+                appInteractor.appState,
+                userScope.historyInteractorLegacy,
+                userScope.hyperTrackService,
+                appScope.preferencesRepository,
+            ) as T
+            BackgroundPermissionsViewModel::class.java -> BackgroundPermissionsViewModel(
+                baseDependencies,
+                userScope.permissionsInteractor
             ) as T
             ProfileViewModel::class.java -> ProfileViewModel(
                 baseDependencies,
-                userScopeProvider.get().measurementUnitsRepository,
-                appScope.driverRepository,
-                hyperTrackService,
-                appScope.accountRepositoryProvider,
+                userScope.measurementUnitsRepository,
+                appScope.userRepository,
+                appScope.publishableKeyRepository,
+                userScope.hyperTrackService,
             ) as T
             SelectTripDestinationViewModel::class.java -> SelectTripDestinationViewModel(
                 baseDependencies,
-                userScopeProvider.get().placesInteractor,
-                userScopeProvider.get().googlePlacesInteractor,
+                userScope.placesInteractor,
+                userScope.googlePlacesInteractor,
                 appScope.geocodingInteractor,
-                deviceLocationProvider,
+                userScope.deviceLocationProvider,
             ) as T
             PlacesVisitsViewModel::class.java -> PlacesVisitsViewModel(
                 baseDependencies,
-                userScopeProvider.get().placesVisitsInteractor,
+                userScope.placesVisitsInteractor,
                 appScope.geofenceVisitDisplayDelegate,
                 appScope.dateTimeFormatter,
                 appScope.distanceFormatter,
             ) as T
             AddGeotagViewModel::class.java -> AddGeotagViewModel(
                 baseDependencies,
-                userScopeProvider.get().geotagsInteractor
+                userScope.geotagsInteractor
             ) as T
             else -> throw IllegalArgumentException("Can't instantiate class $modelClass")
         }

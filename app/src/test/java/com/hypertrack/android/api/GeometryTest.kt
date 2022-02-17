@@ -1,15 +1,19 @@
 package com.hypertrack.android.api
 
+import com.hypertrack.android.TestInjector
 import com.hypertrack.android.api.models.RemoteGeofence
-import com.hypertrack.android.utils.Injector
 import org.junit.Assert.*
 import org.junit.Test
+import org.robolectric.util.inject.Injector
 
 class GeometryTest {
+
+    private val moshi = TestInjector.getMoshi()
+
     @Test
     fun `it should deserialize polygons correctly`() {
-        val polygonString = """{"type": "Polygon", "coordinates": [[[0.0, 0.0], [0.0, 0.1], [0.1, 0.0], [0.0, 0.0]]]}"""
-        val moshi = Injector.getMoshi()
+        val polygonString =
+            """{"type": "Polygon", "coordinates": [[[0.0, 0.0], [0.0, 0.1], [0.1, 0.0], [0.0, 0.0]]]}"""
         val geometry = moshi.adapter(Geometry::class.java).fromJson(polygonString)
         assertNotNull(geometry)
         assertTrue(geometry is Polygon)
@@ -30,7 +34,6 @@ class GeometryTest {
                 "coordinates": [122.395223, 37.794763]
             }
         }"""
-        val moshi = Injector.getMoshi()
         val geofence = moshi.adapter(RemoteGeofence::class.java).fromJson(geofenceString)
             ?: throw NullPointerException("Geofence should not be null")
         assertEquals("Point", geofence.type)
@@ -56,7 +59,6 @@ class GeometryTest {
                 ]]
             }
         }"""
-        val moshi = Injector.getMoshi()
         val geofence = moshi.adapter(RemoteGeofence::class.java).fromJson(geofenceString)
             ?: throw NullPointerException("Geofence should not be null")
         assertEquals("Polygon", geofence.type)

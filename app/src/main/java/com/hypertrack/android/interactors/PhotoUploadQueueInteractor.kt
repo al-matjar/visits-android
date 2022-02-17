@@ -156,5 +156,8 @@ class PhotoUploadQueueInteractorImpl(
         queue.postValue(queueStorage.getPhotosQueue().toMap { it.photoId })
     }
 
+    companion object {
+        const val MAX_IMAGE_SIDE_LENGTH_PX = 1024
+    }
 
 }

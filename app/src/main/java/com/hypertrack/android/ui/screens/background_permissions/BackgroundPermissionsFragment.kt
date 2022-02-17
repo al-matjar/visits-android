@@ -9,6 +9,7 @@ import android.text.style.StyleSpan
 import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
@@ -16,12 +17,14 @@ import com.hypertrack.android.ui.common.util.hide
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_background_permission.*
+import kotlinx.coroutines.FlowPreview
 
+@FlowPreview
 class BackgroundPermissionsFragment :
     BaseFragment<MainActivity>(R.layout.fragment_background_permission) {
 
     private val vm: BackgroundPermissionsViewModel by viewModels {
-        MyApplication.injector.provideViewModelFactory(MyApplication.context)
+        Injector.provideUserScopeViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

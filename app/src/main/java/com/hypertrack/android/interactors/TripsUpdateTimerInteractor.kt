@@ -6,7 +6,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-//todo unit tests
+// todo tests
+// todo appCoroutineScope
 class TripsUpdateTimerInteractor(
     val tripsInteractor: TripsInteractor
 ) {

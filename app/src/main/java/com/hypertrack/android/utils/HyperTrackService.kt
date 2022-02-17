@@ -13,33 +13,23 @@ import com.hypertrack.sdk.TrackingError
 import com.hypertrack.sdk.TrackingStateObserver
 
 class HyperTrackService(
-    private val listener: TrackingState,
-    private val sdkInstance: HyperTrack,
-    private val crashReportsProvider: CrashReportsProvider? = null
+    private val sdk: HyperTrack,
+    private val crashReportsProvider: CrashReportsProvider
 ) {
 
-    init {
-        when (sdkInstance.isRunning) {
-            true -> listener.onTrackingStart()
-            else -> listener.onTrackingStop()
+    val isServiceRunning: Boolean
+        get() {
+            return sdk.isRunning
         }
-    }
 
     val deviceId: String
         get() {
-            return sdkInstance.deviceID
+            return sdk.deviceID
         }
-
-    val state: LiveData<TrackingStateValue>
-        get() = listener.state
-
-    val isTracking: LiveData<Boolean> = Transformations.map(state) {
-        it == TrackingStateValue.TRACKING
-    }
 
     val latestLocation: Result<Location, OutageReason>
         get() {
-            return sdkInstance.latestLocation
+            return sdk.latestLocation
         }
 
     fun setDeviceInfo(
@@ -50,42 +40,42 @@ class HyperTrackService(
         deeplinkWithoutGetParams: String? = null,
         metadata: Map<String, Any>? = null
     ) {
-        sdkInstance.setDeviceName(name)
-        sdkInstance.setDeviceMetadata(mutableMapOf<String, Any>().apply {
+        sdk.setDeviceName(name)
+        sdk.setDeviceMetadata(mutableMapOf<String, Any>().apply {
             driverId.nullIfBlank()?.let { put(KEY_DRIVER_ID, it) }
             email.nullIfBlank()?.let { put(KEY_EMAIL, it) }
             phoneNumber.nullIfBlank()?.let { put(KEY_PHONE, it) }
             deeplinkWithoutGetParams.nullIfBlank()?.let { put(KEY_DEEPLINK, it) }
             metadata?.let { putAll(it) }
         }.apply {
-            if (MyApplication.DEBUG_MODE) {
-//                Log.v("hypertrack-verbose", "set device name: ${name}")
-//                Log.v("hypertrack-verbose", "set device metadata: $this")
-            }
+            crashReportsProvider.log("set device name: $name")
+            crashReportsProvider.log("set device metadata: $this")
         })
     }
 
     fun startTracking() {
-        crashReportsProvider?.log("clockIn")
-        sdkInstance.start()
+        crashReportsProvider.log("clockIn")
+        sdk.start()
     }
 
     fun stopTracking() {
-        crashReportsProvider?.log("clockOut")
-        sdkInstance.stop()
+        crashReportsProvider.log("clockOut")
+        sdk.stop()
     }
 
     fun syncDeviceSettings() {
-        crashReportsProvider?.log("syncDeviceSettings")
-        sdkInstance.syncDeviceSettings()
+        crashReportsProvider.log("syncDeviceSettings")
+        sdk.syncDeviceSettings()
     }
 
     fun showPermissionsPrompt() {
-        sdkInstance.backgroundTrackingRequirement(false).requestPermissionsIfNecessary()
+        crashReportsProvider.log("showPermissionsPrompt")
+        sdk.backgroundTrackingRequirement(false).requestPermissionsIfNecessary()
     }
 
     fun createGeotag(metadata: Map<String, String>): GeotagResult {
-        return sdkInstance.addGeotag(metadata)
+        crashReportsProvider.log("createGeotag $metadata")
+        return sdk.addGeotag(metadata)
     }
 
     companion object {
@@ -97,29 +87,33 @@ class HyperTrackService(
 
 }
 
-
+@Deprecated("refactor")
 class TrackingState(val crashReportsProvider: CrashReportsProvider? = null) :
     TrackingStateObserver.OnTrackingStateChangeListener {
-    var state: MutableLiveData<TrackingStateValue> =
-        MutableLiveData(TrackingStateValue.UNKNOWN)
+    val state: MutableLiveData<TrackingStateValue> =
+        MutableLiveData()
 
     override fun onTrackingStart() {
         crashReportsProvider?.log("onTrackingStart")
         state.postValue(TrackingStateValue.TRACKING)
     }
 
-    override fun onError(p0: TrackingError?) {
-        crashReportsProvider?.log("TrackingError ${p0?.code} ${p0?.message}")
-        when {
-            p0?.code == TrackingError.AUTHORIZATION_ERROR && p0.message.contains("trial ended") -> state.postValue(
-                TrackingStateValue.DEVICE_DELETED
-            )
-            p0?.code == TrackingError.PERMISSION_DENIED_ERROR -> {
-                TrackingStateValue.PERMISIONS_DENIED
+    override fun onError(trackingError: TrackingError) {
+        crashReportsProvider?.log("TrackingError: $trackingError")
+        state.postValue(
+            when {
+                trackingError.code == TrackingError.AUTHORIZATION_ERROR
+                        && trackingError.message.contains("trial ended") -> {
+                    TrackingStateValue.DEVICE_DELETED
+                }
+                trackingError.code == TrackingError.PERMISSION_DENIED_ERROR -> {
+                    TrackingStateValue.PERMISIONS_DENIED
+                }
+                else -> {
+                    TrackingStateValue.ERROR
+                }
             }
-            else -> state.postValue(TrackingStateValue.ERROR)
-        }
-
+        )
     }
 
     override fun onTrackingStop() = state.postValue(TrackingStateValue.STOP)

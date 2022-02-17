@@ -16,7 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 
 
-@Suppress("EXPERIMENTAL_API_USAGE")
+@Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class MyPreferencesTest {
 
     private lateinit var myPreferences: MyPreferences
@@ -73,7 +73,6 @@ class MyPreferencesTest {
     @Test
     fun crudPhotoUploadQueue() {
         runBlocking {
-            //todo test overwrite for equal ids?
             myPreferences.addToPhotosQueue(
                 PhotoForUpload(
                     "1",

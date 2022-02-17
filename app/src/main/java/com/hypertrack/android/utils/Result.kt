@@ -36,8 +36,8 @@ fun <T> Failure<T>.toSimple(): JustFailure {
     return JustFailure(this.exception)
 }
 
-class Success<T>(val data: T) : Result<T>()
-class Failure<T>(val exception: Exception) : Result<T>()
+data class Success<T>(val data: T) : Result<T>()
+data class Failure<T>(val exception: Exception) : Result<T>()
 
 fun <T> T.asSuccess(): Result<T> {
     return Success(this)
@@ -49,6 +49,10 @@ fun <T> Exception.asFailure(): Result<T> {
 
 fun Exception.asSimpleFailure(): JustFailure {
     return JustFailure(this)
+}
+
+fun Any.asSimpleSuccess(): JustSuccess {
+    return JustSuccess
 }
 
 fun <T> Result<T>.toNullable(): T? {
@@ -75,7 +79,7 @@ fun <T> Result<T>.toNullableWithErrorReporting(
 
 //todo rename
 sealed class AbstractResult<S, F>
-class AbstractSuccess<S, F>(val success: S) : AbstractResult<S, F>()
-class AbstractFailure<S, F>(val failure: F) : AbstractResult<S, F>()
+data class AbstractSuccess<S, F>(val success: S) : AbstractResult<S, F>()
+data class AbstractFailure<S, F>(val failure: F) : AbstractResult<S, F>()
 
 

@@ -3,7 +3,7 @@ package com.hypertrack.android.models.local
 
 /**
  * This type is required to guarantee that publishable key
- * will not be mocked in some places
+ * will not be mocked in the SDK (to avoid messing with client data)
  * */
 class RealPublishableKey(publishableKey: String) : PublishableKey(publishableKey)
 

@@ -1,5 +1,6 @@
 package com.hypertrack.android.repository
 
+import com.hypertrack.android.TestInjector
 import com.hypertrack.android.api.graphql.DayRange
 import com.hypertrack.android.api.graphql.GraphQlApiClient
 import com.hypertrack.android.api.graphql.models.GraphQlDayVisitsStats
@@ -168,7 +169,7 @@ class PlacesVisitsRepositoryTest {
                 graphQlApiClient,
                 mockk(relaxed = true),
                 mockk(relaxed = true),
-                Injector.getMoshi(),
+                TestInjector.getMoshi(),
                 ZoneId.of("UTC")
             )
         }

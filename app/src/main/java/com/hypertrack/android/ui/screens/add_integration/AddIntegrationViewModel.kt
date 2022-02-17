@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
 
-@Suppress("EXPERIMENTAL_API_USAGE")
+@Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class AddIntegrationViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val integrationsRepository: IntegrationsRepository

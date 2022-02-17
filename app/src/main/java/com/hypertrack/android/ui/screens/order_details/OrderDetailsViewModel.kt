@@ -32,7 +32,6 @@ class OrderDetailsViewModel(
     private val tripsInteractor: TripsInteractor,
     private val photoUploadInteractor: PhotoUploadQueueInteractor,
     private val dateTimeFormatter: DateTimeFormatter,
-    private val addressDelegate: OrderAddressDelegate,
 ) : BaseViewModel(baseDependencies) {
 
     override val errorHandler =
@@ -169,7 +168,9 @@ class OrderDetailsViewModel(
                 when (it) {
                     JustSuccess -> {
                     }
-                    is JustFailure -> errorHandler.postException(it.exception)
+                    is JustFailure -> {
+                        errorHandler.postException(it.exception)
+                    }
                 }
             }
         }

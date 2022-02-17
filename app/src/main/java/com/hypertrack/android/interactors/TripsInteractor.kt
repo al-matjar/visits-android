@@ -1,10 +1,12 @@
 package com.hypertrack.android.interactors
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.*
+import com.hypertrack.android.interactors.app.AppState
 import com.hypertrack.android.models.*
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
@@ -49,9 +51,9 @@ interface TripsInteractor {
 }
 
 open class TripsInteractorImpl(
+    private val appState: LiveData<AppState>,
     private val tripsRepository: TripsRepository,
     private val apiClient: ApiClient,
-    private val hyperTrackService: HyperTrackService,
     private val photoUploadInteractor: PhotoUploadQueueInteractor,
     private val imageDecoder: ImageDecoder,
     private val osUtilsProvider: OsUtilsProvider,
@@ -93,7 +95,7 @@ open class TripsInteractorImpl(
     }
 
     override suspend fun completeOrder(orderId: String): OrderCompletionResponse {
-        return if (hyperTrackService.isTracking.value == true) {
+        return if (appState.value?.isSdkTracking() == true) {
             withContext(globalScope.coroutineContext) {
                 setOrderCompletionStatus(orderId, canceled = false)
             }
@@ -103,7 +105,7 @@ open class TripsInteractorImpl(
     }
 
     override suspend fun snoozeOrder(orderId: String): SimpleResult {
-        return if (hyperTrackService.isTracking.value == true) {
+        return if (appState.value?.isSdkTracking() == true) {
             withContext(globalScope.coroutineContext) {
                 try {
                     currentTrip.value!!.let { trip ->
@@ -155,7 +157,7 @@ open class TripsInteractorImpl(
     }
 
     override suspend fun cancelOrder(orderId: String): OrderCompletionResponse {
-        if (hyperTrackService.isTracking.value == true) {
+        if (appState.value?.isSdkTracking() == true) {
             return withContext(globalScope.coroutineContext) {
                 setOrderCompletionStatus(orderId, canceled = true)
             }
@@ -334,7 +336,7 @@ open class TripsInteractorImpl(
     }
 
     private suspend fun <T> onlyWhenClockedIn(code: (suspend () -> T)): T {
-        return if (hyperTrackService.isTracking.value == true) {
+        return if (appState.value?.isSdkTracking() == true) {
             code.invoke()
         } else {
             throw NotClockedInException

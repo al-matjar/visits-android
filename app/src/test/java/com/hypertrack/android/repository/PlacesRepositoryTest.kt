@@ -1,12 +1,12 @@
 package com.hypertrack.android.repository
 
 import com.hypertrack.android.MainCoroutineScopeRule
+import com.hypertrack.android.TestInjector
 import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.GeofenceSuccess
 import com.hypertrack.android.mock.TestMockData
 import com.hypertrack.android.models.local.DeviceId
 
-import com.hypertrack.android.utils.Injector
 import io.mockk.coEvery
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
@@ -36,7 +36,7 @@ class PlacesRepositoryTest {
                     )
                 )
             },
-            Injector.getMoshi(),
+            TestInjector.getMoshi(),
             mockk(relaxed = true),
             mockk(relaxed = true),
         )

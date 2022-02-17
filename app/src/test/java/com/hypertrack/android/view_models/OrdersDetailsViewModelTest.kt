@@ -13,6 +13,7 @@ import com.hypertrack.android.interactors.*
 import com.hypertrack.android.interactors.TripInteractorTest.Companion.createMockApiClient
 import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.api.models.RemoteOrder
+import com.hypertrack.android.interactors.TripInteractorTest.Companion.createTripInteractorImpl
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
@@ -33,7 +34,7 @@ import org.junit.Test
 import retrofit2.Response
 import java.io.File
 
-@Suppress("EXPERIMENTAL_API_USAGE")
+@Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class OrdersDetailsViewModelTest {
 
     @get:Rule
@@ -159,7 +160,6 @@ class OrdersDetailsViewModelTest {
                 assertFalse(it.showCompleteButtons.observeAndGetValue())
                 assertFalse(it.isNoteEditable.observeAndGetValue())
                 assertFalse(it.showAddPhoto.observeAndGetValue())
-                assertNull(getFromMetadata("order_picked_up", it.metadata.observeAndGetValue()))
             }
         }
     }
@@ -193,7 +193,6 @@ class OrdersDetailsViewModelTest {
                 assertFalse(it.showCompleteButtons.observeAndGetValue())
                 assertFalse(it.isNoteEditable.observeAndGetValue())
                 assertFalse(it.showAddPhoto.observeAndGetValue())
-                assertNull(getFromMetadata("order_picked_up", it.metadata.observeAndGetValue()))
             }
         }
     }
@@ -208,7 +207,7 @@ class OrdersDetailsViewModelTest {
         )
 
         var allowRefresh = true
-        val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
+        val tripsInteractor: TripsInteractor = createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = backendOrders)),
         ) {
             allowRefresh
@@ -218,16 +217,14 @@ class OrdersDetailsViewModelTest {
             allowRefresh = false
 
             createVm("ONGOING", tripsInteractor).let {
-                it.onCancelClicked()
-
+                it.onSnoozeClicked()
                 assertEquals(
-                    OrderStatus.CANCELED.value,
+                    OrderStatus.SNOOZED.value,
                     getFromMetadata("order_status", it.metadata.observeAndGetValue())
                 )
                 assertFalse(it.showCompleteButtons.observeAndGetValue())
                 assertFalse(it.isNoteEditable.observeAndGetValue())
                 assertFalse(it.showAddPhoto.observeAndGetValue())
-                assertNull(getFromMetadata("order_picked_up", it.metadata.observeAndGetValue()))
             }
         }
     }
@@ -624,21 +621,18 @@ class OrdersDetailsViewModelTest {
             id: String,
             tripsInteractor: TripsInteractor,
             photoUploadInteractor: PhotoUploadQueueInteractor = mockk(relaxed = true),
-            ordersInteractor: TripsInteractor = mockk(),
         ): OrderDetailsViewModel {
             return OrderDetailsViewModel(
                 id,
                 mockk(relaxed = true) {
                     every { osUtilsProvider } returns mockk(relaxed = true) {
                         every { stringFromResource(R.string.order_status) } returns "order_status"
-                        every { stringFromResource(R.string.order_picked_up) } returns "order_picked_up"
                         every { cacheDir } returns File("nofile")
                         every { createImageFile() } returns File("nofile")
                     }
                 },
                 tripsInteractor,
                 photoUploadInteractor,
-                mockk(relaxed = true),
                 mockk(relaxed = true),
             )
         }

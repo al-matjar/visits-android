@@ -29,7 +29,7 @@ fun Moshi.createStringMapAdapter(): JsonAdapter<Map<String, String>> {
             String::class.java,
             Any::class.java
         )
-    )!!
+    )
 }
 
 fun Moshi.createAnyMapAdapter(): JsonAdapter<Map<String, Any>> {
@@ -39,5 +39,5 @@ fun Moshi.createAnyMapAdapter(): JsonAdapter<Map<String, Any>> {
             String::class.java,
             Any::class.java
         )
-    )!!
+    )
 }

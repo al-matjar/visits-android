@@ -15,13 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView.HORIZONTAL
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.common.adapters.KeyValueAdapter
 import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
 import com.hypertrack.android.ui.common.util.textString
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.stringFromResource
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_order_detail.*
@@ -40,7 +40,7 @@ class OrderDetailsFragment : ProgressDialogFragment(R.layout.fragment_order_deta
 
     private val args: OrderDetailsFragmentArgs by navArgs()
     private val vm: OrderDetailsViewModel by viewModels {
-        MyApplication.injector.provideParamVmFactory(
+        Injector.provideUserScopeParamViewModelFactory(
             args.orderId
         )
     }

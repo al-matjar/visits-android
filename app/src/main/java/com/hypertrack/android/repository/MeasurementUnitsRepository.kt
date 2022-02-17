@@ -4,14 +4,23 @@ import com.hypertrack.android.models.Imperial
 import com.hypertrack.android.models.MeasurementUnits
 import com.hypertrack.android.models.Metric
 import com.hypertrack.android.models.Unspecified
+import com.hypertrack.android.repository.preferences.PreferencesRepository
+import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.toNullable
+import com.hypertrack.android.utils.toNullableWithErrorReporting
 
 //todo destroy with user scope
 class MeasurementUnitsRepository(
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val crashReportsProvider: CrashReportsProvider
 ) {
 
     fun getMeasurementUnits(): MeasurementUnits {
-        return when (preferencesRepository.measurementUnitsImperial) {
+        val measurementUnitsImperial = preferencesRepository
+            .measurementUnitsImperial
+            .load()
+            .toNullableWithErrorReporting(crashReportsProvider)
+        return when (measurementUnitsImperial) {
             false -> Metric
             true -> Imperial
             null -> Unspecified
@@ -19,11 +28,11 @@ class MeasurementUnitsRepository(
     }
 
     fun setMeasurementUnits(units: MeasurementUnits) {
-        preferencesRepository.measurementUnitsImperial = when (units) {
+        when (units) {
             Imperial -> true
             Metric -> false
             Unspecified -> null
-        }
+        }.let { preferencesRepository.measurementUnitsImperial.save(it) }
     }
 
 }

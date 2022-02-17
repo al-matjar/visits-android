@@ -1,8 +1,6 @@
 package com.hypertrack.android.utils
 
-import com.hypertrack.android.use_case.HandlePushUseCaseTest
 import io.mockk.mockk
-import junit.framework.TestCase
 
 class OsUtilsProviderTest {
     companion object {

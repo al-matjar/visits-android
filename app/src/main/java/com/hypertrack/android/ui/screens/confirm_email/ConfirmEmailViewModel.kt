@@ -4,14 +4,41 @@ import android.app.Activity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.interactors.*
+import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.SignedInAction
+import com.hypertrack.android.interactors.app.UserLoggedIn
 import com.hypertrack.android.ui.base.*
+import com.hypertrack.android.use_case.login.LoadUserStateAfterSignInUseCase
+import com.hypertrack.android.use_case.login.OtpError
+import com.hypertrack.android.use_case.login.OtpFailure
+import com.hypertrack.android.use_case.login.OtpSignInRequired
+import com.hypertrack.android.use_case.login.OtpWrongCode
+import com.hypertrack.android.use_case.login.ResendAlreadyConfirmed
+import com.hypertrack.android.use_case.login.ResendEmailConfirmationUseCase
+import com.hypertrack.android.use_case.login.ResendError
+import com.hypertrack.android.use_case.login.ResendNoAction
+import com.hypertrack.android.use_case.login.VerifyByOtpCodeUseCase
+import com.hypertrack.android.utils.AbstractFailure
+import com.hypertrack.android.utils.AbstractSuccess
+import com.hypertrack.android.utils.Failure
+import com.hypertrack.android.utils.Success
+import com.hypertrack.android.utils.mapSuccess
 import com.hypertrack.logistics.android.github.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+@Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class ConfirmEmailViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val loginInteractor: LoginInteractor,
-    private val permissionsInteractor: PermissionsInteractor,
+    private val appInteractor: AppInteractor,
+    private val verifyByOtpCodeUseCase: VerifyByOtpCodeUseCase,
+    private val resendEmailConfirmationUseCase: ResendEmailConfirmationUseCase,
+    private val loadUserStateAfterSignInUseCase: LoadUserStateAfterSignInUseCase,
 ) : BaseViewModel(baseDependencies) {
 
     private lateinit var email: String
@@ -34,63 +61,98 @@ class ConfirmEmailViewModel(
     fun onVerifiedClick(code: String, complete: Boolean, activity: Activity) {
         if (complete) {
             loadingState.postValue(true)
-            viewModelScope.launch {
-                val res = loginInteractor.verifyByOtpCode(email = email, code = code)
-                loadingState.postValue(false)
-                when (res) {
-                    is OtpSuccess -> {
-                        when (permissionsInteractor.checkPermissionsState()
-                            .getNextPermissionRequest()) {
-                            PermissionDestination.PASS -> {
-                                destination.postValue(ConfirmFragmentDirections.actionGlobalVisitManagementFragment())
+            runInVmEffectsScope {
+                verifyByOtpCodeUseCase.execute(email = email, code = code)
+                    .flatMapConcat {
+                        when (it) {
+                            is AbstractSuccess -> {
+                                loadUserStateAfterSignInUseCase
+                                    .execute(it.success).flowOn(Dispatchers.Main)
+                                    .map { result ->
+                                        when (result) {
+                                            is Success -> {
+                                                AbstractSuccess(result.data)
+                                            }
+                                            is Failure -> {
+                                                AbstractFailure<UserLoggedIn, OtpFailure>(
+                                                    OtpError(
+                                                        result.exception
+                                                    )
+                                                )
+                                            }
+                                        }
+
+                                    }
                             }
-                            PermissionDestination.FOREGROUND_AND_TRACKING -> {
-                                destination.postValue(ConfirmFragmentDirections.actionGlobalPermissionRequestFragment())
-                            }
-                            PermissionDestination.BACKGROUND -> {
-                                destination.postValue(ConfirmFragmentDirections.actionGlobalBackgroundPermissionsFragment())
+                            is AbstractFailure -> {
+                                flowOf(AbstractFailure<UserLoggedIn, OtpFailure>(it.failure))
                             }
                         }
                     }
-                    is OtpSignInRequired -> {
-                        destination.postValue(
-                            ConfirmFragmentDirections.actionConfirmFragmentToSignInFragment(
-                                email
-                            )
-                        )
+                    .collect { res ->
+                        loadingState.postValue(false)
+                        when (res) {
+                            is AbstractSuccess -> {
+                                appInteractor.handleAction(SignedInAction(res.success))
+                                res.success.userScope.permissionsInteractor.let { permissionsInteractor ->
+                                    when (permissionsInteractor.checkPermissionsState()
+                                        .getNextPermissionRequest()) {
+                                        PermissionDestination.PASS -> {
+                                            destination.postValue(ConfirmFragmentDirections.actionGlobalVisitManagementFragment())
+                                        }
+                                        PermissionDestination.FOREGROUND_AND_TRACKING -> {
+                                            destination.postValue(ConfirmFragmentDirections.actionGlobalPermissionRequestFragment())
+                                        }
+                                        PermissionDestination.BACKGROUND -> {
+                                            destination.postValue(ConfirmFragmentDirections.actionGlobalBackgroundPermissionsFragment())
+                                        }
+                                    }
+                                }
+                            }
+                            is AbstractFailure -> {
+                                when (res.failure) {
+                                    is OtpSignInRequired -> {
+                                        destination.postValue(
+                                            ConfirmFragmentDirections
+                                                .actionConfirmFragmentToSignInFragment(
+                                                    email
+                                                )
+                                        )
+                                    }
+                                    is OtpWrongCode -> {
+                                        errorHandler.postText(R.string.wrong_code)
+                                    }
+                                    is OtpError -> {
+                                        errorHandler.postException(res.failure.exception)
+                                    }
+                                }
+                            }
+                        } as Any?
                     }
-                    is OtpWrongCode -> {
-                        errorHandler.postText(R.string.wrong_code)
-                    }
-                    is OtpError -> {
-                        errorHandler.postException(res.exception)
-                    }
-                }
             }
         }
     }
 
     fun onResendClick() {
         loadingState.postValue(true)
-        viewModelScope.launch {
-            val res = loginInteractor.resendEmailConfirmation(email)
-            loadingState.postValue(false)
-            when (res) {
-                ResendNoAction -> {
-                    return@launch
-                }
-                ResendAlreadyConfirmed -> {
-                    destination.postValue(
-                        ConfirmFragmentDirections.actionConfirmFragmentToSignInFragment(
-                            email
+        runInVmEffectsScope {
+            resendEmailConfirmationUseCase.execute(email).collect { res ->
+                loadingState.postValue(false)
+                when (res) {
+                    ResendNoAction -> {
+                    }
+                    ResendAlreadyConfirmed -> {
+                        destination.postValue(
+                            ConfirmFragmentDirections.actionConfirmFragmentToSignInFragment(
+                                email
+                            )
                         )
-                    )
-                }
-                is ResendError -> {
-                    errorHandler.postException(res.exception)
+                    }
+                    is ResendError -> {
+                        errorHandler.postException(res.exception)
+                    }
                 }
             }
-
         }
     }
 

@@ -4,13 +4,12 @@ import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.toView
-import com.hypertrack.android.utils.Injector
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_outage.bOpenDontkillmyapp
 import kotlinx.android.synthetic.main.fragment_outage.toolbar

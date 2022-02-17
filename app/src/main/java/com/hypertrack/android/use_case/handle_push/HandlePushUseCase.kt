@@ -3,7 +3,7 @@ package com.hypertrack.android.use_case.handle_push
 import android.content.Context
 import android.content.Intent
 import com.google.firebase.messaging.RemoteMessage
-import com.hypertrack.android.interactors.TripsInteractor
+import com.hypertrack.android.interactors.app.UserLoggedIn
 import com.hypertrack.android.models.LiveAppBackendNotification
 import com.hypertrack.android.models.OutageType
 import com.hypertrack.android.models.webhook.GeofenceWebhook
@@ -26,7 +26,6 @@ import com.hypertrack.android.utils.flatMapSuccess
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.android.utils.tryAsResult
-import com.hypertrack.android.utils.tryAsSimpleResultSuspend
 import com.hypertrack.logistics.android.github.R
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.Flow
@@ -41,19 +40,17 @@ class HandlePushUseCase(
     private val crashReportsProvider: CrashReportsProvider,
     private val resourceProvider: ResourceProvider,
     private val notificationUtil: NotificationUtil,
-    private val tripsInteractorProvider: () -> TripsInteractor?,
     private val dateTimeFormatter: DateTimeFormatter,
-    private val isLoggedInCheck: () -> Boolean
 ) {
 
-    fun execute(remoteMessage: RemoteMessage): Flow<Unit> {
+    fun execute(userLoggedIn: UserLoggedIn, remoteMessage: RemoteMessage): Flow<Unit> {
         return suspend {
             crashReportsProvider.log("Got push notification: ${remoteMessage.data}")
             getRemoteMessageData(remoteMessage)
         }.asFlow().flatMapSuccess { data ->
             deserializeNotification(data)
         }.flatMapSimpleSuccess { notification ->
-            handleNotification(notification)
+            handleNotification(userLoggedIn, notification)
         }.flatMapConcat {
             when (it) {
                 is JustFailure -> {
@@ -161,73 +158,71 @@ class HandlePushUseCase(
         }
     }
 
-    private fun handleNotification(notification: PushNotification): Flow<SimpleResult> {
-        return suspend {
-            tryAsSimpleResultSuspend {
-                if (isLoggedInCheck.invoke()) {
-                    when (notification) {
-                        TripUpdateNotification -> {
-                            tripsInteractorProvider.invoke()?.refreshTrips()
-                            notificationUtil.sendNotification(
-                                context,
-                                id = TRIP_NOTIFICATION_ID,
-                                text = resourceProvider.stringFromResource(
-                                    R.string.notification_new_trip
-                                ),
-                                intentAction = Intent.ACTION_SYNC,
-                                type = notification.javaClass.simpleName
-                            )
-                        }
-                        is OutageNotification -> {
-                            notificationUtil.sendNotification(
-                                context,
-                                id = getRandomNotificationId(),
-                                title = getNotificationTitle(notification),
-                                text = notification.outageDeveloperDescription,
-                                data = notification,
-                                type = notification.javaClass.simpleName,
-                            )
-                        }
-                        is GeofenceVisitNotification -> {
-                            val enter = notification.geofenceVisitTime is EnterTime
-                            val timeString = when (val time = notification.geofenceVisitTime) {
-                                is EnterTime -> dateTimeFormatter.formatTime(time.enterDateTime)
-                                is ExitTime -> dateTimeFormatter.formatTime(time.exitDateTime)
-                            }
-                            val text = if (notification.geofenceName != null) {
-                                resourceProvider.stringFromResource(
-                                    R.string.notification_geofence_visit_text,
-                                    notification.geofenceName,
-                                    timeString
-                                )
-                            } else {
-                                resourceProvider.stringFromResource(
-                                    R.string.notification_geofence_visit_text_without_name,
-                                    timeString
-                                )
-                            }
-                            notificationUtil.sendNotification(
-                                context,
-                                id = getRandomNotificationId(),
-                                title = resourceProvider.stringFromResource(
-                                    if (enter) {
-                                        R.string.notification_geofence_enter
-                                    } else {
-                                        R.string.notification_geofence_exit
-                                    }
-                                ),
-                                text = text,
-                                data = notification,
-                                type = notification.javaClass.simpleName,
-                            )
-                        }
-                        SdkNotification -> {
-                            // ignore SDK notifications
-                        }
-                    }
-                }
+    private suspend fun handleNotification(
+        state: UserLoggedIn,
+        notification: PushNotification
+    ): Flow<SimpleResult> {
+        return when (notification) {
+            TripUpdateNotification -> {
+                state.userScope.tripsInteractor.refreshTrips()
+                notificationUtil.sendNotification(
+                    context,
+                    id = TRIP_NOTIFICATION_ID,
+                    text = resourceProvider.stringFromResource(
+                        R.string.notification_new_trip
+                    ),
+                    intentAction = Intent.ACTION_SYNC,
+                    type = notification.javaClass.simpleName
+                )
             }
-        }.asFlow()
+            is OutageNotification -> {
+                notificationUtil.sendNotification(
+                    context,
+                    id = getRandomNotificationId(),
+                    title = getNotificationTitle(notification),
+                    text = notification.outageDeveloperDescription,
+                    data = notification,
+                    type = notification.javaClass.simpleName,
+                )
+            }
+            is GeofenceVisitNotification -> {
+                val enter = notification.geofenceVisitTime is EnterTime
+                val timeString = when (val time = notification.geofenceVisitTime) {
+                    is EnterTime -> dateTimeFormatter.formatTime(time.enterDateTime)
+                    is ExitTime -> dateTimeFormatter.formatTime(time.exitDateTime)
+                }
+                val text = if (notification.geofenceName != null) {
+                    resourceProvider.stringFromResource(
+                        R.string.notification_geofence_visit_text,
+                        notification.geofenceName,
+                        timeString
+                    )
+                } else {
+                    resourceProvider.stringFromResource(
+                        R.string.notification_geofence_visit_text_without_name,
+                        timeString
+                    )
+                }
+                notificationUtil.sendNotification(
+                    context,
+                    id = getRandomNotificationId(),
+                    title = resourceProvider.stringFromResource(
+                        if (enter) {
+                            R.string.notification_geofence_enter
+                        } else {
+                            R.string.notification_geofence_exit
+                        }
+                    ),
+                    text = text,
+                    data = notification,
+                    type = notification.javaClass.simpleName,
+                )
+            }
+            SdkNotification -> {
+                // ignore SDK notifications
+                JustSuccess
+            }
+        }.toFlow()
     }
 
     private fun getNotificationTitle(notification: OutageNotification): String {

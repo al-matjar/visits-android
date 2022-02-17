@@ -1,9 +1,9 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.summary
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.fragment.app.viewModels
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
@@ -16,7 +16,7 @@ class SummaryFragment : ProgressDialogFragment(R.layout.fragment_tab_summary) {
     private val adapter = SummaryItemsAdapter()
 
     private val vm: SummaryViewModel by viewModels {
-        MyApplication.injector.provideUserScopeViewModelFactory()
+        Injector.provideUserScopeViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

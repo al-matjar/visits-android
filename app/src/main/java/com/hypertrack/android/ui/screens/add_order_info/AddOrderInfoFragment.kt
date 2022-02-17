@@ -7,13 +7,13 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.gms.maps.SupportMapFragment
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.SimpleTextWatcher
 import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.util.silentUpdate
 import com.hypertrack.android.ui.common.util.textString
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_add_place_info.*
 import kotlinx.android.synthetic.main.fragment_add_place_info.confirm
@@ -23,7 +23,7 @@ class AddOrderInfoFragment : ProgressDialogFragment(R.layout.fragment_add_order_
 
     private val args: AddOrderInfoFragmentArgs by navArgs()
     private val vm: AddOrderInfoViewModel by viewModels {
-        MyApplication.injector.provideParamVmFactory(
+        Injector.provideUserScopeParamViewModelFactory(
             args.tripId.let { tripId ->
                 if (tripId == null) {
                     NewTripParams(args.destinationData)

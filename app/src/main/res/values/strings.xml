@@ -44,10 +44,6 @@
     <string name="visited">Visited</string>
     <string name="pending">Pending</string>
     <string name="no_planned_visits">No trips assigned to you</string>
-    <string name="device_deleted">"Device Deleted"</string>
-    <string name="generic_tracking_error">Tracking Failure</string>
-    <string name="permissions_not_granted">Permissions not granted</string>
-    <string name="splashscreenlogo">splashScreenLogo</string>
     <string name="account_login_header_text">Sign into your account</string>
     <string name="login_hint">Cannot get login from the deeplink. Sign in or contact your manager to get the link.</string>
     <string name="email_address">Business email</string>
@@ -95,8 +91,7 @@
     <string name="editable_value_hint">Value</string>
 
     <string name="network_error">Network error. Please check your internet connection</string>
-    <string name="clocked_in">You are clocked in</string>
-    <string name="clocked_out">You are clocked out</string>
+
     <string name="directions_button">Show in Maps app</string>
     <string name="address_hint">Please check the address below and if it empty or wrong, enter the correct value (if possible)</string>
 
@@ -113,6 +108,7 @@
     <string name="splash_screen_no_key">No publishable_key</string>
     <string name="splash_screen_no_username">No email or phone_number</string>
     <string name="splash_screen_duplicate_fields">Duplicate fields</string>
+    <string name="splash_screen_deprecated_deeplink">The deeplink you\'re using is deprecated</string>
 
     <string name="sign_in_deeplink_issues">Having issues with deeplink?</string>
     <string name="sign_in_deeplink_hint">Paste the deeplink or login token here</string>
@@ -128,6 +124,13 @@
         - Compute daily stats \n\t\t(like total driven distance)
     </string>
     <string name="permission_rationale_3">We also need to access accelerometer to detect when you drive or walk</string>
+
+    <string name="visits_management_clocked_in">You are clocked in</string>
+    <string name="visits_management_clocked_out">You are clocked out</string>
+    <string name="visits_management_device_deleted">"Device is deleted"</string>
+    <string name="visits_management_permissions_not_granted">Permissions are not granted</string>
+    <string name="visits_management_location_services_disabled">Location services are disabled</string>
+    <string name="visits_management_generic_tracking_error">Tracking failure</string>
 
     <string name="current_trip">Current trip</string>
     <string name="current_trip_add_order">Add order</string>

@@ -1,15 +1,14 @@
 package com.hypertrack.android.ui.base
 
-import android.util.Log
 import androidx.annotation.StringRes
 import androidx.lifecycle.*
 import androidx.navigation.NavController
-import androidx.navigation.NavDestination
 import androidx.navigation.NavDirections
 import com.hypertrack.android.utils.*
-import retrofit2.HttpException
-import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @Suppress("LeakingThis")
@@ -29,11 +28,10 @@ open class BaseViewModel(
 
     open val loadingState = MutableLiveData<Boolean>()
 
-    private val observers = mutableListOf<Pair<LiveData<*>, Observer<*>>>()
+    private val liveDataObserverManager = LiveDataObserverManager()
 
     protected fun <T> LiveData<T>.observeManaged(observer: Observer<T>) {
-        observeForever(observer)
-        observers.add(Pair(this, observer))
+        this.observeManaged(liveDataObserverManager, observer)
     }
 
     fun withLoadingStateAndErrorHandler(code: (suspend () -> Unit)) {
@@ -51,9 +49,14 @@ open class BaseViewModel(
         }
     }
 
+    protected fun runInVmEffectsScope(block: suspend CoroutineScope.() -> Unit): Job {
+        // todo sync with splash screen and activity viewmodel
+        return viewModelScope.launch(Dispatchers.Default, block = block)
+    }
+
     @Suppress("UNCHECKED_CAST")
     override fun onCleared() {
-        observers.forEach { it.first.removeObserver(it.second as Observer<Any>) }
+        liveDataObserverManager.onCleared()
     }
 }
 
@@ -64,7 +67,7 @@ class BaseViewModelDependencies(
 )
 
 class ErrorHandler(
-    private val osUtilsProvider: OsUtilsProvider,
+    private val resourceProvider: ResourceProvider,
     private val crashReportsProvider: CrashReportsProvider,
     private val exceptionSource: LiveData<Consumable<Exception>>? = null,
     private val errorTextSource: LiveData<Consumable<String>>? = null
@@ -91,7 +94,7 @@ class ErrorHandler(
         }
         addSource(_exception) {
             postValue(it.map {
-                osUtilsProvider.getErrorMessage(it).text
+                resourceProvider.getErrorMessage(it).text
             })
         }
     }
@@ -111,7 +114,7 @@ class ErrorHandler(
     }
 
     fun postText(@StringRes res: Int) {
-        _errorText.postValue(Consumable(osUtilsProvider.stringFromResource(res)))
+        _errorText.postValue(Consumable(resourceProvider.stringFromResource(res)))
     }
 
     private fun onExceptionReceived(e: Exception) {
@@ -135,5 +138,16 @@ fun <T> MutableLiveData<Consumable<T>>.postValue(item: T) {
 fun NavController.navigate(d: Consumable<NavDirections>) {
     d.consume {
         navigate(it)
+    }
+}
+
+fun withErrorHandling(
+    errorHandler: (Exception) -> Unit,
+    block: () -> Unit
+) {
+    try {
+        block.invoke()
+    } catch (e: Exception) {
+        errorHandler.invoke(e)
     }
 }

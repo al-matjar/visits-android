@@ -29,6 +29,7 @@ import kotlinx.android.synthetic.main.fragment_history.scrim
 import kotlinx.android.synthetic.main.progress_bar.*
 
 import android.view.LayoutInflater
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.toView
 import com.hypertrack.android.ui.common.util.toViewOrHideIfNull
@@ -63,7 +64,7 @@ import java.time.LocalDate
 class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
 
     private val vm: HistoryViewModel by viewModels {
-        MyApplication.injector.provideUserScopeViewModelFactory()
+        Injector.provideUserScopeViewModelFactory()
     }
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>

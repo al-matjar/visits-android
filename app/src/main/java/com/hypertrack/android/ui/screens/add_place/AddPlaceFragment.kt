@@ -2,19 +2,18 @@ package com.hypertrack.android.ui.screens.add_place
 
 import android.os.Bundle
 import android.view.View
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
-import com.hypertrack.android.ui.common.select_destination.DestinationData
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationFragment
-import com.hypertrack.android.utils.MyApplication
-import com.hypertrack.android.utils.stringFromResource
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_select_destination.*
+import kotlinx.coroutines.FlowPreview
 
+@FlowPreview
 open class AddPlaceFragment : SelectDestinationFragment() {
 
     protected override val vm: AddPlaceViewModel by viewModels {
-        MyApplication.injector.provideUserScopeViewModelFactory()
+        Injector.provideUserScopeViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

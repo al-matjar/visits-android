@@ -19,6 +19,8 @@ object Utils {
         }
     }
 
+    // todo handle exceptions
+    // may be related to leadschool show keyboard issue
     fun showKeyboard(activity: Activity, view: View? = null) {
         try {
             view?.requestFocus()

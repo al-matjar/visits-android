@@ -3,10 +3,9 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.profile
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import com.hypertrack.android.interactors.LoginInteractor
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
@@ -22,7 +21,7 @@ class ProfileFragment : BaseFragment<MainActivity>(R.layout.fragment_profile) {
     private val adapter = KeyValueAdapter(showCopyButton = true)
 
     private val vm: ProfileViewModel by viewModels {
-        MyApplication.injector.provideUserScopeViewModelFactory()
+        Injector.provideUserScopeViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

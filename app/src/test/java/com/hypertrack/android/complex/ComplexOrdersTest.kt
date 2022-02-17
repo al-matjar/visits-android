@@ -11,10 +11,11 @@ import com.hypertrack.android.view_models.OrdersDetailsViewModelTest
 import io.mockk.*
 import junit.framework.Assert.*
 import kotlinx.coroutines.runBlocking
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
-@Suppress("EXPERIMENTAL_API_USAGE")
+@Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class ComplexOrdersTest {
 
     @get:Rule
@@ -45,12 +46,10 @@ class ComplexOrdersTest {
         val detailsVm1 = OrdersDetailsViewModelTest.createVm(
             id = "1",
             tripsInteractor,
-            ordersInteractor = tripsInteractor
         )
         val detailsVm2 = OrdersDetailsViewModelTest.createVm(
             id = "2",
             tripsInteractor,
-            ordersInteractor = tripsInteractor
         )
 
         runBlocking {

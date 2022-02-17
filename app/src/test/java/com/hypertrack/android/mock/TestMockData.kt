@@ -1,6 +1,7 @@
 package com.hypertrack.android.mock
 
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.TestInjector
 import com.hypertrack.android.api.*
 import com.hypertrack.android.api.graphql.DayRange
 import com.hypertrack.android.api.graphql.models.GraphQlDayVisitsStats
@@ -18,7 +19,6 @@ import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
-import com.hypertrack.android.utils.Injector
 import com.hypertrack.android.ui.common.util.copy
 
 import com.hypertrack.android.utils.datetime.toIso
@@ -61,7 +61,7 @@ object TestMockData {
                 "coordinates": [${lon ?: 37.794763}, ${lat ?: 122.395223}]
             }
             """.let {
-                Injector.getMoshi().adapter(Geometry::class.java).fromJson(it)!!
+                TestInjector.getMoshi().adapter(Geometry::class.java).fromJson(it)!!
             }
         } else {
             val coords: MutableList<List<Double>> = mutableListOf()

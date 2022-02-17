@@ -2,81 +2,18 @@ package com.hypertrack.android.utils
 
 import android.annotation.SuppressLint
 import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.media.AudioAttributes
-import android.media.RingtoneManager
-import android.os.Build
 import android.util.Log
-import com.google.android.gms.common.GoogleApiAvailability
-import com.google.android.gms.security.ProviderInstaller
-import com.google.android.libraries.places.api.Places
+import com.hypertrack.android.di.Injector
 import com.hypertrack.logistics.android.github.BuildConfig
-import com.hypertrack.logistics.android.github.R
-import java.util.*
 
 class MyApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-
         context = this
-
-        injector.deeplinkProcessor.appOnCreate(this)
-
-        if (BuildConfig.DEBUG) {
-//            HyperTrack.enableDebugLogging()
-        }
-
-        Places.initialize(
-            applicationContext,
-            getString(R.string.google_places_api_key),
-            Locale.getDefault()
-        );
-
-        buildNotificationChannels()
-
-        injector.batteryLevelMonitor.init(this)
-
         Log.w("hypertrack-verbose", "Visits app started")
-
-        upgradeSecurityProvider(this, injector.crashReportsProvider);
-    }
-
-    private fun buildNotificationChannels() {
-        NotificationUtil.setUpNotificationChannels(this)
-    }
-
-    private fun upgradeSecurityProvider(
-        context: Context,
-        crashReportsProvider: CrashReportsProvider
-    ) {
-        try {
-            ProviderInstaller.installIfNeededAsync(
-                this,
-                object : ProviderInstaller.ProviderInstallListener {
-                    override fun onProviderInstalled() {
-                        crashReportsProvider.log("Security Provider installed")
-                    }
-
-                    override fun onProviderInstallFailed(errorCode: Int, recoveryIntent: Intent?) {
-                        try {
-                            GoogleApiAvailability.getInstance()
-                                .showErrorNotification(context, errorCode)
-                            crashReportsProvider.logException(
-                                Exception("Security provider installation failed, error code: $errorCode")
-                            )
-                        } catch (e: Exception) {
-                            crashReportsProvider.logException(e)
-                        }
-                    }
-                })
-        } catch (e: Exception) {
-            crashReportsProvider.logException(e)
-        }
+        newInjector.appOnCreate(this)
     }
 
     companion object {
@@ -88,7 +25,7 @@ class MyApplication : Application() {
 
         val DEBUG_MODE = BuildConfig.DEBUG
 
-        val injector: Injector = Injector
+        val newInjector: Injector = Injector
 
         @SuppressLint("StaticFieldLeak")
         lateinit var context: Context

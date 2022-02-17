@@ -1,39 +1,33 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.profile
 
 import android.app.Activity
-import android.text.TextUtils.split
-import android.view.Gravity.apply
 import android.widget.ArrayAdapter
 import android.widget.SpinnerAdapter
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.messaging.VisitsMessagingService
 import com.hypertrack.android.models.Imperial
 import com.hypertrack.android.models.Metric
 import com.hypertrack.android.models.Unspecified
-import com.hypertrack.android.repository.AccountRepository
-import com.hypertrack.android.repository.DriverRepository
 import com.hypertrack.android.repository.MeasurementUnitsRepository
+import com.hypertrack.android.repository.PublishableKeyRepository
+import com.hypertrack.android.repository.user.UserRepository
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.*
-import com.hypertrack.android.utils.formatters.DistanceFormatter
-import com.hypertrack.logistics.android.github.BuildConfig
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.launch
 import java.util.*
-import javax.inject.Provider
 
 class ProfileViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val measurementUnitsRepository: MeasurementUnitsRepository,
-    private val driverRepository: DriverRepository,
+    private val userRepository: UserRepository,
+    private val publishableKeyRepository: PublishableKeyRepository,
     private val hyperTrackService: HyperTrackService,
-    private val accountRepositoryProvider: Provider<AccountRepository>,
 ) : BaseViewModel(baseDependencies) {
 
     private val measurementUnitsOptions = mapOf(
@@ -64,28 +58,20 @@ class ProfileViewModel(
         val firebaseToken = VisitsMessagingService.getFirebaseToken()
 
         items.apply {
-            driverRepository.user?.let { user ->
+            userRepository.userData.load().toNullable()?.let { user ->
                 user.email?.let {
                     add(
                         KeyValueItem(
                             osUtilsProvider.stringFromResource(R.string.email),
-                            it
+                            it.value
                         )
                     )
                 }
-                user.phoneNumber?.let {
+                user.phone?.let {
                     add(
                         KeyValueItem(
                             osUtilsProvider.stringFromResource(R.string.phone_number),
-                            it
-                        )
-                    )
-                }
-                user.driverId?.let {
-                    add(
-                        KeyValueItem(
-                            osUtilsProvider.stringFromResource(R.string.driver_id),
-                            it
+                            it.value
                         )
                     )
                 }
@@ -120,7 +106,7 @@ class ProfileViewModel(
                 add(
                     KeyValueItem(
                         "Publishable key (debug)",
-                        accountRepositoryProvider.get().publishableKey
+                        publishableKeyRepository.publishableKey.load().toNullable()?.value.orEmpty()
                     )
                 )
             }
@@ -158,7 +144,7 @@ class ProfileViewModel(
 
     fun onShowOnDashboardClick(activity: Activity) {
         val deviceId = hyperTrackService.deviceId
-        val publishableKey = accountRepositoryProvider.get().publishableKey
+        val publishableKey = publishableKeyRepository.publishableKey
         osUtilsProvider.openUrl(
             activity,
             "https://dashboard.hypertrack.com/tracking/$deviceId?view=devices&publishable_key=$publishableKey&on_demand=l1"

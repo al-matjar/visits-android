@@ -49,6 +49,7 @@ class ApiClient(
 
     suspend fun getGeofence(geofenceId: String): RemoteGeofence {
         try {
+            // todo handle EOFException: End of input if there is no such geofence
             val metadataResponse = api.getGeofenceMetadata(geofenceId).apply {
                 if (!isSuccessful) throw HttpException(this)
             }
@@ -89,21 +90,21 @@ class ApiClient(
     }
 
     suspend fun getTrips(page: String = ""): List<Trip> {
-        try {
+        return try {
             val response = api.getTrips(
                 deviceId = deviceId.value,
                 paginationToken = page
             )
             if (response.isSuccessful) {
-                return response.body()?.trips?.filterNot {
+                response.body()?.trips?.filterNot {
                     it.id.isNullOrEmpty()
                 } ?: emptyList()
+            } else {
+                throw HttpException(response)
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Got exception while trying to refresh trips $e")
             throw e
         }
-        return emptyList()
     }
 
     suspend fun updateOrderMetadata(

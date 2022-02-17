@@ -8,13 +8,7 @@
     <fragment
         android:id="@+id/splashScreenFragment"
         android:name="com.hypertrack.android.ui.screens.splash_screen.SplashScreenFragment"
-        android:label="SplashScreenFragment">
-        <action
-            android:id="@+id/action_splashScreenFragment_to_signInFragment"
-            app:destination="@id/signInFragment"
-            app:popUpTo="@id/nav_graph"
-            app:popUpToInclusive="true" />
-    </fragment>
+        android:label="SplashScreenFragment" />
     <fragment
         android:id="@+id/permissionRequestFragment"
         android:name="com.hypertrack.android.ui.screens.permission_request.PermissionRequestFragment"
@@ -199,4 +193,9 @@
     <action
         android:id="@+id/action_global_outageFragment"
         app:destination="@id/outageFragment" />
+    <action
+        android:id="@+id/action_global_signInFragment"
+        app:destination="@id/signInFragment"
+        app:popUpTo="@id/nav_graph"
+        app:popUpToInclusive="true" />
 </navigation>

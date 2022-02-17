@@ -8,12 +8,12 @@ import androidx.core.view.doOnLayout
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.SnackbarUtil
 import com.hypertrack.android.ui.common.util.Utils
 import com.hypertrack.android.ui.views.VerificationCodeView
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_confirm.*
 
@@ -23,7 +23,7 @@ class ConfirmFragment : ProgressDialogFragment(R.layout.fragment_confirm) {
     private val args: ConfirmFragmentArgs by navArgs()
 
     private val vm: ConfirmEmailViewModel by viewModels {
-        MyApplication.injector.provideViewModelFactory(MyApplication.context)
+        Injector.provideViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

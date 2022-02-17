@@ -6,10 +6,10 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.common.adapters.KeyValueAdapter
 import com.hypertrack.android.ui.common.util.*
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_place_details.*
 import kotlinx.android.synthetic.main.fragment_place_details.lIntegration
@@ -22,7 +22,7 @@ class PlaceDetailsFragment : ProgressDialogFragment(R.layout.fragment_place_deta
 
     private val args: PlaceDetailsFragmentArgs by navArgs()
     private val vm: PlaceDetailsViewModel by viewModels {
-        MyApplication.injector.provideParamVmFactory(
+        Injector.provideUserScopeParamViewModelFactory(
             args.geofenceId
         )
     }

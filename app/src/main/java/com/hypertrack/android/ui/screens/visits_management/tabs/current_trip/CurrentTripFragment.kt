@@ -2,7 +2,6 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.current_trip
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import androidx.fragment.app.viewModels
@@ -11,24 +10,25 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
-import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.common.util.*
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.stringFromResource
-import com.hypertrack.logistics.android.github.BuildConfig
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_current_trip.*
 import kotlinx.android.synthetic.main.inflate_current_trip.*
 import kotlinx.android.synthetic.main.progress_bar.*
+import kotlinx.coroutines.FlowPreview
 
+@FlowPreview
 class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_trip) {
 
     private lateinit var bottomHolderSheetBehavior: BottomSheetBehavior<*>
 
     private val vm: CurrentTripViewModel by viewModels {
-        MyApplication.injector.provideUserScopeViewModelFactory()
+        Injector.provideUserScopeViewModelFactory()
     }
 
     private val ordersAdapter by lazy { vm.createOrdersAdapter() }
@@ -49,22 +49,6 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        findNavController().currentBackStackEntry?.savedStateHandle
-            ?.getLiveData<DestinationData>(KEY_DESTINATION)
-            ?.observe(viewLifecycleOwner) { result ->
-                result?.let {
-                    vm.onDestinationResult(it)
-                    findNavController().currentBackStackEntry?.savedStateHandle
-                        ?.set(KEY_DESTINATION, null)
-                }
-            }
-
-        //check if there is intent to create trip
-        MyApplication.injector.tripCreationScope?.let {
-            MyApplication.injector.tripCreationScope = null
-            vm.onDestinationResult(it.destinationData)
-        }
 
         vm.onViewCreated()
 

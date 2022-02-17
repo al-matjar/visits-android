@@ -1,20 +1,12 @@
 package com.hypertrack.android.interactors
 
 import android.app.Activity
-import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.models.local.DeviceId
-import com.hypertrack.android.models.local.LocalTrip
-import com.hypertrack.android.repository.AccessTokenRepository
-import com.hypertrack.android.repository.BasicAuthAccessTokenRepository
-import com.hypertrack.android.repository.IntegrationsRepository
 import com.hypertrack.android.repository.IntegrationsRepositoryImpl
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.logistics.android.github.BuildConfig
 import com.hypertrack.logistics.android.github.R
-import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 

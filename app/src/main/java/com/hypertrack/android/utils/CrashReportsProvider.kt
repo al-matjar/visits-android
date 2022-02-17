@@ -1,14 +1,18 @@
 package com.hypertrack.android.utils
 
 import android.util.Log
+import android.content.Context
+import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.squareup.moshi.JsonClass
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.FlowPreview
 import retrofit2.HttpException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
+// todo rename (remove 'provider')
 interface CrashReportsProvider {
     fun logException(e: Throwable, metadata: Map<String, String> = mapOf())
     fun log(txt: String)
@@ -16,9 +20,19 @@ interface CrashReportsProvider {
     fun setUserIdentifier(id: String)
 }
 
-class FirebaseCrashReportsProvider : CrashReportsProvider {
+class FirebaseCrashReportsProvider(appContext: Context) : CrashReportsProvider {
+    init {
+        FirebaseApp.initializeApp(appContext)
+    }
+
     override fun logException(e: Throwable, metadata: Map<String, String>) {
         if (MyApplication.DEBUG_MODE) {
+            Log.v(
+                javaClass.simpleName, mapOf(
+                    "exception" to (e as Exception).format(),
+                    "metadata" to metadata
+                ).toString()
+            )
             e.printStackTrace()
         }
         if (e.shouldBeReported()) {
@@ -29,7 +43,10 @@ class FirebaseCrashReportsProvider : CrashReportsProvider {
         }
     }
 
-    override fun setUserIdentifier(id: String) = FirebaseCrashlytics.getInstance().setUserId(id)
+    override fun setUserIdentifier(id: String) {
+        log("User identifier set: $id")
+        FirebaseCrashlytics.getInstance().setUserId(id)
+    }
 
     //todo keys to enum
     override fun setCustomKey(key: String, value: String) {
@@ -60,13 +77,11 @@ class FirebaseCrashReportsProvider : CrashReportsProvider {
 
 class NonReportableException(message: String) : Exception(message)
 
+// do not place any data that third party can use to identify user
 @JsonClass(generateAdapter = true)
 class UserIdentifier(
     val deviceId: String,
-    val driverId: String,
-    val pubKey: String,
 )
-
 
 fun Exception.isNetworkError(): Boolean {
     return when (this) {
@@ -76,6 +91,14 @@ fun Exception.isNetworkError(): Boolean {
         is ConnectException,
         -> true
         else -> false
+    }
+}
+
+fun tryWithReport(crashReportsProvider: CrashReportsProvider, block: () -> Unit) {
+    try {
+        block.invoke()
+    } catch (e: Exception) {
+        crashReportsProvider.logException(e)
     }
 }
 

@@ -3,7 +3,9 @@ package com.hypertrack.android.utils
 import android.util.Log
 import com.hypertrack.android.interactors.history.Action
 import com.hypertrack.logistics.android.github.BuildConfig
+import io.branch.referral.Branch
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -11,10 +13,17 @@ import kotlinx.coroutines.newSingleThreadContext
 import java.util.concurrent.Executors.newSingleThreadExecutor
 import kotlin.coroutines.CoroutineContext
 
-open class ReducerResult<S, E>(val newState: S, val effects: Set<E>) {
+//todo separate file
+data class ReducerResult<S, E>(val newState: S, val effects: Set<E>) {
     constructor(newState: S) : this(newState, setOf())
+
+    fun withEffects(effects: Set<E>): ReducerResult<S, E> {
+        return ReducerResult(newState, this.effects + effects)
+    }
 }
 
+
+//todo dedicated package
 class StateMachine<A, S, E>(
     private val tag: String,
     initialState: S,
@@ -46,7 +55,7 @@ class StateMachine<A, S, E>(
                         msg.appendLine("\t> $effect")
                     }
                     msg.appendLine("]")
-                    Log.v("hypertrack-verbose", msg.toString())
+                    Log.v("hypertrack-sm", msg.toString())
                 }
             }
         }

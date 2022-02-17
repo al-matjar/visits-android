@@ -10,6 +10,9 @@ import com.hypertrack.android.interactors.TripsInteractor
 import com.hypertrack.android.interactors.TripsUpdateTimerInteractor
 import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.models.local.Order
+import com.hypertrack.android.interactors.app.AppState
+import com.hypertrack.android.interactors.app.NotInitialized
+import com.hypertrack.android.interactors.app.Initialized
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.repository.TripCreationError
 import com.hypertrack.android.repository.TripCreationSuccess
@@ -23,22 +26,23 @@ import com.hypertrack.android.ui.common.util.*
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersAdapter
 import com.hypertrack.android.utils.DeviceLocationProvider
-import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.TimeValueFormatter
 import com.hypertrack.logistics.android.github.R
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.lang.IllegalStateException
 
 class CurrentTripViewModel(
     baseDependencies: BaseViewModelDependencies,
+    private val appState: LiveData<AppState>,
+    private val appCoroutineScope: CoroutineScope,
     private val tripsInteractor: TripsInteractor,
     private val placesInteractor: PlacesInteractor,
     private val geocodingInteractor: GeocodingInteractor,
     private val tripsUpdateTimerInteractor: TripsUpdateTimerInteractor,
-    private val hyperTrackService: HyperTrackService,
     private val locationProvider: DeviceLocationProvider,
     private val dateTimeFormatter: DateTimeFormatter,
     private val timeFormatter: TimeValueFormatter,
@@ -48,9 +52,11 @@ class CurrentTripViewModel(
         OrderAddressDelegate(geocodingInteractor, osUtilsProvider, dateTimeFormatter)
 
     private val isTracking = MediatorLiveData<Boolean>().apply {
-        addSource(hyperTrackService.isTracking) {
-            if (value != it) {
-                updateValue(it)
+        addSource(appState) {
+            it.isSdkTracking().let { isTracking ->
+                if (value != isTracking) {
+                    updateValue(isTracking)
+                }
             }
         }
     }
@@ -96,10 +102,10 @@ class CurrentTripViewModel(
     }
 
     val showWhereAreYouGoing: LiveData<Boolean> =
-        ZipLiveData(hyperTrackService.isTracking, tripData).let {
-            Transformations.map(it) { (isTracking, trip) ->
-                return@map if (isTracking != null) {
-                    trip == null && isTracking
+        ZipLiveData(appState, tripData).let {
+            Transformations.map(it) { (appState, trip) ->
+                return@map if (appState != null) {
+                    trip == null && appState.isSdkTracking()
                 } else {
                     false
                 }
@@ -161,9 +167,18 @@ class CurrentTripViewModel(
     }
 
     fun onViewCreated() {
-        if (loadingState.value != true) {
-            viewModelScope.launch {
-                tripsInteractor.refreshTrips()
+        when (val state = appState.requireValue()) {
+            is NotInitialized -> throw IllegalStateException(state.toString())
+            is Initialized -> {
+                if (state.tripCreationScope != null) {
+                    proceedCreatingTrip(state.tripCreationScope.destinationData)
+                } else {
+                    if (loadingState.value != true) {
+                        viewModelScope.launch {
+                            tripsInteractor.refreshTrips()
+                        }
+                    }
+                }
             }
         }
     }
@@ -228,9 +243,9 @@ class CurrentTripViewModel(
         )
     }
 
-    fun onDestinationResult(destinationData: DestinationData) {
+    private fun proceedCreatingTrip(destinationData: DestinationData) {
         loadingState.updateValue(true)
-        GlobalScope.launch {
+        appCoroutineScope.launch {
             when (val res =
                 tripsInteractor.createTrip(destinationData.latLng, destinationData.address)) {
                 is TripCreationSuccess -> {
