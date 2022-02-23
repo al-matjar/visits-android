@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.14.1] - 2022-02-23
+
+### Changed
+
+- Hypertrack SDK 6.0.0
+
 ## [0.14.0] - 2022-02-16
 
 ### Changed
