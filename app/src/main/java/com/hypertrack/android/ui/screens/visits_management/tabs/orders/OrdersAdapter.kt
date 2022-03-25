@@ -1,7 +1,7 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.orders
 
 import android.view.View
-import com.hypertrack.android.models.local.LocalOrder
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.base.BaseAdapter
 import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
@@ -17,17 +17,17 @@ class OrdersAdapter(
     private val dateTimeFormatter: DateTimeFormatter,
     private val addressDelegate: OrderAddressDelegate,
     private val showStatus: Boolean = true
-) : BaseAdapter<LocalOrder, BaseAdapter.BaseVh<LocalOrder>>() {
+) : BaseAdapter<Order, BaseAdapter.BaseVh<Order>>() {
 
     override val itemLayoutResource: Int = R.layout.item_order
 
     override fun createViewHolder(
         view: View,
         baseClickListener: (Int) -> Unit
-    ): BaseVh<LocalOrder> {
-        return object : BaseContainerVh<LocalOrder>(view, baseClickListener) {
-            override fun bind(item: LocalOrder) {
-                addressDelegate.shortAddress(item).toView(containerView.tvAddress)
+    ): BaseVh<Order> {
+        return object : BaseContainerVh<Order>(view, baseClickListener) {
+            override fun bind(item: Order) {
+                item.shortAddress?.toView(containerView.tvAddress)
                 containerView.tvEta.setGoneState(item.status != OrderStatus.ONGOING)
                 if (item.eta != null) {
                     containerView.tvEta.setText(

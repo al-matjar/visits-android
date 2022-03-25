@@ -4,6 +4,7 @@ import androidx.lifecycle.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
+import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.history.HistoryInteractor
 import com.hypertrack.android.interactors.history.HistoryState
 import com.hypertrack.android.models.*
@@ -16,8 +17,8 @@ import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.base.toConsumable
 import com.hypertrack.android.ui.common.delegates.DeviceStatusMarkerDisplayDelegate
-import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
-import com.hypertrack.android.ui.common.delegates.GeotagDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.delegates.address.GeofenceVisitAddressDelegate
 import com.hypertrack.android.utils.toAddressString
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
@@ -31,6 +32,7 @@ import com.hypertrack.android.utils.formatters.TimeValueFormatter
 
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.lang.IllegalArgumentException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -39,6 +41,8 @@ import java.time.format.FormatStyle
 class HistoryViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val historyInteractor: HistoryInteractor,
+    private val geocodingInteractor: GeocodingInteractor,
+    private val geofenceVisitAddressDelegate: GeofenceVisitAddressDelegate,
     private val visitDisplayDelegate: GeofenceVisitDisplayDelegate,
     private val statusMarkerDisplayDelegate: DeviceStatusMarkerDisplayDelegate,
     private val geotagDisplayDelegate: GeotagDisplayDelegate,
@@ -48,8 +52,6 @@ class HistoryViewModel(
     private val mapItemsFactory: HypertrackMapItemsFactory,
     val style: BaseHistoryStyle
 ) : BaseViewModel(baseDependencies) {
-
-    private val geofenceVisitAddressDelegate = GeofenceVisitAddressDelegate(osUtilsProvider)
 
     val timelineAdapter = TimelineTileItemAdapter(
         osUtilsProvider
@@ -323,96 +325,102 @@ class HistoryViewModel(
 
     private fun applyEffects(effects: Set<Effect>) {
         try {
-            effects.forEach { effect ->
-                when (effect) {
-                    is MoveMapEffect -> {
-                        when (effect.target) {
-                            is Either.Left -> effect.map.animateCamera(effect.target.left)
-                            is Either.Right -> effect.map.animateCameraToBounds(effect.target.right)
-                        } as Any?
-                    }
-                    is SetBottomSheetStateEffect -> {
-                        setBottomSheetExpandedEvent.postValue(effect.expanded)
-                        timelineArrowDirectionDown.postValue(effect.expanded)
-                    }
-                    is MoveMapToBoundsEffect -> {
-                        effect.map.moveCamera(
-                            CameraUpdateFactory.newLatLngBounds(
-                                effect.latLngBounds,
-                                effect.mapPadding
-                            )
-                        )
-                    }
-                    is UpdateMapEffect -> {
-                        effect.map.clear()
-                        effect.userLocation?.let {
-                            effect.map.addUserLocation(it)
-                        }
-                        effect.map.addPolyline(effect.mapHistoryData.historyPolyline.polylineOptions)
-                        effect.mapHistoryData.geotags.forEach { effect.map.addMarker(it.markerOptions) }
-                        effect.mapHistoryData.geofenceVisits.forEach { effect.map.addMarker(it.markerOptions) }
-                    }
-                    is UpdateViewStateEffect -> {
-                        displayViewState(effect.viewState)
-                    }
-                    is ShowDatePickerDialogEffect -> {
-                        openDatePickerDialogEvent.postValue(effect.date)
-                    }
-                    is LoadHistoryEffect -> {
-                        historyInteractor.loadHistory(effect.date)
-                    }
-                    is SendErrorToCrashlytics -> {
-                        crashReportsProvider.logException(effect.exception)
-                    }
-                    is OpenGeofenceVisitInfoDialogEffect -> {
-                        effect.visit.id?.let {
-                            openDialogEvent.postValue(
-                                GeofenceVisitDialog(
-                                    visitId = effect.visit.id,
-                                    geofenceId = effect.visit.geofenceId,
-                                    geofenceName = visitDisplayDelegate.getGeofenceName(effect.visit),
-                                    geofenceDescription = visitDisplayDelegate.getGeofenceDescription(
-                                        effect.visit
-                                    ),
-                                    integrationName = effect.visit.metadata?.integration?.name,
-                                    address = geofenceVisitAddressDelegate.shortAddress(effect.visit),
-                                    durationText = visitDisplayDelegate.getDurationText(effect.visit),
-                                    routeToText = visitDisplayDelegate.getRouteToText(effect.visit)
-                                )
-                            )
-                        }
-                    }
-                    is OpenGeotagInfoDialogEffect -> {
-                        openDialogEvent.postValue(
-                            GeotagDialog(
-                                geotagId = effect.geotag.id,
-                                title = geotagDisplayDelegate.getDescription(effect.geotag),
-                                metadataString = geotagDisplayDelegate.formatMetadata(effect.geotag),
-                                routeToText = geotagDisplayDelegate.getRouteToText(effect.geotag),
-                                address = effect.geotag.address
-                                    ?: osUtilsProvider.getPlaceFromCoordinates(effect.geotag.location)
-                                        ?.toAddressString(strictMode = false)
-                            )
-                        )
-                    }
-                    is OpenGeofenceDetailsEffect -> {
-                        destination.postValue(
-                            VisitsManagementFragmentDirections
-                                .actionVisitManagementFragmentToPlaceDetailsFragment(effect.geofenceId)
-                        )
-                    }
-                    is IllegalActionEffect -> {
-                        crashReportsProvider.logException(
-                            IllegalActionException(
-                                effect.action, effect.state
-                            )
-                        )
-                    }
-                } as Any?
+            viewModelScope.launch {
+                effects.forEach { effect ->
+                    handleEffect(effect)
+                }
             }
         } catch (e: Exception) {
             stateMachine.handleAction(OnErrorAction(e))
         }
+    }
+
+    private suspend fun handleEffect(effect: Effect) {
+        when (effect) {
+            is MoveMapEffect -> {
+                when (effect.target) {
+                    is Either.Left -> effect.map.animateCamera(effect.target.left)
+                    is Either.Right -> effect.map.animateCameraToBounds(effect.target.right)
+                } as Any?
+            }
+            is SetBottomSheetStateEffect -> {
+                setBottomSheetExpandedEvent.postValue(effect.expanded)
+                timelineArrowDirectionDown.postValue(effect.expanded)
+            }
+            is MoveMapToBoundsEffect -> {
+                effect.map.moveCamera(
+                    CameraUpdateFactory.newLatLngBounds(
+                        effect.latLngBounds,
+                        effect.mapPadding
+                    )
+                )
+            }
+            is UpdateMapEffect -> {
+                effect.map.clear()
+                effect.userLocation?.let {
+                    effect.map.addUserLocation(it)
+                }
+                effect.map.addPolyline(effect.mapHistoryData.historyPolyline.polylineOptions)
+                effect.mapHistoryData.geotags.forEach { effect.map.addMarker(it.markerOptions) }
+                effect.mapHistoryData.geofenceVisits.forEach { effect.map.addMarker(it.markerOptions) }
+            }
+            is UpdateViewStateEffect -> {
+                displayViewState(effect.viewState)
+            }
+            is ShowDatePickerDialogEffect -> {
+                openDatePickerDialogEvent.postValue(effect.date)
+            }
+            is LoadHistoryEffect -> {
+                historyInteractor.loadHistory(effect.date)
+            }
+            is SendErrorToCrashlytics -> {
+                crashReportsProvider.logException(effect.exception)
+            }
+            is OpenGeofenceVisitInfoDialogEffect -> {
+                effect.visit.id?.let {
+                    openDialogEvent.postValue(
+                        GeofenceVisitDialog(
+                            visitId = effect.visit.id,
+                            geofenceId = effect.visit.geofenceId,
+                            geofenceName = visitDisplayDelegate.getGeofenceName(effect.visit),
+                            geofenceDescription = visitDisplayDelegate.getGeofenceDescription(
+                                effect.visit
+                            ),
+                            integrationName = effect.visit.metadata?.integration?.name,
+                            address = geofenceVisitAddressDelegate.shortAddress(effect.visit),
+                            durationText = visitDisplayDelegate.getDurationText(effect.visit),
+                            routeToText = visitDisplayDelegate.getRouteToText(effect.visit)
+                        )
+                    )
+                }
+            }
+            is OpenGeotagInfoDialogEffect -> {
+                openDialogEvent.postValue(
+                    GeotagDialog(
+                        geotagId = effect.geotag.id,
+                        title = geotagDisplayDelegate.getDescription(effect.geotag),
+                        metadataString = geotagDisplayDelegate.formatMetadata(effect.geotag),
+                        routeToText = geotagDisplayDelegate.getRouteToText(effect.geotag),
+                        address = effect.geotag.address
+                            ?: geocodingInteractor.getPlaceFromCoordinates(effect.geotag.location)
+                                ?.toAddressString(strictMode = false)
+                    )
+                )
+            }
+            is OpenGeofenceDetailsEffect -> {
+                destination.postValue(
+                    VisitsManagementFragmentDirections
+                        .actionVisitManagementFragmentToPlaceDetailsFragment(effect.geofenceId)
+                )
+            }
+            is IllegalActionEffect -> {
+                crashReportsProvider.logException(
+                    IllegalActionException(
+                        effect.action, effect.state
+                    )
+                )
+            }
+        } as Any?
     }
 
     private fun stateChangeEffects(newState: State): Set<Effect> {
@@ -618,7 +626,7 @@ class HistoryViewModel(
                         isOutage = false,
                         description = visitDisplayDelegate.getGeofenceName(it),
                         timeString = visitDisplayDelegate.getVisitTimeTextForTimeline(it),
-                        address = visitDisplayDelegate.getAddress(it),
+                        address = it.address,
                         locations = listOf()
                     )
                 })

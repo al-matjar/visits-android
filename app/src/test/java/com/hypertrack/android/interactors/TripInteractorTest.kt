@@ -8,11 +8,10 @@ import com.hypertrack.android.api.*
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.models.Metadata
-import com.hypertrack.android.models.Order
+import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
-import com.hypertrack.android.observeAndAssertNull
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.*
 import com.hypertrack.android.utils.HyperTrackService
@@ -95,7 +94,7 @@ class TripInteractorTest {
         val backendOrders = listOf(
             createBaseTrip().copy(
                 id = "tripId",
-                status = TripStatus.ACTIVE.value, orders = listOf<Order>(
+                status = TripStatus.ACTIVE.value, orders = listOf<RemoteOrder>(
                     createBaseOrder().copy(
                         id = "1",
                         _status = OrderStatus.COMPLETED.value
@@ -131,31 +130,6 @@ class TripInteractorTest {
                 assertEquals("tripId", it.id)
                 assertEquals(3, it.orders.size)
             }
-        }
-    }
-
-    @Test
-    fun `it should create legacy trip only for ongoing trip`() {
-        val backendTrips = listOf(
-            createBaseTrip().copy(status = TripStatus.COMPLETED.value, orders = null),
-            createBaseTrip().copy(
-                status = TripStatus.PROGRESSING_COMPLETION.value,
-                orders = listOf()
-            ),
-            createBaseTrip().copy(
-                status = TripStatus.UNKNOWN.value, orders = listOf(
-                    createBaseOrder()
-                )
-            ),
-        )
-        val tripsInteractorImpl = createTripInteractorImpl(
-            backendTrips = backendTrips
-        )
-        runBlocking {
-            tripsInteractorImpl.refreshTrips()
-        }
-        runBlocking {
-            tripsInteractorImpl.currentTrip.observeAndAssertNull()
         }
     }
 
@@ -198,12 +172,9 @@ class TripInteractorTest {
                     Response.success(trip)
                 }
             },
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns true }
         )
         runBlocking {
             tripsInteractorImpl.refreshTrips()
-            tripsInteractorImpl.setOrderPickedUp("1")
-            tripsInteractorImpl.setOrderPickedUp("2")
             tripsInteractorImpl.addPhotoToOrder("2", "")
             tripsInteractorImpl.addPhotoToOrder("2", "")
             tripsInteractorImpl.addPhotoToOrder("3", "")
@@ -213,15 +184,12 @@ class TripInteractorTest {
             tripsInteractorImpl.currentTrip.observeAndGetValue()!!.let { trip ->
                 trip.orders.let { orders ->
                     orders[0].let {
-                        assertEquals(true, it.isPickedUp)
                         assertEquals(0, it.photos.size)
                     }
                     orders[1].let {
-                        assertEquals(true, it.isPickedUp)
                         assertEquals(2, it.photos.size)
                     }
                     orders[2].let {
-                        assertEquals(false, it.isPickedUp)
                         assertEquals(1, it.photos.size)
                     }
                 }
@@ -247,7 +215,6 @@ class TripInteractorTest {
         }
         val tripsInteractorImpl = createTripInteractorImpl(
             backendTrips = backendTrips,
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false },
             apiClient = apiClient
         )
         runBlocking {
@@ -278,7 +245,6 @@ class TripInteractorTest {
         }
         val tripsInteractorImpl = createTripInteractorImpl(
             backendTrips = backendTrips,
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false },
             apiClient = apiClient
         )
         runBlocking {
@@ -315,7 +281,6 @@ class TripInteractorTest {
         }
         val tripsInteractorImpl = createTripInteractorImpl(
             backendTrips = backendTrips,
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false },
             apiClient = apiClient
         )
         runBlocking {
@@ -380,56 +345,6 @@ class TripInteractorTest {
         assertEquals(null, slot)
     }
 
-    //todo disabled because of Indiabulls
-//    @Test
-//    fun `it should complete trip on order complete for legacy trips`() {
-//        val backendTrips = listOf(
-//            createBaseTrip().copy(tripId = "1", status = TripStatus.ACTIVE.value, orders = null),
-//        )
-//        val apiClient: ApiClient = mockk {
-//            coEvery { getTrips() } returns backendTrips
-//            coEvery { completeTrip(any()) } returns JustSuccess
-//        }
-//        val tripsInteractorImpl = createTripInteractorImpl(
-//            backendTrips = backendTrips,
-//            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false },
-//            apiClient = apiClient
-//        )
-//        runBlocking {
-//            tripsInteractorImpl.refreshTrips()
-//            tripsInteractorImpl.completeOrder("1")
-//            coVerifyAll {
-//                apiClient.getTrips()
-//                apiClient.completeTrip("1")
-//            }
-//        }
-//    }
-
-    //todo disabled because of Indiabulls
-//    @Test
-//    fun `it should cancel trip on order cancel for legacy trips`() {
-//        val backendTrips = listOf(
-//            createBaseTrip().copy(tripId = "1", status = TripStatus.ACTIVE.value, orders = null),
-//        )
-//        val apiClient: ApiClient = mockk {
-//            coEvery { getTrips() } returns backendTrips
-//            coEvery { completeTrip(any()) } returns JustSuccess
-//        }
-//        val tripsInteractorImpl = createTripInteractorImpl(
-//            backendTrips = backendTrips,
-//            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false },
-//            apiClient = apiClient
-//        )
-//        runBlocking {
-//            tripsInteractorImpl.refreshTrips()
-//            tripsInteractorImpl.cancelOrder("1")
-//            coVerifyAll {
-//                apiClient.getTrips()
-//                apiClient.completeTrip("1")
-//            }
-//        }
-//    }
-
     companion object {
         fun createTripsStorage(): TripsStorage {
             return object : TripsStorage {
@@ -477,19 +392,17 @@ class TripInteractorTest {
                 coEvery { saveTrips(any()) } returns Unit
             },
             backendTrips: List<Trip> = listOf(),
-            accountRepository: AccountRepository = mockk() { coEvery { isPickUpAllowed } returns false },
             apiClient: ApiClient = createMockApiClient(backendTrips),
             hyperTrackService: HyperTrackService = mockk(relaxed = true) {
-                coEvery { sendPickedUp(any(), any()) } returns Unit
                 every { isTracking } returns MutableLiveData(true)
             },
             queueInteractor: PhotoUploadQueueInteractor = mockk(relaxed = true) {},
             tripsRepository: TripsRepository = TripsRepositoryImpl(
                 apiClient,
                 tripStorage,
-                hyperTrackService,
                 TestCoroutineScope(),
-                accountRepository.isPickUpAllowed
+                mockk(relaxed = true),
+                mockk(relaxed = true),
             ),
             allowRefresh: () -> Boolean = { true }
         ): TripsInteractorImpl {

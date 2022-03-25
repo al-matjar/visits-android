@@ -1,4 +1,4 @@
-package com.hypertrack.android.models
+package com.hypertrack.android.api.models
 
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.TripDestination
@@ -8,7 +8,7 @@ import com.squareup.moshi.JsonClass
 
 @Suppress("UNCHECKED_CAST")
 @JsonClass(generateAdapter = true)
-data class Order(
+data class RemoteOrder(
     @field:Json(name = "order_id") val id: String,
     val destination: TripDestination,
     @field:Json(name = "status") val _status: String,

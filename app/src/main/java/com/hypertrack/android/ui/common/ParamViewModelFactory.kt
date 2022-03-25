@@ -49,6 +49,7 @@ class ParamViewModelFactory<T>(
                 userScopeProvider.get().tripsInteractor,
                 userScopeProvider.get().photoUploadQueueInteractor,
                 appScope.dateTimeFormatter,
+                appScope.orderAddressDelegate,
             ) as T
             AddPlaceInfoViewModel::class.java -> (param as DestinationData).let { destinationData ->
                 AddPlaceInfoViewModel(
@@ -57,21 +58,26 @@ class ParamViewModelFactory<T>(
                     _name = destinationData.name,
                     baseDependencies,
                     userScopeProvider.get().placesInteractor,
+                    appScope.geocodingInteractor,
                     userScopeProvider.get().integrationsRepository,
-                    MetersDistanceFormatter(osUtilsProvider),
-                    moshi
+                    MetersDistanceFormatter(
+                        osUtilsProvider,
+                        userScopeProvider.get().measurementUnitsRepository
+                    ),
                 ) as T
             }
             AddOrderInfoViewModel::class.java -> AddOrderInfoViewModel(
                 param as AddOrderParams,
                 baseDependencies,
                 userScopeProvider.get().tripsInteractor,
+                appScope.geocodingInteractor,
             ) as T
             AddOrderViewModel::class.java -> AddOrderViewModel(
                 param as String,
                 baseDependencies,
                 userScopeProvider.get().placesInteractor,
                 userScopeProvider.get().googlePlacesInteractor,
+                appScope.geocodingInteractor,
                 userScopeProvider.get().deviceLocationProvider,
             ) as T
             else -> throw IllegalArgumentException("Can't instantiate class $modelClass")

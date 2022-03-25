@@ -4,7 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.hypertrack.android.ui.base.BaseAdapter
-import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.toView
 import com.hypertrack.android.ui.common.util.toViewOrHideIfNull
@@ -26,8 +26,6 @@ import kotlinx.android.synthetic.main.item_place_visit_all_places.view.tvVisitId
 
 
 class AllPlacesVisitsAdapter(
-    private val osUtilsProvider: OsUtilsProvider,
-    private val displayDelegate: GeofenceVisitDisplayDelegate,
     private val dateTimeFormatter: DateTimeFormatter,
     private val distanceFormatter: DistanceFormatter,
     private val onCopyClickListener: ((String) -> Unit)
@@ -39,7 +37,6 @@ class AllPlacesVisitsAdapter(
         return when (items[position]) {
             is Day -> Day::class.java.hashCode()
             is Visit -> Visit::class.java.hashCode()
-//            is MonthItem -> MonthItem::class.java.hashCode()
         }
     }
 
@@ -49,7 +46,6 @@ class AllPlacesVisitsAdapter(
                 when (viewType) {
                     Day::class.java.hashCode() -> R.layout.item_day
                     Visit::class.java.hashCode() -> itemLayoutResource
-//                    MonthItem::class.java.hashCode() -> R.layout.item_month
                     else -> throw IllegalStateException("viewType ${viewType}")
                 },
                 parent,
@@ -73,41 +69,24 @@ class AllPlacesVisitsAdapter(
                         containerView.tvDayTitle.text = dateTimeFormatter.formatDate(item.date)
                         containerView.tvTotal.text = item.totalDriveDistance.meters.let {
                             distanceFormatter.formatDistance(it)
-                        } ?: osUtilsProvider.stringFromResource(R.string.places_visits_loading)
+                        }
                     }
                     is Visit -> {
-                        val visit = item.visit
-                        visit.id?.toView(containerView.tvVisitId)
-                        displayDelegate.getGeofenceName(visit).toView(containerView.tvTitle)
-                        displayDelegate.getDurationText(visit)
-                            .toViewOrHideIfNull(containerView.tvDescription)
-                        displayDelegate.getRouteToText(visit)
-                            .toViewOrHideIfNull(containerView.tvRouteTo)
+                        item.visitId.toView(containerView.tvVisitId)
+                        item.title.toView(containerView.tvTitle)
+                        item.durationText.toViewOrHideIfNull(containerView.tvDescription)
+                        item.routeToText.toViewOrHideIfNull(containerView.tvRouteTo)
                         listOf(containerView.ivRouteTo, containerView.tvRouteTo).forEach {
-                            it.setGoneState(visit.routeTo == null)
+                            it.setGoneState(item.routeToText == null)
                         }
                         containerView.bCopy.setOnClickListener {
-                            visit.id?.let {
+                            item.visitId.let {
                                 onCopyClickListener.invoke(it)
                             }
                         }
-                        containerView.tvPlaceIntegrationName.text =
-                            displayDelegate.getGeofenceName(visit)
-                        containerView.tvPlaceAddress.text = visit.address
+                        item.integrationName.toViewOrHideIfNull(containerView.tvPlaceIntegrationName)
+                        item.addressText.toView(containerView.tvPlaceAddress)
                     }
-//                    is MonthItem -> {
-////                        Log.v(
-////                            "hypertrack-verbose",
-////                            "adapter $item ${visitsData.monthStats} ${visitsData.monthStats}"
-////                        )
-//                        val monthTotal = visitsData.monthStats[item.month]?.let {
-//                            timeDistanceFormatter.formatDistance(it)
-//                        }
-//                        containerView.tvTitle.text =
-//                            item.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
-//                        containerView.tvTotal.text = monthTotal
-//                            ?: osUtilsProvider.stringFromResource(R.string.places_visits_loading)
-//                    }
                 }
             }
         }

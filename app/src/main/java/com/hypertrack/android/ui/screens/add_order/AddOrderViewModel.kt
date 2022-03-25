@@ -1,5 +1,6 @@
 package com.hypertrack.android.ui.screens.add_order
 
+import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.GooglePlacesInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.ui.base.postValue
@@ -14,11 +15,13 @@ class AddOrderViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val placesInteractor: PlacesInteractor,
     private val googlePlacesInteractor: GooglePlacesInteractor,
+    private val geocodingInteractor: GeocodingInteractor,
     private val deviceLocationProvider: DeviceLocationProvider,
 ) : SelectDestinationViewModel(
     baseDependencies,
     placesInteractor,
     googlePlacesInteractor,
+    geocodingInteractor,
     deviceLocationProvider,
 ) {
     override fun proceed(destinationData: DestinationData) {

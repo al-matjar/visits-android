@@ -11,15 +11,16 @@ import com.hypertrack.android.api.graphql.models.GraphQlHistory
 import com.hypertrack.android.api.graphql.models.GraphQlPlaceVisits
 import com.hypertrack.android.api.graphql.models.GraphQlPointGeometry
 import com.hypertrack.android.api.models.Coordinate
+import com.hypertrack.android.api.models.RemoteGeofence
+import com.hypertrack.android.api.models.RemoteEstimate
 import com.hypertrack.android.api.models.RemoteLocation
-import com.hypertrack.android.models.*
+import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.utils.Injector
 import com.hypertrack.android.ui.common.util.copy
 
-import com.hypertrack.android.utils.createAnyMapAdapter
 import com.hypertrack.android.utils.datetime.toIso
 import java.time.LocalDate
 import java.time.ZoneId
@@ -52,7 +53,7 @@ object TestMockData {
         polygon: Boolean = false,
         metadata: Map<String, Any> = mapOf("name" to page.toString()),
         marker: GeofenceMarkersResponse? = null,
-    ): Geofence {
+    ): RemoteGeofence {
         val geometry = if (!polygon) {
             """
                 {
@@ -71,7 +72,7 @@ object TestMockData {
             Polygon(listOf(coords))
         }
 
-        return Geofence(
+        return RemoteGeofence(
             UUID.randomUUID().hashCode().toString(),
             "",
             ZonedDateTime.now().format(DateTimeFormatter.ISO_INSTANT),
@@ -147,7 +148,7 @@ object TestMockData {
 
     fun createTrip(
         id: String? = null,
-        orders: List<Order> = listOf(
+        orders: List<RemoteOrder> = listOf(
             createOrder(status = OrderStatus.ONGOING),/*.copy(estimate=null)*/
             createOrder(status = OrderStatus.ONGOING),
             createOrder(status = OrderStatus.SNOOZED),
@@ -173,8 +174,8 @@ object TestMockData {
     fun createOrder(
         id: String? = null,
         status: OrderStatus = OrderStatus.ONGOING
-    ): Order {
-        return Order(
+    ): RemoteOrder {
+        return RemoteOrder(
             id ?: ("order " + Math.random()),
             TripDestination(paloAltoLatLng, "Test Address"),
             status.value,

@@ -1,33 +1,32 @@
 package com.hypertrack.android.ui.common.delegates.address
 
-import com.hypertrack.android.models.local.LocalGeofence
+import androidx.annotation.MainThread
+import androidx.annotation.WorkerThread
+import com.hypertrack.android.interactors.GeocodingInteractor
+import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.ui.common.util.nullIfBlank
-import com.hypertrack.android.utils.OsUtilsProvider
+import com.hypertrack.android.utils.ResourceProvider
 import com.hypertrack.android.utils.SHORT_ADDRESS_LIMIT
 import com.hypertrack.android.utils.toAddressString
 import com.hypertrack.logistics.android.github.R
 
-class GeofenceAddressDelegate(val osUtilsProvider: OsUtilsProvider) {
+class GeofenceAddressDelegate(
+    private val geocodingInteractor: GeocodingInteractor,
+) {
 
-    fun shortAddress(geofence: LocalGeofence): String {
+    suspend fun shortAddress(geofence: Geofence): String? {
         return geofence.address?.nullIfBlank()?.let {
             if (it.length < SHORT_ADDRESS_LIMIT) {
                 it
             } else null
-        } ?: osUtilsProvider.getPlaceFromCoordinates(
-            geofence.latLng.latitude,
-            geofence.latLng.longitude
-        )?.toAddressString(short = true)
-        ?: osUtilsProvider.stringFromResource(R.string.address_not_available)
+        }
+            ?: geocodingInteractor.getPlaceFromCoordinates(geofence.latLng)
+                ?.toAddressString(short = true)
     }
 
-    fun fullAddress(geofence: LocalGeofence): String {
+    suspend fun fullAddress(geofence: Geofence): String? {
         return geofence.address?.nullIfBlank()
-            ?: osUtilsProvider.getPlaceFromCoordinates(
-                geofence.latLng.latitude,
-                geofence.latLng.longitude
-            )?.toAddressString()
-            ?: osUtilsProvider.stringFromResource(R.string.address_not_available)
+            ?: geocodingInteractor.getPlaceFromCoordinates(geofence.latLng)?.toAddressString()
     }
 
 

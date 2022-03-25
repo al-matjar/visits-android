@@ -4,9 +4,7 @@ import android.location.Location
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
-import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.ui.common.util.nullIfBlank
-import com.hypertrack.android.ui.screens.visits_management.tabs.places.Visit
 import com.hypertrack.sdk.GeotagResult
 import com.hypertrack.sdk.HyperTrack
 import com.hypertrack.sdk.OutageReason
@@ -65,31 +63,6 @@ class HyperTrackService(
 //                Log.v("hypertrack-verbose", "set device metadata: $this")
             }
         })
-    }
-
-    fun sendCompletionEvent(legacyOrder: LocalOrder, canceled: Boolean) {
-        val payload = mapOf(
-            "trip_id" to legacyOrder.id,
-            "type" to if (!canceled) Constants.VISIT_MARKED_COMPLETE else Constants.VISIT_MARKED_CANCELED,
-            LocalOrder.VISIT_NOTE_KEY to legacyOrder.note,
-            LocalOrder.VISIT_PHOTOS_KEY to legacyOrder.photos.map { it.photoId }.toSet()
-        )
-        sdkInstance.addGeotag(payload, with(legacyOrder.destinationLatLng) {
-            latitude.let {
-                longitude.let {
-                    val location = Location("visit")
-                    location.longitude = longitude
-                    location.latitude = latitude
-                    location
-                }
-            }
-        })
-        crashReportsProvider?.log("sendCompletionEvent ${legacyOrder.id}")
-    }
-
-    fun sendPickedUp(id: String, typeKey: String) {
-        crashReportsProvider?.log("sendPickedUp ${id}")
-        sdkInstance.addGeotag(mapOf(typeKey to id, "type" to Constants.PICK_UP))
     }
 
     fun startTracking() {

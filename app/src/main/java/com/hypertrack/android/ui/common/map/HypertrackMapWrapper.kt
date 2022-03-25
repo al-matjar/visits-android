@@ -8,18 +8,13 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.hypertrack.android.models.History
-import com.hypertrack.android.models.local.LocalGeofence
-import com.hypertrack.android.models.local.LocalOrder
+import com.hypertrack.android.models.local.Geofence
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
-import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
-import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryStyle
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.logistics.android.github.R
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 class HypertrackMapWrapper(
     val googleMap: GoogleMap,
@@ -89,7 +84,7 @@ class HypertrackMapWrapper(
         return googleMap.addMarker(markerOptions)
     }
 
-    fun addGeofenceShape(geofence: LocalGeofence) {
+    fun addGeofenceShape(geofence: Geofence) {
         if (geofence.isPolygon) {
             googleMap.addPolygon(
                 PolygonOptions()
@@ -148,7 +143,7 @@ class HypertrackMapWrapper(
         return res
     }
 
-    fun addGeofenceMarker(geofence: LocalGeofence) {
+    fun addGeofenceMarker(geofence: Geofence) {
         val it = geofence
         if (geofence.isPolygon) {
             googleMap.addPolygon(
@@ -316,13 +311,13 @@ class HypertrackMapWrapper(
         googleMap.setPadding(left, top, right, bottom)
     }
 
-    fun addOrder(order: LocalOrder, orderAddressDelegate: OrderAddressDelegate) {
+    fun addOrder(order: Order) {
         googleMap.addMarker(
             MarkerOptions()
                 .icon(geofenceMarkerIcon)
                 .anchor(0.5f, 0.5f)
                 .position(order.destinationLatLng)
-                .title(orderAddressDelegate.shortAddress(order))
+                .title(order.shortAddress)
         )
     }
 

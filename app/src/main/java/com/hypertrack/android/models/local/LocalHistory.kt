@@ -20,40 +20,4 @@ class LocalHistory(
     val deviceStatusMarkers: List<DeviceStatusMarker>,
     val totalDriveDistance: DistanceValue,
     val totalDriveDuration: TimeValue,
-) {
-    companion object {
-        fun fromGraphQl(
-            date: LocalDate,
-            gqlHistory: GraphQlHistory,
-            deviceId: DeviceId,
-            addressDelegate: GraphQlGeofenceVisitAddressDelegate,
-            crashReportsProvider: CrashReportsProvider,
-            osUtilsProvider: OsUtilsProvider,
-            moshi: Moshi
-        ): LocalHistory {
-            return LocalHistory(
-                date,
-                gqlHistory.visits.map {
-                    LocalGeofenceVisit.fromGraphQlVisit(
-                        it,
-                        deviceId,
-                        crashReportsProvider,
-                        addressDelegate,
-                        moshi
-                    )
-                },
-                gqlHistory.geotagMarkers.map {
-                    Geotag.fromGraphQlGeotagMarker(it, moshi)
-                },
-                gqlHistory.locations
-                    .sortedBy { it.recordedAt }
-                    .map { it.coordinate.toLatLng() },
-                gqlHistory.deviceStatusMarkers.map {
-                    DeviceStatusMarker.fromGraphQl(it)
-                },
-                gqlHistory.totalDriveDistanceMeters.toMeters(),
-                gqlHistory.totalDriveDurationMinutes.toSeconds()
-            )
-        }
-    }
-}
+)

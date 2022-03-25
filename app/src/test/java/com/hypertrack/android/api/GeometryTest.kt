@@ -1,5 +1,6 @@
 package com.hypertrack.android.api
 
+import com.hypertrack.android.api.models.RemoteGeofence
 import com.hypertrack.android.utils.Injector
 import org.junit.Assert.*
 import org.junit.Test
@@ -30,8 +31,8 @@ class GeometryTest {
             }
         }"""
         val moshi = Injector.getMoshi()
-        val geofence = moshi.adapter(Geofence::class.java).fromJson(geofenceString)
-                ?: throw NullPointerException("Geofence should not be null")
+        val geofence = moshi.adapter(RemoteGeofence::class.java).fromJson(geofenceString)
+            ?: throw NullPointerException("Geofence should not be null")
         assertEquals("Point", geofence.type)
 
     }
@@ -56,8 +57,8 @@ class GeometryTest {
             }
         }"""
         val moshi = Injector.getMoshi()
-        val geofence = moshi.adapter(Geofence::class.java).fromJson(geofenceString)
-                ?: throw NullPointerException("Geofence should not be null")
+        val geofence = moshi.adapter(RemoteGeofence::class.java).fromJson(geofenceString)
+            ?: throw NullPointerException("Geofence should not be null")
         assertEquals("Polygon", geofence.type)
     }
 }

@@ -60,7 +60,7 @@ class LocalGeofenceVisit(
             visit: GraphQlGeofenceVisit,
             deviceId: DeviceId,
             crashReportsProvider: CrashReportsProvider,
-            addressDelegate: GraphQlGeofenceVisitAddressDelegate,
+            address: String?,
             moshi: Moshi
         ): LocalGeofenceVisit {
             val exit = visit.exit?.recordedAt?.let { dateTimeFromString(it) }
@@ -81,7 +81,7 @@ class LocalGeofenceVisit(
                     } else it
                 },
                 durationSeconds = exit?.let { ChronoUnit.SECONDS.between(arrival, exit) }?.toInt(),
-                address = addressDelegate.displayAddress(visit),
+                address = address,
                 metadata = try {
                     moshi.adapter(GeofenceMetadata::class.java).fromJson(visit.geofence.metadata)
                 } catch (e: Exception) {

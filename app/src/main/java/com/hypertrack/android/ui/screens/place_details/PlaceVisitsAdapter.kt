@@ -3,8 +3,7 @@ package com.hypertrack.android.ui.screens.place_details
 import android.view.View
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.base.BaseAdapter
-import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
-import com.hypertrack.android.ui.common.util.goneIfNull
+import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.toView
 import com.hypertrack.android.ui.common.util.toViewOrHideIfNull

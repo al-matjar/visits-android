@@ -3,7 +3,7 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.orders
 import androidx.lifecycle.*
 import com.hypertrack.android.interactors.TripsInteractor
 import com.hypertrack.android.interactors.TripsUpdateTimerInteractor
-import com.hypertrack.android.models.local.LocalOrder
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.base.BaseViewModel
@@ -22,9 +22,8 @@ class OrdersListViewModel(
     private val tripsInteractor: TripsInteractor,
     private val tripsUpdateTimerInteractor: TripsUpdateTimerInteractor,
     private val dateTimeFormatter: DateTimeFormatter,
+    private val addressDelegate: OrderAddressDelegate,
 ) : BaseViewModel(baseDependencies) {
-
-    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, dateTimeFormatter)
 
     val error = tripsInteractor.errorFlow.asLiveData()
 
@@ -46,10 +45,10 @@ class OrdersListViewModel(
             }
         }
 
-    val orders: LiveData<List<LocalOrder>> =
+    val orders: LiveData<List<Order>> =
         Transformations.map(tripsInteractor.currentTrip) { trip ->
             if (trip != null) {
-                mutableListOf<LocalOrder>().apply {
+                mutableListOf<Order>().apply {
                     addAll(trip.orders.filter { it.status == OrderStatus.ONGOING })
                     addAll(trip.orders.filter { it.status != OrderStatus.ONGOING })
                 }

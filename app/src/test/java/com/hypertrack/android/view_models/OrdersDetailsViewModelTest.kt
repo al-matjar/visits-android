@@ -12,8 +12,8 @@ import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.interactors.TripInteractorTest.Companion.createMockApiClient
 import com.hypertrack.android.models.Metadata
-import com.hypertrack.android.models.Order
-import com.hypertrack.android.models.local.LocalOrder
+import com.hypertrack.android.api.models.RemoteOrder
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
@@ -46,37 +46,41 @@ class OrdersDetailsViewModelTest {
     fun `it should show correct view state for order`() {
         runBlocking {
             val tripsInteractor: TripsInteractor = createTripsInteractorMock(orderSet = {
-                every { it.getOrderLiveData("ONGOING") } returns MutableLiveData<LocalOrder>(
-                    LocalOrder.fromRemote(
+                every { it.getOrderLiveData("ONGOING") } returns MutableLiveData<Order>(
+                    mapOrder(
                         createBaseOrder(status = OrderStatus.ONGOING),
-                        note = null,
-                        metadata = null,
-                        isPickedUp = false
-                    )
+                        metadata = Metadata.empty().apply {
+                            visitsAppMetadata.apply {
+                                photos = listOf("1", "2", "3")
+                            }
+                        })
                 )
-                every { it.getOrderLiveData("COMPLETED") } returns MutableLiveData<LocalOrder>(
-                    LocalOrder.fromRemote(
+                every { it.getOrderLiveData("COMPLETED") } returns MutableLiveData<Order>(
+                    mapOrder(
                         createBaseOrder(status = OrderStatus.COMPLETED),
-                        note = null,
-                        metadata = null,
-                        isPickedUp = false
-                    )
+                        metadata = Metadata.empty().apply {
+                            visitsAppMetadata.apply {
+                                photos = listOf("1", "2", "3")
+                            }
+                        })
                 )
-                every { it.getOrderLiveData("CANCELED") } returns MutableLiveData<LocalOrder>(
-                    LocalOrder.fromRemote(
+                every { it.getOrderLiveData("CANCELED") } returns MutableLiveData<Order>(
+                    mapOrder(
                         createBaseOrder(status = OrderStatus.CANCELED),
-                        note = null,
-                        metadata = null,
-                        isPickedUp = false
-                    )
+                        metadata = Metadata.empty().apply {
+                            visitsAppMetadata.apply {
+                                photos = listOf("1", "2", "3")
+                            }
+                        })
                 )
-                every { it.getOrderLiveData("SNOOZED") } returns MutableLiveData<LocalOrder>(
-                    LocalOrder.fromRemote(
+                every { it.getOrderLiveData("SNOOZED") } returns MutableLiveData<Order>(
+                    mapOrder(
                         createBaseOrder(status = OrderStatus.SNOOZED),
-                        note = null,
-                        metadata = null,
-                        isPickedUp = false
-                    )
+                        metadata = Metadata.empty().apply {
+                            visitsAppMetadata.apply {
+                                photos = listOf("1", "2", "3")
+                            }
+                        })
                 )
             })
 
@@ -87,10 +91,9 @@ class OrdersDetailsViewModelTest {
             createVm("ONGOING", tripsInteractor).let {
                 assertEquals(true, it.isNoteEditable.observeAndGetValue())
                 assertEquals(true, it.showCompleteButtons.observeAndGetValue())
-                assertEquals(false, it.showPickUpButton.observeAndGetValue())
                 assertEquals(true, it.showAddPhoto.observeAndGetValue())
                 assertEquals(true, it.showSnoozeButton.observeAndGetValue())
-                assertEquals(false, it.showUnsnoozeButton.observeAndGetValue())
+                assertEquals(false, it.showUnSnoozeButton.observeAndGetValue())
                 val md = it.metadata.observeAndGetValue()
                 assertMetadata(OrderStatus.ONGOING.value, "order_status", md)
             }
@@ -98,10 +101,9 @@ class OrdersDetailsViewModelTest {
             createVm("COMPLETED", tripsInteractor).let {
                 assertEquals(false, it.isNoteEditable.observeAndGetValue())
                 assertEquals(false, it.showCompleteButtons.observeAndGetValue())
-                assertEquals(false, it.showPickUpButton.observeAndGetValue())
                 assertEquals(false, it.showAddPhoto.observeAndGetValue())
                 assertEquals(false, it.showSnoozeButton.observeAndGetValue())
-                assertEquals(false, it.showUnsnoozeButton.observeAndGetValue())
+                assertEquals(false, it.showUnSnoozeButton.observeAndGetValue())
                 val md = it.metadata.observeAndGetValue()
                 assertMetadata(OrderStatus.COMPLETED.value, "order_status", md)
             }
@@ -109,10 +111,9 @@ class OrdersDetailsViewModelTest {
             createVm("CANCELED", tripsInteractor).let {
                 assertEquals(false, it.isNoteEditable.observeAndGetValue())
                 assertEquals(false, it.showCompleteButtons.observeAndGetValue())
-                assertEquals(false, it.showPickUpButton.observeAndGetValue())
                 assertEquals(false, it.showAddPhoto.observeAndGetValue())
                 assertEquals(false, it.showSnoozeButton.observeAndGetValue())
-                assertEquals(false, it.showUnsnoozeButton.observeAndGetValue())
+                assertEquals(false, it.showUnSnoozeButton.observeAndGetValue())
                 val md = it.metadata.observeAndGetValue()
                 assertMetadata(OrderStatus.CANCELED.value, "order_status", md)
             }
@@ -120,10 +121,9 @@ class OrdersDetailsViewModelTest {
             createVm("SNOOZED", tripsInteractor).let {
                 assertEquals(false, it.isNoteEditable.observeAndGetValue())
                 assertEquals(false, it.showCompleteButtons.observeAndGetValue())
-                assertEquals(false, it.showPickUpButton.observeAndGetValue())
                 assertEquals(false, it.showAddPhoto.observeAndGetValue())
                 assertEquals(false, it.showSnoozeButton.observeAndGetValue())
-                assertEquals(true, it.showUnsnoozeButton.observeAndGetValue())
+                assertEquals(true, it.showUnSnoozeButton.observeAndGetValue())
                 val md = it.metadata.observeAndGetValue()
                 assertMetadata(OrderStatus.SNOOZED.value, "order_status", md)
             }
@@ -132,7 +132,7 @@ class OrdersDetailsViewModelTest {
 
     @Test
     fun `it should update order state on complete button click`() {
-        val backendOrders = listOf<Order>(
+        val backendOrders = listOf<RemoteOrder>(
             createBaseOrder().copy(
                 id = "ONGOING",
                 _status = OrderStatus.ONGOING.value
@@ -142,7 +142,6 @@ class OrdersDetailsViewModelTest {
         var allowRefresh = true
         val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = backendOrders)),
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         ) {
             allowRefresh
         }
@@ -158,7 +157,6 @@ class OrdersDetailsViewModelTest {
                     getFromMetadata("order_status", it.metadata.observeAndGetValue())
                 )
                 assertFalse(it.showCompleteButtons.observeAndGetValue())
-                assertFalse(it.showPickUpButton.observeAndGetValue())
                 assertFalse(it.isNoteEditable.observeAndGetValue())
                 assertFalse(it.showAddPhoto.observeAndGetValue())
                 assertNull(getFromMetadata("order_picked_up", it.metadata.observeAndGetValue()))
@@ -168,7 +166,7 @@ class OrdersDetailsViewModelTest {
 
     @Test
     fun `it should update order state on cancel button click`() {
-        val backendOrders = listOf<Order>(
+        val backendOrders = listOf<RemoteOrder>(
             createBaseOrder().copy(
                 id = "ONGOING",
                 _status = OrderStatus.ONGOING.value
@@ -178,7 +176,6 @@ class OrdersDetailsViewModelTest {
         var allowRefresh = true
         val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = backendOrders)),
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         ) {
             allowRefresh
         }
@@ -194,7 +191,6 @@ class OrdersDetailsViewModelTest {
                     getFromMetadata("order_status", it.metadata.observeAndGetValue())
                 )
                 assertFalse(it.showCompleteButtons.observeAndGetValue())
-                assertFalse(it.showPickUpButton.observeAndGetValue())
                 assertFalse(it.isNoteEditable.observeAndGetValue())
                 assertFalse(it.showAddPhoto.observeAndGetValue())
                 assertNull(getFromMetadata("order_picked_up", it.metadata.observeAndGetValue()))
@@ -204,7 +200,7 @@ class OrdersDetailsViewModelTest {
 
     @Test
     fun `it should update order state on snooze button click`() {
-        val backendOrders = listOf<Order>(
+        val backendOrders = listOf<RemoteOrder>(
             createBaseOrder().copy(
                 id = "ONGOING",
                 _status = OrderStatus.ONGOING.value
@@ -214,7 +210,6 @@ class OrdersDetailsViewModelTest {
         var allowRefresh = true
         val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = backendOrders)),
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         ) {
             allowRefresh
         }
@@ -230,7 +225,6 @@ class OrdersDetailsViewModelTest {
                     getFromMetadata("order_status", it.metadata.observeAndGetValue())
                 )
                 assertFalse(it.showCompleteButtons.observeAndGetValue())
-                assertFalse(it.showPickUpButton.observeAndGetValue())
                 assertFalse(it.isNoteEditable.observeAndGetValue())
                 assertFalse(it.showAddPhoto.observeAndGetValue())
                 assertNull(getFromMetadata("order_picked_up", it.metadata.observeAndGetValue()))
@@ -242,7 +236,6 @@ class OrdersDetailsViewModelTest {
     fun `it should save note on exit`() {
         val tripsInteractor: TripsInteractor = TripInteractorTest.createTripInteractorImpl(
             backendTrips = listOf(createBaseTrip().copy(orders = listOf(createBaseOrder().copy(id = "1")))),
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         )
 
         runBlocking {
@@ -366,17 +359,16 @@ class OrdersDetailsViewModelTest {
                 coEvery { getTrips() } returns listOf(
                     LocalTrip(
                         "1", TripStatus.ACTIVE, mapOf(), mutableListOf(
-                            LocalOrder.fromRemote(
-                                order,
-                                metadata = null,
-                                note = "Note_local"
-                            )
+                            mapOrder(order, note = "Note_local", Metadata.empty().apply {
+                                visitsAppMetadata.apply {
+                                    photos = listOf("1", "2", "3")
+                                }
+                            })
                         )
                     )
                 )
                 coEvery { saveTrips(any()) } returns Unit
             },
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         )
 
         runBlocking {
@@ -410,17 +402,16 @@ class OrdersDetailsViewModelTest {
                 coEvery { getTrips() } returns listOf(
                     LocalTrip(
                         "1", TripStatus.ACTIVE, mapOf(), mutableListOf(
-                            LocalOrder.fromRemote(
-                                order,
-                                metadata = null,
-                                note = null
-                            )
+                            mapOrder(order, metadata = Metadata.empty().apply {
+                                visitsAppMetadata.apply {
+                                    photos = listOf("1", "2", "3")
+                                }
+                            })
                         )
                     )
                 )
                 coEvery { saveTrips(any()) } returns Unit
             },
-            accountRepository = mockk() { coEvery { isPickUpAllowed } returns false }
         )
 
         runBlocking {
@@ -551,23 +542,20 @@ class OrdersDetailsViewModelTest {
             }
             val tripsInteractor = createTripsInteractorMock(orderSet = {
                 every { it.getOrderLiveData("1") } returns MutableLiveData(
-                    LocalOrder.fromRemote(
+                    mapOrder(
                         createBaseOrder(),
-                        true,
-                        null,
-                        Metadata.empty().apply {
+                        metadata = Metadata.empty().apply {
                             visitsAppMetadata.apply {
                                 photos = listOf("1", "2", "3")
                             }
                         },
-                        false,
-                        listOf("1", "2", "3").map {
+                        photos = listOf("1", "2", "3").map {
                             TripInteractorTest.createBasePhotoForUpload(
                                 it,
                                 "",
                                 state = PhotoUploadingState.NOT_UPLOADED
                             )
-                        }.toMutableSet(),
+                        }.toMutableSet()
                     )
                 )
             })
@@ -596,15 +584,26 @@ class OrdersDetailsViewModelTest {
     }
 
     companion object {
+        fun mapOrder(
+            order: RemoteOrder,
+            note: String? = null,
+            metadata: Metadata? = null,
+            photos: MutableSet<PhotoForUpload> = mutableSetOf(),
+        ): Order {
+            return Order.fromRemote(
+                order,
+                note = note,
+                metadata = metadata,
+                photos = photos,
+                shortAddress = null,
+                fullAddress = null,
+            )
+        }
+
         fun createTripsInteractorMock(
             orderSet: ((TripsInteractor) -> Unit) = {
-                every { it.getOrderLiveData(any()) } returns MutableLiveData<LocalOrder>(
-                    LocalOrder.fromRemote(
-                        createBaseOrder(),
-                        note = null,
-                        metadata = null,
-                        isPickedUp = false
-                    )
+                every { it.getOrderLiveData(any()) } returns MutableLiveData<Order>(
+                    mapOrder(createBaseOrder())
                 )
             }
         ): TripsInteractor {
@@ -639,6 +638,7 @@ class OrdersDetailsViewModelTest {
                 },
                 tripsInteractor,
                 photoUploadInteractor,
+                mockk(relaxed = true),
                 mockk(relaxed = true),
             )
         }

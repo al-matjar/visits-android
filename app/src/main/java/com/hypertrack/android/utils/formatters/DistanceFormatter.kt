@@ -1,5 +1,10 @@
 package com.hypertrack.android.utils.formatters
 
+import android.util.Log
+import com.hypertrack.android.models.Imperial
+import com.hypertrack.android.models.Metric
+import com.hypertrack.android.models.Unspecified
+import com.hypertrack.android.repository.MeasurementUnitsRepository
 import com.hypertrack.android.utils.DistanceValue
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.Steps
@@ -15,9 +20,22 @@ interface DistanceFormatter {
 
 open class LocalizedDistanceFormatter(
     private val osUtilsProvider: OsUtilsProvider,
+    private val measurementUnitsRepository: MeasurementUnitsRepository,
 ) : DistanceFormatter {
     private val shouldUseImperial: Boolean
-        get() = Locale.getDefault().country in listOf("US", "LR", "MM")
+        get() {
+            return when (measurementUnitsRepository.getMeasurementUnits()) {
+                Metric -> {
+                    false
+                }
+                Imperial -> {
+                    true
+                }
+                Unspecified -> {
+                    Locale.getDefault().country in listOf("US", "LR", "MM")
+                }
+            }
+        }
 
     override fun formatDistance(meters: Int): String {
         return if (shouldUseImperial) {
@@ -68,8 +86,13 @@ open class LocalizedDistanceFormatter(
     }
 }
 
-class MetersDistanceFormatter(val osUtilsProvider: OsUtilsProvider) :
-    LocalizedDistanceFormatter(osUtilsProvider) {
+class MetersDistanceFormatter(
+    private val osUtilsProvider: OsUtilsProvider,
+    private val measurementUnitsRepository: MeasurementUnitsRepository,
+) : LocalizedDistanceFormatter(
+    osUtilsProvider,
+    measurementUnitsRepository,
+) {
     override fun formatDistance(meters: Int): String {
         return osUtilsProvider.stringFromResource(
             R.string.meters,

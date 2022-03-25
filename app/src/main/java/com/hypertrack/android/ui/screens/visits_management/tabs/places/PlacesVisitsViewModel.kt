@@ -6,7 +6,7 @@ import com.hypertrack.android.interactors.PlaceVisitsStats
 import com.hypertrack.android.interactors.PlacesVisitsInteractor
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.base.*
-import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.Meters
@@ -15,6 +15,7 @@ import com.hypertrack.android.utils.datetime.prettyFormat
 
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
+import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.*
 import java.time.LocalDate
 
@@ -39,8 +40,6 @@ class PlacesVisitsViewModel(
 
     fun createVisitsAdapter(): AllPlacesVisitsAdapter {
         return AllPlacesVisitsAdapter(
-            osUtilsProvider,
-            displayDelegate,
             dateTimeFormatter,
             distanceFormatter
         ) {
@@ -48,7 +47,7 @@ class PlacesVisitsViewModel(
         }.apply {
             onItemClickListener = {
                 if (it is Visit) {
-                    onVisitClick(it.visit)
+                    onVisitClick(it)
                 }
             }
         }
@@ -71,10 +70,10 @@ class PlacesVisitsViewModel(
         }
     }
 
-    private fun onVisitClick(visit: LocalGeofenceVisit) {
+    private fun onVisitClick(visitItem: Visit) {
         destination.postValue(
             VisitsManagementFragmentDirections.actionVisitManagementFragmentToPlaceDetailsFragment(
-                visit.geofenceId
+                visitItem.geofenceId
             )
         )
     }
@@ -85,7 +84,7 @@ class PlacesVisitsViewModel(
             stats.forEach { (k, v) ->
                 add(Day(k, v.totalDriveDistance))
                 v.visits.forEach {
-                    add(Visit(it))
+                    add(mapVisit(it))
                 }
             }
         }
@@ -95,23 +94,21 @@ class PlacesVisitsViewModel(
         onResume()
     }
 
-}
-
-sealed class VisitItem
-class Visit(val visit: LocalGeofenceVisit) : VisitItem() {
-    override fun toString(): String {
-        return "visit ${visit.getDay().prettyFormat()}"
+    private fun mapVisit(visit: LocalGeofenceVisit): Visit {
+        return Visit(
+            visit.getDay(),
+            // todo report and filter visits with id == null
+            visitId = visit.id ?: "null",
+            geofenceId = visit.geofenceId,
+            title = displayDelegate.getGeofenceName(visit),
+            durationText = displayDelegate.getDurationText(visit),
+            routeToText = displayDelegate.getRouteToText(visit),
+            integrationName = visit.metadata?.integration?.name,
+            addressText = visit.address
+                ?: resourceProvider.stringFromResource(R.string.address_not_available)
+        )
     }
+
 }
 
-class Day(val date: LocalDate, val totalDriveDistance: Meters) : VisitItem() {
-    override fun toString(): String {
-        return date.prettyFormat()
-    }
-}
 
-//class MonthItem(val month: Month) : VisitItem() {
-//    override fun toString(): String {
-//        return month.toString()
-//    }
-//}

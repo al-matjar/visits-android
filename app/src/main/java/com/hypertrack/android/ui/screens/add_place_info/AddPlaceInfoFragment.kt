@@ -5,11 +5,14 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.gms.maps.SupportMapFragment
 import com.hypertrack.android.models.Integration
+import com.hypertrack.android.ui.MainActivity
+import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.*
@@ -19,15 +22,24 @@ import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_add_place_info.*
 import kotlinx.android.synthetic.main.fragment_add_place_info.confirm
 import kotlinx.android.synthetic.main.fragment_add_place_info.toolbar
+import kotlinx.android.synthetic.main.inflate_error.bReload
+import kotlinx.android.synthetic.main.inflate_error.tvErrorMessage
 import kotlinx.android.synthetic.main.inflate_integration.*
 
-class AddPlaceInfoFragment : ProgressDialogFragment(R.layout.fragment_add_place_info) {
+class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_place_info) {
 
     private val args: AddPlaceInfoFragmentArgs by navArgs()
     private val vm: AddPlaceInfoViewModel by viewModels {
         MyApplication.injector.provideParamVmFactory(
             args.destinationData
         )
+    }
+
+    private var enableGeofenceNameTouchListener = false
+    private val geofenceNameListener = object : SimpleTextWatcher() {
+        override fun afterChanged(text: String) {
+            vm.onGeofenceNameChanged(text)
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -62,10 +74,6 @@ class AddPlaceInfoFragment : ProgressDialogFragment(R.layout.fragment_add_place_
         }
         etAddress.addTextChangedListener(addressListener)
 
-        vm.address.observe(viewLifecycleOwner, {
-            etAddress.silentUpdate(addressListener, it)
-        })
-
         val radiusListener = object : SimpleTextWatcher() {
             override fun afterChanged(text: String) {
                 vm.onRadiusChanged(text)
@@ -73,67 +81,57 @@ class AddPlaceInfoFragment : ProgressDialogFragment(R.layout.fragment_add_place_
         }
         etRadius.addTextChangedListener(radiusListener)
 
-        vm.radius.observe(viewLifecycleOwner, {
-            etRadius.silentUpdate(radiusListener, it.orEmpty().toString())
-        })
+        etGeofenceName.addTextChangedListener(geofenceNameListener)
 
-        vm.name.observe(viewLifecycleOwner, {
-            etGeofenceName.setText(it)
-        })
+        vm.viewState.observe(viewLifecycleOwner) { viewState ->
+            try {
+                if (viewState.errorMessage == null) {
+                    lError.hide()
+                    confirm.show()
 
-        vm.hasIntegrations.observe(viewLifecycleOwner) {
-            tvGeofenceName.setText(
-                if (it == true) {
-                    R.string.add_place_company_name
+                    lProgressBar.setGoneState(!viewState.isLoading)
+                    confirm.setGoneState(viewState.isLoading)
+
+                    etAddress.silentUpdate(addressListener, viewState.address)
+                    etRadius.silentUpdate(radiusListener, viewState.radius.orEmpty())
+                    displayIntegrationFieldState(viewState.integrationsViewState)
+                    confirm.isSelected = viewState.enableConfirmButton
                 } else {
-                    R.string.add_place_geofence_name
+                    lError.show()
+                    lProgressBar.hide()
+                    confirm.hide()
+                    bReload.hide()
+                    tvErrorMessage.text = viewState.errorMessage.text
                 }
-            )
+            } catch (e: Exception) {
+                vm.handleAction(ErrorAction(e))
+            }
         }
 
-        vm.integration.observe(viewLifecycleOwner, {
-            lIntegration.setGoneState(it == null)
-            it?.let { integration ->
-                integration.name?.toView(tvIntegrationName)
-                it.id.toView(tvIntegrationId)
-//                it.type.toView(tvIntegrationType)
-                listOf(tvIntegrationType, tvIntegrationTypeHint).forEach {
-                    it.hide()
-                }
-            }
-        })
-
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, {
+        vm.errorHandler.errorText.observe(viewLifecycleOwner) {
             it.consume {
                 SnackbarUtil.showErrorSnackbar(view, it)
             }
-        })
+        }
 
-        vm.loadingState.observe(viewLifecycleOwner, {
-            if (it) showProgress() else dismissProgress()
-        })
-
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observe(viewLifecycleOwner) {
             findNavController().navigate(it)
-        })
+        }
 
-        vm.showGeofenceNameField.observe(viewLifecycleOwner, { show ->
-            listOf(etGeofenceName, tvGeofenceName).forEach { it.setGoneState(!show) }
-        })
-
-        vm.enableConfirmButton.observe(viewLifecycleOwner, { it ->
-            confirm.isSelected = it
-        })
-
-        vm.adjacentGeofenceDialog.observe(viewLifecycleOwner, {
+        vm.adjacentGeofenceDialogEvent.observe(viewLifecycleOwner) {
             it.consume {
                 createConfirmationDialog(it).show()
             }
-        })
+        }
 
         etGeofenceName.setOnTouchListener { v, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
-                vm.onAddIntegration()
+                if (enableGeofenceNameTouchListener) {
+                    vm.onAddIntegration()
+                    true
+                } else {
+                    false
+                }
             } else {
                 false
             }
@@ -155,6 +153,48 @@ class AddPlaceInfoFragment : ProgressDialogFragment(R.layout.fragment_add_place_
 
         bDeleteIntegration.setOnClickListener {
             vm.onDeleteIntegrationClicked()
+        }
+    }
+
+    private fun displayIntegrationFieldState(integrationsView: IntegrationsViewState) {
+        when (integrationsView) {
+            is HasIntegrations -> {
+                enableGeofenceNameTouchListener = true
+                when (integrationsView.integrationFieldState) {
+                    is ShowGeofenceName -> {
+                        listOf(etGeofenceName, tvGeofenceName).forEach {
+                            it.show()
+                        }
+                        tvGeofenceName.setText(
+                            integrationsView.integrationFieldState.geofenceNameHint
+                        )
+                        etGeofenceName.silentUpdate(geofenceNameListener, null)
+                        lIntegration.hide()
+                    }
+                    is ShowIntegration -> {
+                        listOf(etGeofenceName, tvGeofenceName).forEach {
+                            it.hide()
+                        }
+                        lIntegration.show()
+
+                        val integration = integrationsView.integrationFieldState.integration
+                        integration.name?.toView(tvIntegrationName)
+                        integration.id.toView(tvIntegrationId)
+                        listOf(tvIntegrationType, tvIntegrationTypeHint).forEach {
+                            it.hide()
+                        }
+                    }
+                }
+            }
+            is NoIntegrations -> {
+                enableGeofenceNameTouchListener = false
+                listOf(etGeofenceName, tvGeofenceName).forEach {
+                    it.show()
+                }
+                tvGeofenceName.setText(integrationsView.geofenceNameHint)
+                etGeofenceName.silentUpdate(geofenceNameListener, integrationsView.geofenceName)
+                lIntegration.hide()
+            }
         }
     }
 

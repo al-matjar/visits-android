@@ -7,9 +7,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
+import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.GooglePlacesInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
-import com.hypertrack.android.models.local.LocalGeofence
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.SingleLiveEvent
@@ -22,26 +22,24 @@ import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.map.viewportPosition
 import com.hypertrack.android.ui.common.select_destination.reducer.*
 import com.hypertrack.android.ui.common.util.isNearZero
-import com.hypertrack.android.ui.common.util.nullIfEmpty
-import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.add_place.AddPlaceFragmentDirections
-import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
 import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.asNonEmpty
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlin.math.acos
 
 open class SelectDestinationViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val placesInteractor: PlacesInteractor,
     private val googlePlacesInteractor: GooglePlacesInteractor,
+    private val geocodingInteractor: GeocodingInteractor,
     private val deviceLocationProvider: DeviceLocationProvider,
 ) : BaseViewModel(baseDependencies) {
 
     //    private val enableLogging = MyApplication.DEBUG_MODE
-    private val enableLogging = false
+    private val enableLogging = true
 
     protected open val defaultZoom = 13f
 
@@ -164,10 +162,18 @@ open class SelectDestinationViewModel(
         }
 
         deviceLocationProvider.getCurrentLocation {
-            it?.let {
-                sendAction(UserLocationReceived(it, it.let {
-                    addressDelegate.displayAddress(osUtilsProvider.getPlaceFromCoordinates(it))
-                }))
+            it?.let { userLocation ->
+                viewModelScope.launch {
+                    sendAction(
+                        UserLocationReceived(
+                            userLocation,
+                            addressDelegate.displayAddress(
+                                geocodingInteractor.getPlaceFromCoordinates(it)
+                            )
+                        )
+                    )
+                }
+
             }
         }
     }
@@ -184,38 +190,41 @@ open class SelectDestinationViewModel(
         )
         wrapper.setOnCameraMovedListener { position ->
             onCameraMoved(wrapper)
-            sendAction(
-                MapCameraMoved(
-                    position,
-                    position.let {
-                        addressDelegate.displayAddress(
-                            osUtilsProvider.getPlaceFromCoordinates(
-                                it
+            val isMapMovingToPlace = isMapMovingToPlace
+            viewModelScope.launch {
+                sendAction(
+                    MapCameraMoved(
+                        position,
+                        position.let {
+                            addressDelegate.displayAddress(
+                                geocodingInteractor.getPlaceFromCoordinates(it)
                             )
-                        )
-                    },
-                    cause = when {
-                        isMapMovingToPlace -> MovedToPlace
-                        isMapMovingToUserLocation -> MovedToUserLocation
-                        else -> MovedByUser
-                    },
-                    isNearZero = position.isNearZero()
+                        },
+                        cause = when {
+                            isMapMovingToPlace -> MovedToPlace
+                            isMapMovingToUserLocation -> MovedToUserLocation
+                            else -> MovedByUser
+                        },
+                        isNearZero = position.isNearZero()
+                    )
                 )
-            )
-            isMapMovingToPlace = false
+            }
+            this.isMapMovingToPlace = false
             isMapMovingToUserLocation = false
         }
 
         wrapper.setOnMapClickListener {
-            sendAction(
-                MapClicked(
-                    googleMap.viewportPosition,
-                    osUtilsProvider.getPlaceFromCoordinates(googleMap.viewportPosition).let {
-                        addressDelegate.displayAddress(it)
-                    })
-            )
+            viewModelScope.launch {
+                sendAction(
+                    MapClicked(
+                        googleMap.viewportPosition,
+                        geocodingInteractor.getPlaceFromCoordinates(googleMap.viewportPosition)
+                            .let {
+                                addressDelegate.displayAddress(it)
+                            })
+                )
+            }
         }
-
         geofencesMapDelegate = createGeofencesMapDelegate(context, wrapper) {
             destination.postValue(
                 AddPlaceFragmentDirections.actionGlobalPlaceDetailsFragment(
@@ -223,13 +232,19 @@ open class SelectDestinationViewModel(
                 )
             )
         }
-        sendAction(MapReadyAction(
-            wrapper,
-            googleMap.viewportPosition,
-            googleMap.viewportPosition.let {
-                addressDelegate.displayAddress(osUtilsProvider.getPlaceFromCoordinates(it))
-            }
-        ))
+        viewModelScope.launch {
+            sendAction(MapReadyAction(
+                wrapper,
+                googleMap.viewportPosition,
+                googleMap.viewportPosition.let {
+                    addressDelegate.displayAddress(
+                        geocodingInteractor.getPlaceFromCoordinates(
+                            it
+                        )
+                    )
+                }
+            ))
+        }
     }
 
     fun onSearchQueryChanged(query: String) {

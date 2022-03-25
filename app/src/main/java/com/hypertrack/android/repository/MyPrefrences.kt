@@ -23,7 +23,7 @@ interface TripsStorage {
 class MyPreferences(context: Context, private val moshi: Moshi) :
     AccountDataStorage, TripsStorage, PhotoUploadQueueStorage {
 
-    private val sharedPreferences: SharedPreferences =
+    val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("hyper_track_pref", Context.MODE_PRIVATE)
 
     override fun saveUser(user: User) {

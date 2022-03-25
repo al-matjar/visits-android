@@ -1,13 +1,9 @@
 package com.hypertrack.android.models
 
-import com.hypertrack.android.models.local.LocalOrder
-import com.hypertrack.android.repository.AuthCallResponse
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
-import dalvik.annotation.TestTarget
 import org.jetbrains.annotations.TestOnly
 import java.lang.ClassCastException
 

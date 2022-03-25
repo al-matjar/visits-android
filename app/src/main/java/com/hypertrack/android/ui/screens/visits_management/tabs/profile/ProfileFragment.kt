@@ -2,8 +2,11 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.profile
 
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import com.hypertrack.android.interactors.LoginInteractor
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
@@ -24,19 +27,34 @@ class ProfileFragment : BaseFragment<MainActivity>(R.layout.fragment_profile) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        spMeasurementUnits.adapter = vm.createMeasurementUnitsAdapter(requireActivity())
+        spMeasurementUnits.setSelection(vm.getInitialMeasurementUnitItemIndex())
+        spMeasurementUnits.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                index: Int,
+                l: Long
+            ) {
+                vm.onMeasurementUnitItemSelected(index)
+            }
+
+            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+        }
+
         rvProfile.setLinearLayoutManager(requireContext())
         rvProfile.adapter = adapter
         adapter.onCopyClickListener = {
             vm.onCopyItemClick(it)
         }
 
-        vm.profile.observe(viewLifecycleOwner, {
+        vm.profile.observe(viewLifecycleOwner) {
             adapter.updateItems(it)
-        })
+        }
 
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observe(viewLifecycleOwner) {
             findNavController().navigate(it)
-        })
+        }
 
         bReportAnIssue.setOnClickListener {
             vm.onReportAnIssueClick()

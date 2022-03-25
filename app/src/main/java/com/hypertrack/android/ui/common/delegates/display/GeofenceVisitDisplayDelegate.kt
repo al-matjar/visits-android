@@ -1,8 +1,8 @@
-package com.hypertrack.android.ui.common.delegates
+package com.hypertrack.android.ui.common.delegates.display
 
 import com.hypertrack.android.models.local.LocalGeofenceVisit
+import com.hypertrack.android.ui.common.delegates.DateTimeRangeFormatterDelegate
 import com.hypertrack.android.ui.common.delegates.address.GeofenceVisitAddressDelegate
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.datetime.DateTimeRange
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
@@ -12,10 +12,8 @@ import com.hypertrack.logistics.android.github.R
 
 class GeofenceVisitDisplayDelegate(
     private val osUtilsProvider: OsUtilsProvider,
-    private val dateTimeFormatter: DateTimeFormatter,
     private val distanceFormatter: DistanceFormatter,
     private val timeValueFormatter: TimeValueFormatter,
-    private val addressDelegate: GeofenceVisitAddressDelegate,
     private val dateTimeRangeFormatterDelegate: DateTimeRangeFormatterDelegate
 ) {
 
@@ -52,10 +50,6 @@ class GeofenceVisitDisplayDelegate(
                 )
             } else null
         }
-    }
-
-    fun getAddress(visit: LocalGeofenceVisit): String {
-        return addressDelegate.shortAddress(visit)
     }
 
     fun getGeofenceDescription(visit: LocalGeofenceVisit): String? {

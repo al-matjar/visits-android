@@ -2,15 +2,13 @@ package com.hypertrack.android.repository
 
 import com.fonfon.kgeohash.GeoHash
 import com.hypertrack.android.api.ApiClient
-import com.hypertrack.android.api.GeofenceVisit
 import com.hypertrack.android.interactors.GeofenceError
 import com.hypertrack.android.interactors.GeofenceResult
 import com.hypertrack.android.interactors.GeofenceSuccess
 import com.hypertrack.android.models.GeofenceMetadata
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.models.local.DeviceId
-import com.hypertrack.android.models.local.LocalGeofence
-import com.hypertrack.android.models.local.LocalGeofenceVisit
+import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.ui.common.DataPage
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.utils.CrashReportsProvider
@@ -21,8 +19,8 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
 interface PlacesRepository {
-    suspend fun loadGeofencesPage(pageToken: String?): DataPage<LocalGeofence>
-    suspend fun loadGeofencesPageForMap(gh: GeoHash, pageToken: String?): DataPage<LocalGeofence>
+    suspend fun loadGeofencesPage(pageToken: String?): DataPage<Geofence>
+    suspend fun loadGeofencesPageForMap(gh: GeoHash, pageToken: String?): DataPage<Geofence>
 
     suspend fun createGeofence(
         latitude: Double,
@@ -45,23 +43,23 @@ class PlacesRepositoryImpl(
     private val crashReportsProvider: CrashReportsProvider
 ) : PlacesRepository {
 
-    override suspend fun loadGeofencesPage(pageToken: String?): DataPage<LocalGeofence> {
+    override suspend fun loadGeofencesPage(pageToken: String?): DataPage<Geofence> {
         return loadGeofences(pageToken, null)
     }
 
     override suspend fun loadGeofencesPageForMap(
         gh: GeoHash,
         pageToken: String?
-    ): DataPage<LocalGeofence> {
+    ): DataPage<Geofence> {
         return loadGeofences(pageToken, gh)
     }
 
-    private suspend fun loadGeofences(pageToken: String?, gh: GeoHash?): DataPage<LocalGeofence> {
+    private suspend fun loadGeofences(pageToken: String?, gh: GeoHash?): DataPage<Geofence> {
         return withContext(Dispatchers.IO) {
             val res = apiClient.getGeofences(pageToken, gh.string())
             val localGeofences =
                 res.geofences.map {
-                    LocalGeofence.fromGeofence(
+                    Geofence.fromGeofence(
                         deviceId,
                         it,
                         moshi,
@@ -99,7 +97,7 @@ class PlacesRepositoryImpl(
             )
             if (res.isSuccessful) {
                 return CreateGeofenceSuccess(
-                    LocalGeofence.fromGeofence(
+                    Geofence.fromGeofence(
                         deviceId,
                         res.body()!!.first(),
                         moshi,
@@ -118,7 +116,7 @@ class PlacesRepositoryImpl(
     override suspend fun getGeofence(geofenceId: String): GeofenceResult {
         return try {
             apiClient.getGeofence(geofenceId).let {
-                LocalGeofence.fromGeofence(
+                Geofence.fromGeofence(
                     deviceId,
                     it,
                     moshi,
@@ -137,5 +135,5 @@ class PlacesRepositoryImpl(
 fun GeoHash?.string() = this?.let { it.toString() }
 
 sealed class CreateGeofenceResult
-class CreateGeofenceSuccess(val geofence: LocalGeofence) : CreateGeofenceResult()
+class CreateGeofenceSuccess(val geofence: Geofence) : CreateGeofenceResult()
 class CreateGeofenceError(val e: Exception) : CreateGeofenceResult()

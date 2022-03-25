@@ -3,18 +3,21 @@ package com.hypertrack.android.interactors
 import com.hypertrack.android.api.graphql.DayRange
 import com.hypertrack.android.api.graphql.GraphQlApiClient
 import com.hypertrack.android.api.graphql.models.GraphQlDayVisitsStats
+import com.hypertrack.android.api.graphql.models.GraphQlGeofenceVisit
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.common.delegates.address.GraphQlGeofenceVisitAddressDelegate
 import com.hypertrack.android.utils.*
 import com.squareup.moshi.Moshi
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import java.time.LocalDate
 import java.time.ZoneId
 
 class PlacesVisitsRepository(
     private val deviceId: DeviceId,
     private val graphQlApiClient: GraphQlApiClient,
-    private val osUtilsProvider: OsUtilsProvider,
+    private val graphQlVisitAddressDelegate: GraphQlGeofenceVisitAddressDelegate,
     private val crashReportsProvider: CrashReportsProvider,
     private val moshi: Moshi,
     private val zoneId: ZoneId = ZoneId.systemDefault()
@@ -41,7 +44,7 @@ class PlacesVisitsRepository(
             }
     }
 
-    private fun handleSuccess(loadedDays: Map<DayRange, GraphQlDayVisitsStats>): Success<PlaceVisitsStats> {
+    private suspend fun handleSuccess(loadedDays: Map<DayRange, GraphQlDayVisitsStats>): Success<PlaceVisitsStats> {
         return mutableMapOf<LocalDate, GraphQlDayVisitsStats>()
             .also { res ->
                 loadedDays.forEach { (k, v) ->
@@ -54,13 +57,15 @@ class PlacesVisitsRepository(
             }
             .filter { !it.value.isEmpty() }
             .mapValues { (_, v) ->
+                val addresses = getGeocodingAddresses(v.visits)
+
                 LocalDayVisitsStats(
                     v.visits.map {
                         LocalGeofenceVisit.fromGraphQlVisit(
                             it,
                             deviceId,
                             crashReportsProvider,
-                            GraphQlGeofenceVisitAddressDelegate(osUtilsProvider),
+                            addresses[it],
                             moshi
                         )
                     },
@@ -88,6 +93,22 @@ class PlacesVisitsRepository(
                 add(baseDate.minusDays(i.toLong()))
             }
         }
+    }
+
+    private suspend fun getGeocodingAddresses(
+        visits: List<GraphQlGeofenceVisit>
+    ): Map<GraphQlGeofenceVisit, String?> {
+        val addresses = mutableMapOf<GraphQlGeofenceVisit, String?>()
+        try {
+            withTimeout(5000L) {
+                //todo parallelize
+                visits.forEach { visit ->
+                    addresses[visit] = graphQlVisitAddressDelegate.displayAddress(visit)
+                }
+            }
+        } catch (e: TimeoutCancellationException) {
+        }
+        return addresses
     }
 }
 

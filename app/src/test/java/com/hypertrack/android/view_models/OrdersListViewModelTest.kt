@@ -1,26 +1,18 @@
 package com.hypertrack.android.view_models
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.MutableLiveData
 import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.interactors.TripInteractorTest
 import com.hypertrack.android.interactors.TripsInteractor
-import com.hypertrack.android.interactors.TripsInteractorImpl
-import com.hypertrack.android.models.LocalOrderTest
-import com.hypertrack.android.models.Order
+import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersListViewModel
-import com.hypertrack.android.utils.HyperTrackService
-import com.hypertrack.android.utils.Injector
-import io.mockk.coEvery
 import io.mockk.mockk
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.TestCoroutineScope
 import org.junit.Rule
 import org.junit.Test
 
@@ -35,7 +27,7 @@ class OrdersListViewModelTest {
 
     @Test
     fun `it should show ongoing orders first (with preserved backend order), then orders with other statuses`() {
-        val backendOrders = listOf<Order>(
+        val backendOrders = listOf<RemoteOrder>(
             createBaseOrder().copy(
                 id = "1",
                 _status = OrderStatus.COMPLETED.value
@@ -62,6 +54,7 @@ class OrdersListViewModelTest {
             val vm = OrdersListViewModel(
                 mockk(relaxed = true),
                 tripsInteractor,
+                mockk(relaxed = true),
                 mockk(relaxed = true),
                 mockk(relaxed = true),
             )

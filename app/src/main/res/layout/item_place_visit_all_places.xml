@@ -11,9 +11,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:tint="@android:color/darker_gray"
+        android:layout_marginTop="16dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/tvTitle"
+        app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/eta" />
 
     <TextView
@@ -26,24 +26,104 @@
         android:layout_marginEnd="16dp"
         android:paddingRight="32dp"
         android:textSize="18dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/imageView4"
         app:layout_constraintStart_toEndOf="@+id/imageView3"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="Text" />
 
-    <TextView
-        android:id="@+id/tvDescription"
-        style="@style/Text"
+    <LinearLayout
+        android:id="@+id/lVisitData"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:layout_weight="1"
-        tools:visibility="visible"
-        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/tvTitle"
-        app:layout_constraintTop_toBottomOf="@+id/tvTitle"
-        tools:text="Text" />
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toStartOf="@+id/imageView4"
+        app:layout_constraintStart_toEndOf="@+id/imageView3"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle">
+
+        <TextView
+            android:id="@+id/tvPlaceIntegrationName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textStyle="bold"
+            tools:text="TextView"
+            tools:visibility="visible" />
+
+        <TextView
+            android:id="@+id/tvPlaceAddress"
+            style="@style/Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            tools:text="TextView" />
+
+        <TextView
+            android:id="@+id/tvDescription"
+            style="@style/Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            tools:text="Text"
+            tools:visibility="visible" />
+
+    </LinearLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/lVisitId"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/lVisitData"
+        app:layout_constraintTop_toBottomOf="@+id/lVisitData">
+
+        <TextView
+            android:id="@+id/tvVisitId"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/bCopy"
+            app:layout_constraintStart_toEndOf="@+id/textView6"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView6"
+            style="@style/TextDark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/place_visit_id"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/bCopy"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:visibility="visible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:srcCompat="@drawable/ic_copy"
+            app:tint="#44000000"
+            tools:visibility="visible" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ImageView
+        android:id="@+id/ivRouteTo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/tvRouteTo"
+        app:layout_constraintStart_toStartOf="@+id/lVisitData"
+        app:layout_constraintTop_toTopOf="@+id/tvRouteTo"
+        app:srcCompat="@drawable/ic_ht_trip" />
 
     <TextView
         android:id="@+id/tvRouteTo"
@@ -51,83 +131,14 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
         android:layout_weight="1"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
+        app:layout_constraintEnd_toEndOf="@+id/lVisitId"
         app:layout_constraintStart_toEndOf="@+id/ivRouteTo"
-        app:layout_constraintTop_toBottomOf="@+id/bCopy"
+        app:layout_constraintTop_toBottomOf="@+id/lVisitId"
         tools:text="Text" />
-
-    <TextView
-        android:id="@+id/tvVisitId"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        app:layout_constraintBottom_toBottomOf="@+id/bCopy"
-        app:layout_constraintEnd_toStartOf="@+id/bCopy"
-        app:layout_constraintStart_toEndOf="@+id/textView6"
-        app:layout_constraintTop_toTopOf="@+id/bCopy"
-        tools:text="TextView" />
-
-    <ImageView
-        android:id="@+id/bCopy"
-        android:layout_width="wrap_content"
-        android:layout_height="48dp"
-        android:layout_marginTop="8dp"
-        android:layout_weight="1"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:visibility="visible"
-        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
-        app:layout_constraintTop_toBottomOf="@+id/tvPlaceAddress"
-        app:srcCompat="@drawable/ic_copy"
-        app:tint="#44000000"
-        tools:visibility="visible" />
-
-    <ImageView
-        android:id="@+id/ivRouteTo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/tvRouteTo"
-        app:layout_constraintStart_toStartOf="@+id/tvTitle"
-        app:layout_constraintTop_toTopOf="@+id/tvRouteTo"
-        app:srcCompat="@drawable/ic_ht_trip" />
-
-    <TextView
-        android:id="@+id/textView6"
-        style="@style/TextDark"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/place_visit_id"
-        app:layout_constraintBottom_toBottomOf="@+id/tvVisitId"
-        app:layout_constraintStart_toStartOf="@+id/tvDescription"
-        app:layout_constraintTop_toTopOf="@+id/tvVisitId" />
-
-    <TextView
-        android:id="@+id/tvPlaceIntegrationName"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textStyle="bold"
-        tools:visibility="visible"
-        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
-        app:layout_constraintStart_toEndOf="@+id/imageView3"
-        app:layout_constraintStart_toStartOf="@+id/tvTitle"
-        app:layout_constraintTop_toBottomOf="@+id/tvDescription"
-        tools:text="TextView" />
-
-    <TextView
-        android:id="@+id/tvPlaceAddress"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        app:layout_constraintEnd_toEndOf="@+id/tvTitle"
-        app:layout_constraintStart_toEndOf="@+id/tvPlaceIntegrationName"
-        app:layout_constraintStart_toStartOf="@+id/tvTitle"
-        app:layout_constraintTop_toBottomOf="@+id/tvPlaceIntegrationName"
-        tools:text="TextView" />
 
     <ImageView
         android:id="@+id/imageView4"

@@ -35,6 +35,7 @@ import com.hypertrack.logistics.android.github.R
 import retrofit2.HttpException
 import java.io.File
 import java.io.IOException
+import java.lang.Thread.sleep
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -64,21 +65,6 @@ public class OsUtilsProvider(
 
     val cacheDir: File
         get() = MyApplication.context.cacheDir
-
-    fun getPlaceFromCoordinates(latitude: Double?, longitude: Double?): android.location.Address? {
-        if (latitude == null || longitude == null) {
-            return null
-        }
-        return try {
-            Geocoder(context).let { it.getFromLocation(latitude, longitude, 1)?.get(0) }
-        } catch (t: Throwable) {
-            null
-        }
-    }
-
-    fun getPlaceFromCoordinates(latLng: LatLng): android.location.Address? {
-        return getPlaceFromCoordinates(latLng.latitude, latLng.longitude)
-    }
 
     fun makeToast(@StringRes txtRes: Int) {
         makeToast(txtRes.stringFromResource())

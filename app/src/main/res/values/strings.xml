@@ -192,12 +192,14 @@
 
     <string name="place_visit_id">Visit ID</string>
     <string name="place_route_ro">Traveled %s for %s</string>
-    <string name="place_details_visits_history">Visits history</string>
-    <string name="place_details_no_visits">No visits</string>
     <string name="place_visits_count">Visits</string>
     <string name="place_today">Today</string>
     <string name="place_yesterday">Yesterday</string>
     <string name="place_integration_error">Failed to get integrations</string>
+
+    <string name="place_details_visits_history">Visits history</string>
+    <string name="place_details_no_visits">No visits</string>
+    <string name="place_details_name">Geofence name</string>
 
     <string name="add_place_confirm">Confirm</string>
     <string name="add_place_create">Create geofence</string>
@@ -230,6 +232,10 @@
     <string name="add_geotag_success">Geotag was successfully created</string>
     <string name="add_geotag_error_hint">Unable to create geotag</string>
 
+    <string name="profile_measurement_units">Measurement units</string>
+    <string name="profile_measurement_units_unspecified">Use system settings</string>
+    <string name="profile_measurement_units_metric">Metric (meters)</string>
+    <string name="profile_measurement_units_imperial">Imperial (miles)</string>
     <string name="profile_report_an_issue">Report an issue</string>
     <string name="profile_report_sent">App state is successfully reported</string>
 

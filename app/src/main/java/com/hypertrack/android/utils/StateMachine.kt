@@ -40,7 +40,7 @@ class StateMachine<A, S, E>(
                     val msg = StringBuilder()
                     msg.appendLine(tag)
                     msg.appendLine("v $action")
-                    msg.appendLine(it.newState.toString())
+                    msg.appendLine("= ${it.newState}")
                     msg.appendLine("effects: [")
                     effects.forEach { effect ->
                         msg.appendLine("\t> $effect")

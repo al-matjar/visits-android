@@ -6,9 +6,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.Circle
+import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.GooglePlacesInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
-import com.hypertrack.android.models.local.LocalGeofence
+import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.ErrorHandler
@@ -30,11 +31,13 @@ class AddPlaceViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val placesInteractor: PlacesInteractor,
     private val googlePlacesInteractor: GooglePlacesInteractor,
+    private val geocodingInteractor: GeocodingInteractor,
     private val deviceLocationProvider: DeviceLocationProvider,
 ) : SelectDestinationViewModel(
     baseDependencies,
     placesInteractor,
     googlePlacesInteractor,
+    geocodingInteractor,
     deviceLocationProvider,
 ) {
     val adjacentGeofenceDialog = MutableLiveData<Consumable<DestinationData>>()
@@ -116,7 +119,7 @@ class AddPlaceViewModel(
         ) {
             override fun updateGeofencesOnMap(
                 mapWrapper: HypertrackMapWrapper,
-                geofences: List<LocalGeofence>
+                geofences: List<Geofence>
             ) {
                 super.updateGeofencesOnMap(mapWrapper, geofences)
                 displayRadius(mapWrapper)

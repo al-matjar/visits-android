@@ -185,8 +185,6 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
     }
 
     private fun displayTrip(trip: CurrentTripViewModel.TripData) {
-        bAddOrder.setGoneState(trip.isLegacy)
-
         trip.nextOrder.let { order ->
             bCompleteTrip.setGoneState(order != null)
             shareButton.setGoneState(order == null)

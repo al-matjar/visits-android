@@ -1,4 +1,4 @@
-package com.hypertrack.android.ui.common.delegates
+package com.hypertrack.android.ui.common.delegates.display
 
 import com.hypertrack.android.models.local.Geotag
 import com.hypertrack.android.utils.OsUtilsProvider

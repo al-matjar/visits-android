@@ -8,7 +8,7 @@ import androidx.lifecycle.*
 import com.google.android.gms.maps.GoogleMap
 import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.*
-import com.hypertrack.android.models.local.LocalOrder
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
@@ -22,8 +22,8 @@ import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.logistics.android.github.R
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
-import java.util.*
 import kotlin.Exception
 
 class OrderDetailsViewModel(
@@ -32,11 +32,8 @@ class OrderDetailsViewModel(
     private val tripsInteractor: TripsInteractor,
     private val photoUploadInteractor: PhotoUploadQueueInteractor,
     private val dateTimeFormatter: DateTimeFormatter,
+    private val addressDelegate: OrderAddressDelegate,
 ) : BaseViewModel(baseDependencies) {
-    //todo remove legacy
-    private val isPickUpAllowed = false
-
-    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, dateTimeFormatter)
 
     override val errorHandler =
         ErrorHandler(
@@ -48,7 +45,9 @@ class OrderDetailsViewModel(
 
     private val order = tripsInteractor.getOrderLiveData(orderId)
 
-    val address = Transformations.map(order) { addressDelegate.fullAddress(it) }
+    val address = Transformations.map(order) {
+        it.fullAddress ?: resourceProvider.stringFromResource(R.string.address_not_available)
+    }
     val photos = MediatorLiveData<List<PhotoItem>>().apply {
         addSource(order) {
             updatePhotos(it, photoUploadInteractor.queue.value!!)
@@ -87,18 +86,9 @@ class OrderDetailsViewModel(
                     osUtilsProvider.stringFromResource(R.string.coordinates),
                     order.destinationLatLng.format()
                 )
-                if (isPickUpAllowed && order.status == OrderStatus.ONGOING) {
-                    put(
-                        osUtilsProvider.stringFromResource(R.string.order_picked_up),
-                        order.isPickedUp.toString()
-                    )
-                }
             }.map {
                 KeyValueItem(it.key, it.value)
             }
-    }
-    val showPhotosGroup = Transformations.map(order) {
-        it.legacy
     }
     val showAddPhoto = Transformations.map(order) {
         it.status == OrderStatus.ONGOING
@@ -109,14 +99,11 @@ class OrderDetailsViewModel(
     val showCompleteButtons = Transformations.map(order) {
         it.status == OrderStatus.ONGOING
     }
-    val showPickUpButton = Transformations.map(order) {
-        it.legacy && !it.isPickedUp && it.status == OrderStatus.ONGOING && isPickUpAllowed
-    }
     val showSnoozeButton = Transformations.map(order) {
-        !it.legacy && it.status == OrderStatus.ONGOING
+        it.status == OrderStatus.ONGOING
     }
-    val showUnsnoozeButton = Transformations.map(order) {
-        !it.legacy && it.status == OrderStatus.SNOOZED
+    val showUnSnoozeButton = Transformations.map(order) {
+        it.status == OrderStatus.SNOOZED
     }
     val externalMapsIntent = MutableLiveData<Consumable<Intent>>()
 
@@ -155,8 +142,8 @@ class OrderDetailsViewModel(
         )
     }
 
-    private fun displayOrderLocation(order: LocalOrder, mapWrapper: HypertrackMapWrapper) {
-        mapWrapper.addOrder(order, addressDelegate)
+    private fun displayOrderLocation(order: Order, mapWrapper: HypertrackMapWrapper) {
+        mapWrapper.addOrder(order)
         mapWrapper.moveCamera(order.destinationLatLng, 13.0f)
     }
 
@@ -176,12 +163,6 @@ class OrderDetailsViewModel(
         osUtilsProvider.copyToClipboard(it)
     }
 
-    fun onPickUpClicked() {
-        viewModelScope.launch {
-            tripsInteractor.setOrderPickedUp(orderId)
-        }
-    }
-
     fun onSnoozeClicked() {
         withLoadingStateAndErrorHandler {
             tripsInteractor.snoozeOrder(orderId).let {
@@ -194,9 +175,9 @@ class OrderDetailsViewModel(
         }
     }
 
-    fun onUnsnoozeClicked() {
+    fun onUnSnoozeClicked() {
         withLoadingStateAndErrorHandler {
-            tripsInteractor.unsnoozeOrder(orderId).let {
+            tripsInteractor.unSnoozeOrder(orderId).let {
                 when (it) {
                     JustSuccess -> {
                     }
@@ -290,7 +271,7 @@ class OrderDetailsViewModel(
         }
     }
 
-    private fun updatePhotos(order: LocalOrder, uploadQueue: Map<String, PhotoForUpload>) {
+    private fun updatePhotos(order: Order, uploadQueue: Map<String, PhotoForUpload>) {
         photos.postValue(
             order.photos
                 .map { photo ->

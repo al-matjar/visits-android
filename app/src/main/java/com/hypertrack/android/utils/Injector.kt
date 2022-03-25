@@ -1,6 +1,7 @@
 package com.hypertrack.android.utils
 
 import android.content.Context
+import android.util.Log
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.hypertrack.android.api.*
@@ -26,13 +27,15 @@ import com.hypertrack.android.ui.common.UserScopeViewModelFactory
 import com.hypertrack.android.ui.common.ViewModelFactory
 import com.hypertrack.android.ui.common.delegates.DateTimeRangeFormatterDelegate
 import com.hypertrack.android.ui.common.delegates.DeviceStatusMarkerDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
 import com.hypertrack.android.ui.common.delegates.address.GeofenceAddressDelegate
 import com.hypertrack.android.ui.common.delegates.address.GeofenceVisitAddressDelegate
-import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
-import com.hypertrack.android.ui.common.delegates.GeotagDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.address.GraphQlGeofenceVisitAddressDelegate
+import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.select_destination.DestinationData
-import com.hypertrack.android.ui.screens.visits_management.tabs.history.*
 import com.hypertrack.android.utils.formatters.*
 import com.hypertrack.logistics.android.github.R
 import com.hypertrack.sdk.HyperTrack
@@ -100,6 +103,9 @@ object Injector {
         val accountRepositoryProvider = { getAccountRepo(context) }
         val myPreferences = getMyPreferences(context)
         val preferencesRepository = PreferencesRepository(myPreferences)
+        val measurementUnitsRepository = MeasurementUnitsRepository(
+            preferencesRepository
+        )
         val driverRepository = DriverRepository(
             accountRepositoryProvider,
             serviceLocator,
@@ -107,12 +113,19 @@ object Injector {
             osUtilsProvider,
             crashReportsProvider,
         )
+        val geocodingInteractor = GeocodingInteractor(context, crashReportsProvider)
         val moshi = getMoshi()
         val datetimeFormatter = DateTimeFormatterImpl()
-        val distanceFormatter = LocalizedDistanceFormatter(osUtilsProvider)
+        val distanceFormatter = LocalizedDistanceFormatter(
+            osUtilsProvider,
+            measurementUnitsRepository
+        )
         val timeFormatter = TimeValueFormatterImpl(osUtilsProvider)
-        val geofenceVisitAddressDelegate = GeofenceVisitAddressDelegate(osUtilsProvider)
-        val geofenceAddressDelegate = GeofenceAddressDelegate(osUtilsProvider)
+        val geofenceVisitAddressDelegate = GeofenceVisitAddressDelegate(
+            geocodingInteractor,
+            osUtilsProvider
+        )
+        val geofenceAddressDelegate = GeofenceAddressDelegate(geocodingInteractor)
         val datetimeRangeFormatterDelegate = DateTimeRangeFormatterDelegate(
             osUtilsProvider,
             datetimeFormatter
@@ -139,6 +152,7 @@ object Injector {
                 serviceLocator,
                 moshi
             ),
+            geocodingInteractor,
             NotificationsInteractor(),
             loginInteractor,
             crashReportsProvider,
@@ -146,13 +160,17 @@ object Injector {
             datetimeFormatter,
             distanceFormatter,
             timeFormatter,
+            GeofenceNameDelegate(
+                osUtilsProvider,
+                datetimeFormatter
+            ),
             geofenceAddressDelegate,
+            geofenceVisitAddressDelegate,
+            GraphQlGeofenceVisitAddressDelegate(geocodingInteractor, osUtilsProvider),
             GeofenceVisitDisplayDelegate(
                 osUtilsProvider,
-                datetimeFormatter,
                 distanceFormatter,
                 timeFormatter,
-                geofenceVisitAddressDelegate,
                 datetimeRangeFormatterDelegate
             ),
             DeviceStatusMarkerDisplayDelegate(
@@ -165,6 +183,11 @@ object Injector {
                 osUtilsProvider,
                 datetimeFormatter,
                 moshi
+            ),
+            OrderAddressDelegate(
+                geocodingInteractor,
+                osUtilsProvider,
+                datetimeFormatter
             ),
             BranchIoDeepLinkProcessor(
                 Injector.crashReportsProvider,
@@ -292,7 +315,7 @@ object Injector {
             placesRepository,
             integrationsRepository,
             osUtilsProvider,
-            appScope.dateTimeFormatter,
+            appScope.geofenceNameDelegate,
             Intersect(),
             GlobalScope
         )
@@ -315,9 +338,9 @@ object Injector {
         val tripsRepository = TripsRepositoryImpl(
             apiClient,
             myPreferences,
-            hyperTrackService,
-            GlobalScope,
-            false
+            appScope.appCoroutineScope,
+            crashReportsProvider,
+            appScope.orderAddressDelegate
         )
 
         val tripsInteractor = TripsInteractorImpl(
@@ -328,7 +351,7 @@ object Injector {
             imageDecoder,
             osUtilsProvider,
             Dispatchers.IO,
-            GlobalScope
+            appScope.appCoroutineScope
         )
 
         val feedbackInteractor = FeedbackInteractor(
@@ -352,7 +375,7 @@ object Injector {
         val placesVisitsRepository = PlacesVisitsRepository(
             deviceId,
             graphQlApiClient,
-            osUtilsProvider,
+            appScope.gqlGeofenceVisitAddressDelegate,
             crashReportsProvider,
             moshi
         )
@@ -369,8 +392,8 @@ object Injector {
         val historyInteractor = GraphQlHistoryInteractor(
             deviceId,
             graphQlApiClient,
-            osUtilsProvider,
             crashReportsProvider,
+            appScope.gqlGeofenceVisitAddressDelegate,
             moshi,
             appScope.appCoroutineScope,
             appScope.stateMachineContext
@@ -382,6 +405,10 @@ object Injector {
 
         val geotagsInteractor = GeotagsInteractor(
             hyperTrackService
+        )
+
+        val measurementUnitsRepository = MeasurementUnitsRepository(
+            appScope.preferencesRepository
         )
 
         val summaryInteractor = SummaryInteractor(historyInteractorLegacy)
@@ -397,6 +424,7 @@ object Injector {
             historyInteractorLegacy,
             summaryInteractor,
             feedbackInteractor,
+            measurementUnitsRepository,
             integrationsRepository,
             hyperTrackService,
             photoUploadQueueInteractor,
@@ -471,11 +499,11 @@ object Injector {
                     .addInterceptor(UserAgentInterceptor())
                     .readTimeout(30, TimeUnit.SECONDS)
                     .connectTimeout(30, TimeUnit.SECONDS).apply {
-                        if (MyApplication.DEBUG_MODE) {
-                            addInterceptor(HttpLoggingInterceptor().apply {
-                                level = HttpLoggingInterceptor.Level.BODY
-                            })
-                        }
+//                        if (MyApplication.DEBUG_MODE) {
+//                            addInterceptor(HttpLoggingInterceptor().apply {
+//                                level = HttpLoggingInterceptor.Level.BODY
+//                            })
+//                        }
                     }.build()
             )
             .build()
@@ -491,6 +519,18 @@ object Injector {
                 OkHttpClient.Builder()
                     .readTimeout(30, TimeUnit.SECONDS)
                     .connectTimeout(30, TimeUnit.SECONDS)
+                    .apply {
+                        if (MyApplication.DEBUG_MODE) {
+                            addInterceptor(HttpLoggingInterceptor(object :
+                                HttpLoggingInterceptor.Logger {
+                                override fun log(message: String) {
+                                    Log.v("hypertrack-verbose-gql", message)
+                                }
+                            }).apply {
+                                level = HttpLoggingInterceptor.Level.BODY
+                            })
+                        }
+                    }
                     .build()
             )
             .build()
@@ -574,6 +614,7 @@ class UserScope(
     val historyInteractorLegacy: HistoryInteractorImpl,
     val summaryInteractor: SummaryInteractor,
     val feedbackInteractor: FeedbackInteractor,
+    val measurementUnitsRepository: MeasurementUnitsRepository,
     val integrationsRepository: IntegrationsRepository,
     val hyperTrackService: HyperTrackService,
     val photoUploadQueueInteractor: PhotoUploadQueueInteractor,
@@ -591,6 +632,7 @@ class AppScope(
     val driverRepository: DriverRepository,
     val preferencesRepository: PreferencesRepository,
     val deeplinkInteractor: DeeplinkInteractor,
+    val geocodingInteractor: GeocodingInteractor,
     val notificationsInteractor: NotificationsInteractor,
     val loginInteractor: LoginInteractor,
     val crashReportsProvider: CrashReportsProvider,
@@ -598,10 +640,14 @@ class AppScope(
     val dateTimeFormatter: DateTimeFormatter,
     val distanceFormatter: DistanceFormatter,
     val timeFormatter: TimeValueFormatter,
+    val geofenceNameDelegate: GeofenceNameDelegate,
     val geofenceAddressDelegate: GeofenceAddressDelegate,
+    val geofenceVisitAddressDelegate: GeofenceVisitAddressDelegate,
+    val gqlGeofenceVisitAddressDelegate: GraphQlGeofenceVisitAddressDelegate,
     val geofenceVisitDisplayDelegate: GeofenceVisitDisplayDelegate,
     val deviceStatusMarkerDisplayDelegate: DeviceStatusMarkerDisplayDelegate,
     val geotagDisplayDelegate: GeotagDisplayDelegate,
+    val orderAddressDelegate: OrderAddressDelegate,
     val deeplinkProcessor: DeeplinkProcessor,
     val mapItemsFactory: HypertrackMapItemsFactory,
     val accountRepositoryProvider: Provider<AccountRepository>,
@@ -617,7 +663,6 @@ fun interface Factory<A, T> {
 interface AccountPreferencesProvider {
     var wasWhitelisted: Boolean
     val isManualCheckInAllowed: Boolean
-    val isPickUpAllowed: Boolean
     var shouldStartTracking: Boolean
 }
 

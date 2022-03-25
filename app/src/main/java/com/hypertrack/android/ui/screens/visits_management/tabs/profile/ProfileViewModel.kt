@@ -1,12 +1,20 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.profile
 
+import android.app.Activity
 import android.text.TextUtils.split
 import android.view.Gravity.apply
+import android.widget.ArrayAdapter
+import android.widget.SpinnerAdapter
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.messaging.VisitsMessagingService
+import com.hypertrack.android.models.Imperial
+import com.hypertrack.android.models.Metric
+import com.hypertrack.android.models.Unspecified
 import com.hypertrack.android.repository.AccountRepository
 import com.hypertrack.android.repository.DriverRepository
+import com.hypertrack.android.repository.MeasurementUnitsRepository
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
@@ -22,11 +30,17 @@ import javax.inject.Provider
 
 class ProfileViewModel(
     baseDependencies: BaseViewModelDependencies,
+    private val measurementUnitsRepository: MeasurementUnitsRepository,
     private val driverRepository: DriverRepository,
     private val hyperTrackService: HyperTrackService,
     private val accountRepositoryProvider: Provider<AccountRepository>,
-    private val distanceFormatter: DistanceFormatter
 ) : BaseViewModel(baseDependencies) {
+
+    private val measurementUnitsOptions = mapOf(
+        Unspecified to resourceProvider.stringFromResource(R.string.profile_measurement_units_unspecified),
+        Metric to resourceProvider.stringFromResource(R.string.profile_measurement_units_metric),
+        Imperial to resourceProvider.stringFromResource(R.string.profile_measurement_units_imperial),
+    )
 
     val profile = MutableLiveData<List<KeyValueItem>>()
 
@@ -100,13 +114,6 @@ class ProfileViewModel(
                 )
             )
 
-            add(
-                KeyValueItem(
-                    "Distance units",
-                    distanceFormatter.formatDistance(EXAMPLE_DISTANCE)
-                )
-            )
-
             if (MyApplication.DEBUG_MODE) {
                 add(KeyValueItem("Firebase token (debug)", firebaseToken))
 
@@ -122,8 +129,24 @@ class ProfileViewModel(
         profile.postValue(items)
     }
 
-    companion object {
-        val EXAMPLE_DISTANCE = 2010.toMeters()
+    fun createMeasurementUnitsAdapter(activity: Activity): SpinnerAdapter {
+        return ArrayAdapter(
+            activity,
+            R.layout.item_spinner,
+            measurementUnitsOptions.values.toList()
+        )
+    }
+
+    fun getInitialMeasurementUnitItemIndex(): Int {
+        return measurementUnitsOptions.keys.indexOf(
+            measurementUnitsRepository.getMeasurementUnits()
+        )
+    }
+
+    fun onMeasurementUnitItemSelected(index: Int) {
+        measurementUnitsRepository.setMeasurementUnits(
+            measurementUnitsOptions.keys.toList()[index]
+        )
     }
 
 }

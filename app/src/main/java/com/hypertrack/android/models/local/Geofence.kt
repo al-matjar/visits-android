@@ -1,8 +1,8 @@
 package com.hypertrack.android.models.local
 
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.api.Geofence
 import com.hypertrack.android.api.Polygon
+import com.hypertrack.android.api.models.RemoteGeofence
 import com.hypertrack.android.models.*
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.utils.CrashReportsProvider
@@ -13,11 +13,12 @@ import com.squareup.moshi.Moshi
 import java.time.ZonedDateTime
 
 @JsonClass(generateAdapter = true)
-data class LocalGeofence(
-    val geofence: Geofence,
+data class Geofence(
+    val geofence: RemoteGeofence,
     val name: String?,
     val address: String?,
     val radius: Int,
+    // todo rename to location
     val latLng: LatLng,
     val isPolygon: Boolean,
     val polygon: List<LatLng>?,
@@ -27,9 +28,6 @@ data class LocalGeofence(
 ) {
 
     val id = geofence.geofence_id
-
-    val location: LatLng
-        get() = geofence.geometry.let { LatLng(it.latitude, it.longitude) }
 
     val visitsCount: Int by lazy {
         visits.count()
@@ -44,11 +42,11 @@ data class LocalGeofence(
     companion object {
         fun fromGeofence(
             currentDeviceId: DeviceId,
-            geofence: Geofence,
+            geofence: RemoteGeofence,
             moshi: Moshi,
             osUtilsProvider: OsUtilsProvider,
             crashReportsProvider: CrashReportsProvider
-        ): LocalGeofence {
+        ): Geofence {
             //all parsed metadata fields should be removed to avoid duplication
             val metadata = geofence.metadata?.toMutableMap() ?: mutableMapOf()
 
@@ -75,7 +73,7 @@ data class LocalGeofence(
             } else null
 
 
-            return LocalGeofence(
+            return Geofence(
                 geofence = geofence,
                 name = metadata.remove(GeofenceMetadata.KEY_NAME) as String?,
                 address = address,

@@ -82,7 +82,7 @@ class SelectDestinationViewModelReducer {
                             }
                         }
                     }
-                    is MapNotReady -> throw IllegalActionException(action, state)
+                    is MapNotReady -> state.withEffects()
                 }
             }
             is PlaceSelectedAction -> {

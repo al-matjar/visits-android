@@ -3,28 +3,21 @@ package com.hypertrack.android.api
 import android.graphics.Bitmap
 import android.util.Log
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.api.models.RemoteGeofence
+import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.*
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.OrderStatus
-import com.hypertrack.android.repository.AccessTokenRepository
 import com.hypertrack.android.utils.*
-import com.hypertrack.logistics.android.github.BuildConfig
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class ApiClient(
     private val api: ApiInterface,
@@ -54,7 +47,7 @@ class ApiClient(
         }
     }
 
-    suspend fun getGeofence(geofenceId: String): Geofence {
+    suspend fun getGeofence(geofenceId: String): RemoteGeofence {
         try {
             val metadataResponse = api.getGeofenceMetadata(geofenceId).apply {
                 if (!isSuccessful) throw HttpException(this)
@@ -79,7 +72,7 @@ class ApiClient(
         longitude: Double,
         radius: Int,
         metadata: GeofenceMetadata
-    ): Response<List<Geofence>> {
+    ): Response<List<RemoteGeofence>> {
         return api.createGeofences(
             deviceId = deviceId.value,
             GeofenceParams(
@@ -243,7 +236,7 @@ class ApiClient(
                 if (res.code() == 409) {
                     @Suppress("BlockingMethodInNonBlockingContext")
                     val order = withContext(Dispatchers.IO) {
-                        moshi.adapter(Order::class.java)
+                        moshi.adapter(RemoteOrder::class.java)
                             .fromJson(res.errorBody()!!.string())
                     }
                     when (order!!.status) {
@@ -269,7 +262,7 @@ class ApiClient(
                 if (res.code() == 409) {
                     @Suppress("BlockingMethodInNonBlockingContext")
                     val order = withContext(Dispatchers.IO) {
-                        moshi.adapter(Order::class.java)
+                        moshi.adapter(RemoteOrder::class.java)
                             .fromJson(res.errorBody()!!.string())
                     }
                     when (order!!.status) {

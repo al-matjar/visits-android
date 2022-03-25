@@ -34,12 +34,6 @@ class AccountRepository(
             accountData.isManualVisitEnabled = value
         }
 
-    override var isPickUpAllowed: Boolean
-        get() = accountData.pickUpAllowed
-        set(value) {
-            accountData.pickUpAllowed = value
-        }
-
     override var shouldStartTracking: Boolean
         get() = accountData.shouldUseFirstRunExperienceFlow
         set(value) {
@@ -72,14 +66,12 @@ class AccountRepository(
         }
 
         isManualCheckInAllowed = checkInEnabled ?: false
-        isPickUpAllowed = pickUpAllowed ?: false
 
         accountDataStorage.saveAccountData(
             AccountData(
                 publishableKey = key,
                 lastToken = token,
                 isManualVisitEnabled = isManualCheckInAllowed,
-                _pickUpAllowed = isPickUpAllowed
             )
         )
         accountDataStorage.persistRepository(accessTokenRepository)

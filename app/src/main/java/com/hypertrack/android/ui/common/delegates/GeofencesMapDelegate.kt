@@ -8,7 +8,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.interactors.PlacesInteractorImpl
-import com.hypertrack.android.models.local.LocalGeofence
+import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.ManagedObserver
 import com.hypertrack.android.ui.common.util.toLatLng
@@ -47,7 +47,7 @@ open class GeofencesMapDelegate(
 
     protected open fun updateGeofencesOnMap(
         mapWrapper: HypertrackMapWrapper,
-        geofences: List<LocalGeofence>
+        geofences: List<Geofence>
     ) {
         //todo filter regarding to viewport
         mapWrapper.googleMap.clear()

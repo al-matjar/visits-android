@@ -1,5 +1,6 @@
 package com.hypertrack.android.api
 
+import com.hypertrack.android.api.models.RemoteGeofence
 import com.hypertrack.android.utils.Injector
 import com.squareup.moshi.Types
 import org.junit.Assert.*
@@ -85,15 +86,13 @@ class ApiEntitiesDeserializationTest {
                                 "radius": 30
                             }
                             """.trimIndent()
-        val geofence = moshi.adapter(Geofence::class.java)
-                .fromJson(visitedGeofence)
-                ?: throw NullPointerException("No geofence deserialized")
+        val geofence = moshi.adapter(RemoteGeofence::class.java)
+            .fromJson(visitedGeofence)
+            ?: throw NullPointerException("No geofence deserialized")
         assertEquals("42", geofence.marker!!.visits.first().markerId)
         assertEquals("010b7861-59fc-4157-9fcd-6d2e0c5072d9", geofence.geofence_id)
         assertEquals("2020-01-16T12:51:00.010934+00:00", geofence.created_at)
         assertEquals(30, geofence.radius)
-        assertEquals("2020-02-02T20:02:02.000Z", geofence.visitedAt)
-
     }
 
     @Test

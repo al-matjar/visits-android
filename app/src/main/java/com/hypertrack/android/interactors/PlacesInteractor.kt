@@ -6,7 +6,7 @@ import com.fonfon.kgeohash.GeoHash
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
 import com.hypertrack.android.models.Integration
-import com.hypertrack.android.models.local.LocalGeofence
+import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.repository.*
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.DataPage
@@ -22,8 +22,8 @@ import java.lang.RuntimeException
 
 interface PlacesInteractor {
     val errorFlow: MutableSharedFlow<Consumable<Exception>>
-    val geofences: LiveData<Map<String, LocalGeofence>>
-    val geofencesDiff: Flow<List<LocalGeofence>>
+    val geofences: LiveData<Map<String, Geofence>>
+    val geofencesDiff: Flow<List<Geofence>>
     val isLoadingForLocation: MutableLiveData<Boolean>
 
     fun loadGeofencesForMap(center: LatLng)
@@ -39,7 +39,7 @@ interface PlacesInteractor {
         integration: Integration?
     ): CreateGeofenceResult
 
-    suspend fun loadPage(pageToken: String?): DataPage<LocalGeofence>
+    suspend fun loadPage(pageToken: String?): DataPage<Geofence>
 
     val adjacentGeofencesAllowed: Boolean
     suspend fun hasAdjacentGeofence(latLng: LatLng, radius: Int): Boolean
@@ -57,14 +57,12 @@ class PlacesInteractorImpl(
     private val placesRepository: PlacesRepository,
     private val integrationsRepository: IntegrationsRepository,
     private val osUtilsProvider: OsUtilsProvider,
-    private val dateTimeFormatter: DateTimeFormatter,
+    private val geofenceNameDelegate: GeofenceNameDelegate,
     private val intersect: Intersect,
     private val globalScope: CoroutineScope
 ) : PlacesInteractor {
 
-    private val geofenceNameDelegate = GeofenceNameDelegate(osUtilsProvider, dateTimeFormatter)
-
-    private var pendingCreatedGeofences = mutableListOf<LocalGeofence>()
+    private var pendingCreatedGeofences = mutableListOf<Geofence>()
 
     override val errorFlow = MutableSharedFlow<Consumable<Exception>>(
         extraBufferCapacity = 1,
@@ -72,19 +70,19 @@ class PlacesInteractorImpl(
     )
 
     //key - geofence id
-    private val _geofences = mutableMapOf<String, LocalGeofence>()
-    override val geofences = MutableLiveData<Map<String, LocalGeofence>>(mapOf())
-    override val geofencesDiff = MutableSharedFlow<List<LocalGeofence>>(
+    private val _geofences = mutableMapOf<String, Geofence>()
+    override val geofences = MutableLiveData<Map<String, Geofence>>(mapOf())
+    override val geofencesDiff = MutableSharedFlow<List<Geofence>>(
         replay = Int.MAX_VALUE,
         onBufferOverflow = BufferOverflow.SUSPEND
     )
-    private val pageCache = mutableMapOf<String?, List<LocalGeofence>>()
+    private val pageCache = mutableMapOf<String?, List<Geofence>>()
     private val geoCache = GeoCache()
 
     val debugCacheState = MutableLiveData<List<GeoCacheItem>>()
 
     override val isLoadingForLocation = MutableLiveData<Boolean>(false)
-    private var firstPageJob: Deferred<DataPage<LocalGeofence>>? = null
+    private var firstPageJob: Deferred<DataPage<Geofence>>? = null
 
     override val adjacentGeofencesAllowed: Boolean = false
 
@@ -94,7 +92,7 @@ class PlacesInteractorImpl(
         }
     }
 
-    override suspend fun loadPage(pageToken: String?): DataPage<LocalGeofence> {
+    override suspend fun loadPage(pageToken: String?): DataPage<Geofence> {
         return loadPlacesPage(pageToken, false)
     }
 
@@ -183,7 +181,7 @@ class PlacesInteractorImpl(
     private suspend fun loadPlacesPage(
         pageToken: String?,
         initial: Boolean
-    ): DataPage<LocalGeofence> {
+    ): DataPage<Geofence> {
         if (pageCache.containsKey(pageToken)) {
 //            Log.v("hypertrack-verbose", "cached: ${pageToken.hashCode()}")
             return DataPage(
@@ -245,7 +243,7 @@ class PlacesInteractorImpl(
         }
     }
 
-    private fun addGeofencesToCache(newPack: List<LocalGeofence>) {
+    private fun addGeofencesToCache(newPack: List<Geofence>) {
         globalScope.launch(Dispatchers.Main) {
             newPack.forEach {
                 _geofences.put(it.id, it)
@@ -263,7 +261,7 @@ class PlacesInteractorImpl(
     private fun checkIntersection(
         center: LatLng,
         radius: Int,
-        allGeofences: List<LocalGeofence>
+        allGeofences: List<Geofence>
     ): Boolean {
         val gh = center.getGeohash(5)
         allGeofences.filter {
@@ -376,5 +374,5 @@ private fun LatLng.getGeohash(charsCount: Int = 4): GeoHash {
 
 
 sealed class GeofenceResult
-class GeofenceSuccess(val geofence: LocalGeofence) : GeofenceResult()
+class GeofenceSuccess(val geofence: Geofence) : GeofenceResult()
 class GeofenceError(val e: Exception) : GeofenceResult()

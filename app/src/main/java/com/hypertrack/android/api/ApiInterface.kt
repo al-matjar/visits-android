@@ -3,6 +3,9 @@ package com.hypertrack.android.api
 import android.graphics.Bitmap
 import android.net.Uri
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.api.models.RemoteGeofence
+import com.hypertrack.android.api.models.RemoteEstimate
+import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.*
 import com.hypertrack.android.utils.toBase64
 import com.squareup.moshi.Json
@@ -52,13 +55,13 @@ interface ApiInterface {
     @GET("client/geofences/{geofence_id}")
     suspend fun getGeofenceMetadata(
         @Path("geofence_id") geofenceId: String,
-    ): Response<Geofence>
+    ): Response<RemoteGeofence>
 
     @POST("client/devices/{device_id}/geofences")
     suspend fun createGeofences(
         @Path("device_id") deviceId: String,
         @Body params: GeofenceParams
-    ): Response<List<Geofence>>
+    ): Response<List<RemoteGeofence>>
 
     @DELETE("client/geofences/{geofence_id}")
     suspend fun deleteGeofence(@Path("geofence_id") geofence_id: String): Response<Unit>
@@ -207,7 +210,7 @@ data class GeofenceMarkersResponse(
 
 @JsonClass(generateAdapter = true)
 data class GeofenceResponse(
-    @field:Json(name = "data") val geofences: List<Geofence>,
+    @field:Json(name = "data") val geofences: List<RemoteGeofence>,
     @field:Json(name = "pagination_token") val paginationToken: String?
 )
 
@@ -250,7 +253,7 @@ data class Trip(
     @field:Json(name = "metadata") val metadata: Map<String, Any>?,
     @field:Json(name = "destination") val destination: TripDestination?,
     @field:Json(name = "estimate") val estimate: RemoteEstimate?,
-    @field:Json(name = "orders") val orders: List<Order>?,
+    @field:Json(name = "orders") val orders: List<RemoteOrder>?,
 )
 
 @JsonClass(generateAdapter = true)
@@ -274,29 +277,7 @@ data class Views(
         @field:Json(name = "embed_url") val embedUrl: String?
 )
 
-@JsonClass(generateAdapter = true)
-data class Geofence(
-    @field:Json(name = "geofence_id") val geofence_id: String,
-    @field:Json(name = "device_id") val deviceId: String?,
-    @field:Json(name = "created_at") val created_at: String,
-    @field:Json(name = "metadata") val metadata: Map<String, Any>?,
-    @field:Json(name = "geometry") val geometry: Geometry,
-    @field:Json(name = "markers") val marker: GeofenceMarkersResponse?,
-    @field:Json(name = "radius") val radius: Int?,
-    @field:Json(name = "address") val address: String?,
-    @field:Json(name = "archived") val archived: Boolean?,
-) {
 
-    val latitude: Double
-        get() = geometry.latitude
-    val longitude: Double
-        get() = geometry.longitude
-    val visitedAt: String
-        get() = marker?.visits?.first()?.arrival?.recordedAt ?: ""
-
-    val type: String
-        get() = geometry.type
-}
 
 class Point(
         @field:Json(name = "coordinates") override val coordinates: List<Double>
@@ -333,6 +314,8 @@ abstract class Geometry {
     abstract val type: String
     abstract val latitude: Double
     abstract val longitude: Double
+
+    fun toLatLng() = LatLng(latitude, longitude)
 }
 
 @JsonClass(generateAdapter = true)

@@ -5,8 +5,8 @@ import com.hypertrack.android.api.Trip
 import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.api.Views
 import com.hypertrack.android.mock.TestMockData
-import com.hypertrack.android.models.RemoteEstimate
-import com.hypertrack.android.models.Order
+import com.hypertrack.android.api.models.RemoteEstimate
+import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.utils.datetime.toIso
@@ -15,8 +15,8 @@ import java.time.ZonedDateTime
 fun createBaseOrder(
     id: String? = null,
     status: OrderStatus = OrderStatus.ONGOING
-): Order {
-    return Order(
+): RemoteOrder {
+    return RemoteOrder(
         id ?: ("order " + Math.random()),
         TripDestination(TestMockData.PALO_ALTO_LAT_LNG, "Test Address"),
         status.value,

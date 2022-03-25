@@ -4,11 +4,12 @@ import android.content.Context
 import androidx.lifecycle.*
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
+import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.interactors.TripsInteractor
 import com.hypertrack.android.interactors.TripsUpdateTimerInteractor
-import com.hypertrack.android.models.local.LocalGeofence
-import com.hypertrack.android.models.local.LocalOrder
+import com.hypertrack.android.models.local.Geofence
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.repository.TripCreationError
 import com.hypertrack.android.repository.TripCreationSuccess
@@ -28,15 +29,14 @@ import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.TimeValueFormatter
 import com.hypertrack.logistics.android.github.R
-import kotlinx.android.synthetic.main.inflate_current_trip.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.util.*
 
 class CurrentTripViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val tripsInteractor: TripsInteractor,
     private val placesInteractor: PlacesInteractor,
+    private val geocodingInteractor: GeocodingInteractor,
     private val tripsUpdateTimerInteractor: TripsUpdateTimerInteractor,
     private val hyperTrackService: HyperTrackService,
     private val locationProvider: DeviceLocationProvider,
@@ -44,7 +44,8 @@ class CurrentTripViewModel(
     private val timeFormatter: TimeValueFormatter,
 ) : BaseViewModel(baseDependencies) {
 
-    private val addressDelegate = OrderAddressDelegate(osUtilsProvider, dateTimeFormatter)
+    private val addressDelegate =
+        OrderAddressDelegate(geocodingInteractor, osUtilsProvider, dateTimeFormatter)
 
     private val isTracking = MediatorLiveData<Boolean>().apply {
         addSource(hyperTrackService.isTracking) {
@@ -196,7 +197,7 @@ class CurrentTripViewModel(
         ) {
             override fun updateGeofencesOnMap(
                 mapWrapper: HypertrackMapWrapper,
-                geofences: List<LocalGeofence>
+                geofences: List<Geofence>
             ) {
                 if (tripData.value == null) {
                     super.updateGeofencesOnMap(mapWrapper, geofences)
@@ -329,7 +330,6 @@ class CurrentTripViewModel(
     }
 
     inner class TripData(val trip: LocalTrip) {
-        val isLegacy = trip.isLegacy()
         val nextOrder = trip.nextOrder?.let { OrderData(it) }
         val ongoingOrders = trip.ongoingOrders
         val ongoingOrderText = osUtilsProvider
@@ -340,8 +340,9 @@ class CurrentTripViewModel(
             }
     }
 
-    inner class OrderData(val order: LocalOrder) {
-        val address = addressDelegate.shortAddress(order)
+    inner class OrderData(val order: Order) {
+        val address = order.shortAddress
+            ?: resourceProvider.stringFromResource(R.string.address_not_available)
         val etaString = order.eta?.let { dateTimeFormatter.formatTime(it) }
             ?: osUtilsProvider.stringFromResource(R.string.orders_list_eta_unavailable)
         val etaAvailable = order.eta != null

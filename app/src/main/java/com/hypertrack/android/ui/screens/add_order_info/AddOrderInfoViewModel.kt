@@ -8,6 +8,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.MarkerOptions
 import com.hypertrack.android.interactors.AddOrderError
 import com.hypertrack.android.interactors.AddOrderSuccess
+import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.TripsInteractor
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
@@ -19,36 +20,35 @@ import com.hypertrack.android.ui.screens.add_order.AddOrderFragmentDirections
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.TripCreationScope
 import com.hypertrack.logistics.android.github.NavGraphDirections
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class AddOrderInfoViewModel(
     private val params: AddOrderParams,
     baseDependencies: BaseViewModelDependencies,
     private val tripsInteractor: TripsInteractor,
+    private val geocodingInteractor: GeocodingInteractor,
 ) : BaseViewModel(baseDependencies) {
 
     private val addressDelegate = GooglePlaceAddressDelegate(osUtilsProvider)
 
     val destinationData = params.destinationData
 
-    //todo persist state in create order scope
-    val address = MutableLiveData<String?>().apply {
-        if (destinationData.address != null) {
-            postValue(destinationData.address)
-        } else {
-            osUtilsProvider.getPlaceFromCoordinates(
-                destinationData.latLng.latitude,
-                destinationData.latLng.longitude
-            )?.let {
-                //todo set edittext hint with partial address
-                postValue(addressDelegate.strictAddress(it))
+    val address = MutableLiveData<String?>()
+
+    val enableConfirmButton = MutableLiveData<Boolean>(false)
+
+    init {
+        viewModelScope.launch {
+            loadAddress().let {
+                address.postValue(it)
+                enableConfirmButton.postValue(true)
             }
         }
     }
-
-    //todo form validation
-    val enableConfirmButton = MutableLiveData<Boolean>(true)
 
     @SuppressLint("MissingPermission")
     fun onMapReady(googleMap: GoogleMap) {
@@ -57,34 +57,36 @@ class AddOrderInfoViewModel(
     }
 
     fun onConfirmClicked(address: String) {
-        when (params) {
-            is AddOrderToTripParams -> {
-                viewModelScope.launch {
-                    loadingState.postValue(true)
-                    val res = tripsInteractor.addOrderToTrip(
-                        tripId = params.tripId,
-                        destinationData.latLng,
-                        address
-                    )
-                    when (res) {
-                        is AddOrderSuccess -> {
-                            destination.postValue(
-                                NavGraphDirections.actionGlobalVisitManagementFragment(Tab.CURRENT_TRIP)
-                            )
+        if (enableConfirmButton.value == true) {
+            when (params) {
+                is AddOrderToTripParams -> {
+                    viewModelScope.launch {
+                        loadingState.postValue(true)
+                        val res = tripsInteractor.addOrderToTrip(
+                            tripId = params.tripId,
+                            destinationData.latLng,
+                            address
+                        )
+                        when (res) {
+                            is AddOrderSuccess -> {
+                                destination.postValue(
+                                    NavGraphDirections.actionGlobalVisitManagementFragment(Tab.CURRENT_TRIP)
+                                )
+                            }
+                            is AddOrderError -> {
+                                errorHandler.postException(res.e)
+                            }
                         }
-                        is AddOrderError -> {
-                            errorHandler.postException(res.e)
-                        }
+                        loadingState.postValue(false)
                     }
-                    loadingState.postValue(false)
                 }
-            }
-            is NewTripParams -> {
-                MyApplication.injector.tripCreationScope = TripCreationScope(destinationData)
-                destination.postValue(
-                    AddOrderFragmentDirections
-                        .actionGlobalVisitManagementFragment(Tab.CURRENT_TRIP)
-                )
+                is NewTripParams -> {
+                    MyApplication.injector.tripCreationScope = TripCreationScope(destinationData)
+                    destination.postValue(
+                        AddOrderFragmentDirections
+                            .actionGlobalVisitManagementFragment(Tab.CURRENT_TRIP)
+                    )
+                }
             }
         }
     }
@@ -93,6 +95,16 @@ class AddOrderInfoViewModel(
         if (this.address.value != address) {
             this.address.postValue(address)
         }
+    }
+
+    private suspend fun loadAddress(): String? {
+        return destinationData.address
+            ?: withContext(Dispatchers.IO) {
+                geocodingInteractor.getPlaceFromCoordinates(destinationData.latLng)?.let {
+                    //todo set edittext hint with partial address
+                    addressDelegate.strictAddress(it)
+                }
+            }
     }
 
 }

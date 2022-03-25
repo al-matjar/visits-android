@@ -1,44 +1,34 @@
 package com.hypertrack.android.models.local
 
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.interactors.PhotoForUpload
-import com.hypertrack.android.models.RemoteEstimate
+import com.hypertrack.android.api.models.RemoteEstimate
 import com.hypertrack.android.models.Metadata
-import com.hypertrack.android.models.Order
-import com.hypertrack.android.ui.common.util.nullIfBlank
+import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.utils.datetime.dateTimeFromString
 import com.squareup.moshi.JsonClass
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
 @JsonClass(generateAdapter = true)
-data class LocalOrder(
+data class Order(
     val id: String,
-    val destination: TripDestination,
+    val destinationLatLng: LatLng,
+    val shortAddress: String?,
+    val fullAddress: String?,
     val scheduledAt: ZonedDateTime?,
     val completedAt: ZonedDateTime?,
     val estimate: Estimate?,
     val _metadata: Metadata?,
     var status: OrderStatus,
-    //local
-    //todo remove
-    var isPickedUp: Boolean = true,
+    // persisted in local database
     var note: String? = null,
     //todo we should make it set of string, whole photos is stored here until we'll enable retrieving them from s3
     var photos: MutableSet<PhotoForUpload> = mutableSetOf(),
-    val legacy: Boolean = false
 ) {
 
     val metadata: Map<String, String>
         get() = _metadata?.otherMetadata ?: mapOf()
-
-    val destinationLatLng: LatLng
-        get() = LatLng(destination.geometry.latitude, destination.geometry.longitude)
-
-    //use address delegate
-    val destinationAddress: String?
-        get() = destination.address.nullIfBlank()
 
     val eta: ZonedDateTime?
         get() = estimate?.arriveAt
@@ -65,26 +55,28 @@ data class LocalOrder(
 
     companion object {
         fun fromRemote(
-            order: Order,
-            isPickedUp: Boolean = true,
-            note: String? = null,
+            order: RemoteOrder,
             metadata: Metadata?,
-            legacy: Boolean = false,
+            shortAddress: String?,
+            fullAddress: String?,
             photos: MutableSet<PhotoForUpload> = mutableSetOf(),
             status: OrderStatus? = null,
-        ): LocalOrder {
-            return LocalOrder(
+            note: String? = null,
+        ): Order {
+            return Order(
                 id = order.id,
-                destination = order.destination,
+                destinationLatLng = order.destination.geometry.let {
+                    LatLng(it.latitude, it.longitude)
+                },
                 status = status ?: OrderStatus.fromString(order._status),
                 scheduledAt = order.scheduledAt?.let { dateTimeFromString(it) },
                 completedAt = order.completedAt?.let { dateTimeFromString(it) },
                 estimate = Estimate.fromRemote(order.estimate),
                 _metadata = metadata,
                 note = note,
-                legacy = legacy,
-                isPickedUp = isPickedUp,
                 photos = photos,
+                shortAddress = shortAddress,
+                fullAddress = fullAddress
             )
         }
 

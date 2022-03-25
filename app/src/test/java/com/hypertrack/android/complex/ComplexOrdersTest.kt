@@ -1,28 +1,15 @@
 package com.hypertrack.android.complex
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.asLiveData
-import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.MainCoroutineScopeRule
-import com.hypertrack.android.api.ApiClient
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.interactors.TripInteractorTest
-import com.hypertrack.android.models.local.LocalOrder
 import com.hypertrack.android.models.local.OrderStatus
-import com.hypertrack.android.observeAndAssertNull
-import com.hypertrack.android.observeAndGetValue
-import com.hypertrack.android.ui.common.select_destination.DestinationData
-import com.hypertrack.android.ui.screens.order_details.OrderDetailsViewModel
-import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
-import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersListViewModel
 import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.view_models.OrdersDetailsViewModelTest
 import io.mockk.*
 import junit.framework.Assert.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -71,7 +58,7 @@ class ComplexOrdersTest {
             assertNotNull(tripsInteractor.getOrder("1"))
 
             detailsVm1.onSnoozeClicked()
-            detailsVm2.onUnsnoozeClicked()
+            detailsVm2.onUnSnoozeClicked()
 
             coVerify {
                 apiClient.snoozeOrder("1", "1")

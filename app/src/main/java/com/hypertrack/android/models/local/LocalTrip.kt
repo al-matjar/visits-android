@@ -1,10 +1,6 @@
 package com.hypertrack.android.models.local
 
-import com.hypertrack.android.api.Trip
-import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.api.Views
-import com.hypertrack.android.models.Order
-import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
@@ -12,24 +8,19 @@ data class LocalTrip(
     val id: String,
     val status: TripStatus,
     val metadata: Map<String, String>,
-    var orders: MutableList<LocalOrder>,
+    var orders: MutableList<Order>,
     val views: Views? = null
 ) {
 
-    val nextOrder: LocalOrder?
+    val nextOrder: Order?
         get() = ongoingOrders.firstOrNull()
 
-    val ongoingOrders: List<LocalOrder>
+    val ongoingOrders: List<Order>
         get() = orders.filter { it.status == OrderStatus.ONGOING }
 
-    fun getOrder(orderId: String): LocalOrder? {
+    fun getOrder(orderId: String): Order? {
         return orders.firstOrNull { it.id == orderId }
     }
-
-    fun isLegacy(): Boolean {
-        return orders.any { it.legacy }
-    }
-
 
 }
 

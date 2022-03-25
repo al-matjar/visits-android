@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -12,7 +13,7 @@ import com.hypertrack.android.interactors.GeofenceError
 import com.hypertrack.android.interactors.GeofenceSuccess
 import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.models.Integration
-import com.hypertrack.android.models.local.LocalGeofence
+import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
@@ -22,15 +23,17 @@ import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.common.delegates.address.GeofenceAddressDelegate
-import com.hypertrack.android.ui.common.delegates.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.common.util.format
 
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.android.utils.formatters.TimeValueFormatter
 import com.hypertrack.logistics.android.github.R
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
 
+@Suppress("EXPERIMENTAL_API_USAGE")
 class PlaceDetailsViewModel(
     private val geofenceId: String,
     private val placesInteractor: PlacesInteractor,
@@ -45,7 +48,7 @@ class PlaceDetailsViewModel(
 
     private val mapWrapper = MutableLiveData<HypertrackMapWrapper>()
 
-    private val geofence = MutableLiveData<LocalGeofence>().apply {
+    private val geofence = MutableLiveData<Geofence>().apply {
         viewModelScope.launch {
             loadingState.postValue(true)
             when (val res = placesInteractor.getGeofence(geofenceId)) {
@@ -60,8 +63,8 @@ class PlaceDetailsViewModel(
         }
     }
 
-    val address = Transformations.map(geofence) { geofence ->
-        addressDelegate.fullAddress(geofence)
+    val address = Transformations.switchMap(geofence) { geofence ->
+        (suspend { addressDelegate.fullAddress(geofence) }).asFlow().asLiveData()
     }
 
     val metadata: LiveData<List<KeyValueItem>> = Transformations.map(geofence) { geofence ->
@@ -70,6 +73,12 @@ class PlaceDetailsViewModel(
                 "Geofence ID",
                 geofence.id
             )
+            if (geofence.name != null) {
+                put(
+                    osUtilsProvider.stringFromResource(R.string.place_details_name),
+                    geofence.name
+                )
+            }
             put(
                 osUtilsProvider.stringFromResource(R.string.created_at),
                 dateTimeFormatter.formatDateTime(geofence.createdAt)
@@ -119,7 +128,7 @@ class PlaceDetailsViewModel(
         )
     }
 
-    private fun displayGeofenceLocation(geofence: LocalGeofence, mapWrapper: HypertrackMapWrapper) {
+    private fun displayGeofenceLocation(geofence: Geofence, mapWrapper: HypertrackMapWrapper) {
         mapWrapper.addGeofenceShape(geofence)
         mapWrapper.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(geofence.latLng, 14.0f))
     }

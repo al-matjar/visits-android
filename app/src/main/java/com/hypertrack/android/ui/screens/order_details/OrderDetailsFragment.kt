@@ -33,7 +33,6 @@ import kotlinx.android.synthetic.main.fragment_order_detail.rvMetadata
 import kotlinx.android.synthetic.main.fragment_order_detail.rvPhotos
 import kotlinx.android.synthetic.main.fragment_order_detail.tvAddress
 import kotlinx.android.synthetic.main.fragment_order_detail.tvCancel
-import kotlinx.android.synthetic.main.fragment_order_detail.tvPickUp
 import kotlinx.android.synthetic.main.fragment_order_detail.tvTakePicture
 
 
@@ -69,72 +68,63 @@ class OrderDetailsFragment : ProgressDialogFragment(R.layout.fragment_order_deta
             vm.onPhotoClicked(it.photoId)
         }
 
-        vm.address.observe(viewLifecycleOwner, {
+        vm.address.observe(viewLifecycleOwner) {
             tvAddress.text = it
-        })
+        }
 
-        vm.metadata.observe(viewLifecycleOwner, {
+        vm.metadata.observe(viewLifecycleOwner) {
             metadataAdapter.updateItems(it)
-        })
+        }
 
-        vm.note.observe(viewLifecycleOwner, {
+        vm.note.observe(viewLifecycleOwner) {
             etVisitNote.setText(it)
-        })
+        }
 
-        vm.showCompleteButtons.observe(viewLifecycleOwner, {
+        vm.showCompleteButtons.observe(viewLifecycleOwner) {
             orderCompletionGroup.setGoneState(!it)
-        })
+        }
 
-        vm.showPickUpButton.observe(viewLifecycleOwner, {
-            tvPickUp.setGoneState(!it)
-            divider.setGoneState(!it)
-        })
-
-        vm.showSnoozeButton.observe(viewLifecycleOwner, {
+        vm.showSnoozeButton.observe(viewLifecycleOwner) {
             tvSnooze.setGoneState(!it)
             divider.setGoneState(!it)
-        })
+        }
 
-        vm.showUnsnoozeButton.observe(viewLifecycleOwner, {
+        vm.showUnSnoozeButton.observe(viewLifecycleOwner) {
             tvUnsnooze.setGoneState(!it)
             divider.setGoneState(!it)
-        })
+        }
 
-        vm.showPhotosGroup.observe(viewLifecycleOwner, {
+        vm.showAddPhoto.observe(viewLifecycleOwner) {
             photosGroup.setGoneState(!it)
-        })
+        }
 
-        vm.showAddPhoto.observe(viewLifecycleOwner, {
-            photosGroup.setGoneState(!it)
-        })
-
-        vm.isNoteEditable.observe(viewLifecycleOwner, {
+        vm.isNoteEditable.observe(viewLifecycleOwner) {
             etVisitNote.isEnabled = it
-        })
+        }
 
-        vm.showNote.observe(viewLifecycleOwner, { show ->
+        vm.showNote.observe(viewLifecycleOwner) { show ->
             listOf(etVisitNote, ivVisitNote).forEach { it.setGoneState(!show) }
-        })
+        }
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.loadingState.observe(viewLifecycleOwner) {
             if (it) showProgress() else dismissProgress()
-        })
+        }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, { err ->
+        vm.errorHandler.errorText.observe(viewLifecycleOwner) { err ->
             err.consume {
                 SnackbarUtil.showErrorSnackbar(view, it)
             }
-        })
+        }
 
         vm.photos.observe(viewLifecycleOwner) {
             displayPhotos(it)
         }
 
-        vm.externalMapsIntent.observe(viewLifecycleOwner, {
+        vm.externalMapsIntent.observe(viewLifecycleOwner) {
             it.consume {
                 mainActivity().startActivity(it)
             }
-        })
+        }
 
         tvTakePicture.setOnClickListener {
             vm.onAddPhotoClicked(mainActivity(), etVisitNote.textString())
@@ -152,16 +142,12 @@ class OrderDetailsFragment : ProgressDialogFragment(R.layout.fragment_order_deta
             createCancelDialog().show()
         }
 
-        tvPickUp.setOnClickListener {
+        tvSnooze.setOnClickListener {
             createSnoozeDialog().show()
         }
 
-        tvSnooze.setOnClickListener {
-            vm.onSnoozeClicked()
-        }
-
         tvUnsnooze.setOnClickListener {
-            vm.onUnsnoozeClicked()
+            vm.onUnSnoozeClicked()
         }
 
         bDirections.setOnClickListener {

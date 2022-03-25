@@ -6,7 +6,7 @@ import androidx.lifecycle.Transformations
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.*
 import com.hypertrack.android.models.*
-import com.hypertrack.android.models.local.LocalOrder
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
@@ -26,14 +26,13 @@ interface TripsInteractor {
     val errorFlow: MutableSharedFlow<Consumable<Exception>>
     val currentTrip: LiveData<LocalTrip?>
     val completedTrips: LiveData<List<LocalTrip>>
-    fun getOrderLiveData(orderId: String): LiveData<LocalOrder>
+    fun getOrderLiveData(orderId: String): LiveData<Order>
     suspend fun refreshTrips()
     suspend fun cancelOrder(orderId: String): OrderCompletionResponse
     suspend fun completeOrder(orderId: String): OrderCompletionResponse
-    fun getOrder(orderId: String): LocalOrder?
+    fun getOrder(orderId: String): Order?
     suspend fun updateOrderNote(orderId: String, orderNote: String)
     fun updateOrderNoteAsync(orderId: String, orderNote: String)
-    suspend fun setOrderPickedUp(orderId: String)
     suspend fun addPhotoToOrder(orderId: String, path: String)
     fun retryPhotoUpload(orderId: String, photoId: String)
     suspend fun createTrip(latLng: LatLng, address: String?): TripCreationResult
@@ -46,7 +45,7 @@ interface TripsInteractor {
 
     fun logState(): Map<String, Any?>
     suspend fun snoozeOrder(orderId: String): SimpleResult
-    suspend fun unsnoozeOrder(orderId: String): SimpleResult
+    suspend fun unSnoozeOrder(orderId: String): SimpleResult
 }
 
 open class TripsInteractorImpl(
@@ -74,9 +73,9 @@ open class TripsInteractorImpl(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
-    override fun getOrderLiveData(orderId: String): LiveData<LocalOrder> {
+    override fun getOrderLiveData(orderId: String): LiveData<Order> {
         return Transformations.switchMap(tripsRepository.trips) {
-            MutableLiveData<LocalOrder>().apply {
+            MutableLiveData<Order>().apply {
                 getOrder(orderId).let { if (it != null) postValue(it) }
             }
         }
@@ -88,7 +87,7 @@ open class TripsInteractorImpl(
         }
     }
 
-    override fun getOrder(orderId: String): LocalOrder? {
+    override fun getOrder(orderId: String): Order? {
         return tripsRepository.trips.value?.map { it.orders }?.flatten()
             ?.firstOrNull() { it.id == orderId }
     }
@@ -109,23 +108,19 @@ open class TripsInteractorImpl(
                 try {
                     currentTrip.value!!.let { trip ->
                         trip.getOrder(orderId = orderId)!!.let { order ->
-                            if (!order.legacy) {
-                                updateOrderMetadata(trip.id, order)
-                                apiClient.snoozeOrder(orderId = orderId, tripId = trip.id)
-                                    .let { res ->
-                                        if (res is JustSuccess) {
-                                            tripsRepository.updateLocalOrder(orderId) {
-                                                it.status = OrderStatus.SNOOZED
-                                            }
+                            updateOrderMetadata(trip.id, order)
+                            apiClient.snoozeOrder(orderId = orderId, tripId = trip.id)
+                                .let { res ->
+                                    if (res is JustSuccess) {
+                                        tripsRepository.updateLocalOrder(orderId) {
+                                            it.status = OrderStatus.SNOOZED
                                         }
-                                        globalScope.launch {
-                                            refreshTrips()
-                                        }
-                                        res
                                     }
-                            } else {
-                                JustFailure(IllegalArgumentException("Can't snooze legacy order"))
-                            }
+                                    globalScope.launch {
+                                        refreshTrips()
+                                    }
+                                    res
+                                }
                         }
                     }
                 } catch (e: Exception) {
@@ -137,7 +132,7 @@ open class TripsInteractorImpl(
         }
     }
 
-    override suspend fun unsnoozeOrder(orderId: String): SimpleResult {
+    override suspend fun unSnoozeOrder(orderId: String): SimpleResult {
         return try {
             onlyWhenClockedIn {
                 currentTrip.value!!.let { trip ->
@@ -182,16 +177,6 @@ open class TripsInteractorImpl(
     override fun updateOrderNoteAsync(orderId: String, orderNote: String) {
         globalScope.launch {
             updateOrderNote(orderId, orderNote)
-        }
-    }
-
-    override suspend fun setOrderPickedUp(orderId: String) {
-        globalScope.launch {
-            //used only for legacy orders, so orderId is tripId
-            hyperTrackService.sendPickedUp(orderId, "trip_id")
-            tripsRepository.updateLocalOrder(orderId) {
-                it.isPickedUp = true
-            }
         }
     }
 
@@ -253,9 +238,6 @@ open class TripsInteractorImpl(
         latLng: LatLng,
         address: String?
     ): AddOrderResult {
-        if (tripsRepository.trips.value!!.first { it.id == tripId }.isLegacy()) {
-            throw IllegalArgumentException("Can't add an order to a legacy v1 trip")
-        }
         return withContext(globalScope.coroutineContext) {
             try {
                 tripsRepository.addOrderToTrip(
@@ -278,9 +260,14 @@ open class TripsInteractorImpl(
         try {
             currentTrip.value!!.let { trip ->
                 trip.getOrder(orderId)!!.let { order ->
-                    if (order.legacy) {
-                        //legacy v1 trip, destination is order, order.id is trip.id
-                        hyperTrackService.sendCompletionEvent(order, canceled)
+                    updateOrderMetadata(trip.id, order)
+
+                    val res = if (!canceled) {
+                        apiClient.completeOrder(orderId = orderId, tripId = trip.id)
+                    } else {
+                        apiClient.cancelOrder(orderId = orderId, tripId = trip.id)
+                    }
+                    if (res is OrderCompletionSuccess) {
                         tripsRepository.updateLocalOrder(orderId) {
                             it.status = if (!canceled) {
                                 OrderStatus.COMPLETED
@@ -288,49 +275,11 @@ open class TripsInteractorImpl(
                                 OrderStatus.CANCELED
                             }
                         }
-                        globalScope.launch {
-                            refreshTrips()
-                        }
-                        return OrderCompletionSuccess
-                        //todo completion is disabled regarding to Indiabulls use-case
-//                        val res = apiClient.completeTrip(order.id)
-//                        when (res) {
-//                            JustSuccess -> {
-//                                updateCurrentTripOrderStatus(
-//                                    orderId, if (!canceled) {
-//                                        OrderStatus.COMPLETED
-//                                    } else {
-//                                        OrderStatus.CANCELED
-//                                    }
-//                                )
-//                                return OrderCompletionSuccess
-//                            }
-//                            is TripCompletionError -> {
-//                                return OrderCompletionFailure(res.error as Exception)
-//                            }
-//                        }
-                    } else {
-                        updateOrderMetadata(trip.id, order)
-
-                        val res = if (!canceled) {
-                            apiClient.completeOrder(orderId = orderId, tripId = trip.id)
-                        } else {
-                            apiClient.cancelOrder(orderId = orderId, tripId = trip.id)
-                        }
-                        if (res is OrderCompletionSuccess) {
-                            tripsRepository.updateLocalOrder(orderId) {
-                                it.status = if (!canceled) {
-                                    OrderStatus.COMPLETED
-                                } else {
-                                    OrderStatus.CANCELED
-                                }
-                            }
-                        }
-                        globalScope.launch {
-                            refreshTrips()
-                        }
-                        return res
                     }
+                    globalScope.launch {
+                        refreshTrips()
+                    }
+                    return res
                 }
             }
         } catch (e: Exception) {
@@ -344,7 +293,7 @@ open class TripsInteractorImpl(
         }
     }
 
-    private suspend fun updateOrderMetadata(tripId: String, order: LocalOrder) {
+    private suspend fun updateOrderMetadata(tripId: String, order: Order) {
         val orderId = order.id
         val metadata = (order._metadata ?: Metadata.empty())
         if (
