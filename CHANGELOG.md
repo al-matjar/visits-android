@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.15.0] - 2022-04-07
+
+## Fixed
+
+- ANR on getting geocoding addresses
+
+## Added
+
+- Measurement unit system selection (meters/miles)
+
 ## [0.14.2] - 2022-03-01
 
 ### Changed
