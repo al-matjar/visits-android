@@ -16,11 +16,17 @@ import com.hypertrack.android.ui.base.toConsumable
 import com.hypertrack.android.ui.common.adapters.EditableKeyValueItem
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
+import com.hypertrack.android.ui.common.util.nullIfBlank
+import com.hypertrack.android.ui.screens.add_place_info.ShowErrorMessageEffect
 import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.IllegalActionException
 import com.hypertrack.android.utils.ReducerResult
 import com.hypertrack.android.utils.StateMachine
+import com.hypertrack.android.utils.format
+import com.hypertrack.android.utils.mapToJson
+import com.hypertrack.android.utils.prettifyJson
 import com.hypertrack.logistics.android.github.R
+import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import java.util.*
 
@@ -28,6 +34,10 @@ class AddGeotagViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val geotagsInteractor: GeotagsInteractor
 ) : BaseViewModel(baseDependencies) {
+
+    private val emptyStringPlaceholder = resourceProvider.stringFromResource(
+        R.string.add_geotag_empty_placeholder
+    )
 
     private val stateMachine = StateMachine<Action, State, Effect>(
         this::class.java.simpleName,
@@ -138,33 +148,46 @@ class AddGeotagViewModel(
                         state.withEffects(
                             when {
                                 action.metadata.isEmpty() -> {
-                                    ShowErrorMessageEffect(
-                                        osUtilsProvider.stringFromResource(
-                                            R.string.add_geotag_validation_empty_metadata
-                                        )
-                                    )
+                                    ShowMetadataErrorEffect(action.metadata, NoMetadata)
                                 }
-                                action.metadata.any { it.key.isEmpty() || it.value.isEmpty() } -> {
-                                    ShowErrorMessageEffect(
-                                        osUtilsProvider.stringFromResource(
-                                            R.string.add_geotag_validation_empty_key_or_value
-                                        )
-                                    )
+                                action.metadata.any { it.first.isBlank() && it.second.isBlank() } -> {
+                                    ShowMetadataErrorEffect(action.metadata, EmptyMetadata)
+                                }
+                                // has duplicate keys
+                                action.metadata.distinctBy { it.first }.size != action.metadata.size -> {
+                                    ShowMetadataErrorEffect(
+                                        action.metadata,
+                                        DuplicateKeys(
+                                            action.metadata.groupingBy { it.first }
+                                                .eachCount()
+                                                .filter { it.value > 1 }
+                                                .map { it.key }
+                                        ))
+                                }
+                                action.metadata.any { it.first.isBlank() } -> {
+                                    ShowMetadataErrorEffect(
+                                        action.metadata,
+                                        EmptyKeys(
+                                            values = action.metadata.filter { it.first.isBlank() }
+                                                .map { it.second }
+                                        ))
+                                }
+                                action.metadata.any { it.second.isBlank() } -> {
+                                    ShowMetadataErrorEffect(
+                                        action.metadata,
+                                        EmptyValues(
+                                            keys = action.metadata.filter { it.second.isBlank() }
+                                                .map { it.first }
+                                        ))
                                 }
                                 else -> {
-                                    CreateGeotag(action.metadata)
+                                    CreateGeotag(action.metadata.toMap())
                                 }
                             }
                         )
                     }
                     is HasLatestLocation -> {
-                        state.withEffects(
-                            ShowErrorMessageEffect(
-                                osUtilsProvider.stringFromResource(
-                                    R.string.map_is_not_ready_yet
-                                )
-                            )
-                        )
+                        state.withEffects(ShowMapNotReadyErrorEffect)
                     }
                     is OutageState, InitialState -> throw IllegalActionException(action, state)
                 }
@@ -177,37 +200,114 @@ class AddGeotagViewModel(
     }
 
     private fun applyEffects(effects: Set<Effect>) {
-        for (effect in effects) {
-            when (effect) {
-                is SetViewStateEffect -> {
-                    viewState.postValue(effect.viewState)
-                }
-                is ShowOnMapEffect -> {
-                    effect.map.let {
-                        it.addGeotagMarker(effect.latestLocation)
-                        it.moveCamera(effect.latestLocation)
-                    }
-                }
-                GoBackEffect -> {
-                    popBackStack.postValue(true.toConsumable())
-                }
-                is ShowErrorMessageEffect -> {
-                    snackbar.postValue(effect.text.toConsumable())
-                }
-                is CreateGeotag -> {
-                    geotagsInteractor.createGeotag(effect.metadata).let {
-                        stateMachine.handleAction(GeotagResultAction(it))
-                    }
-                }
-                is ShowToastEffect -> {
-                    osUtilsProvider.makeToast(effect.stringResource)
-                }
-            } as Unit
+        try {
+            for (effect in effects) {
+                applyEffect(effect)
+            }
+        } catch (e: Exception) {
+            crashReportsProvider.logException(e)
+            snackbar.postValue(e.format().toConsumable())
         }
     }
 
+    private fun applyEffect(effect: Effect) {
+        when (effect) {
+            is SetViewStateEffect -> {
+                viewState.postValue(effect.viewState)
+            }
+            is ShowOnMapEffect -> {
+                effect.map.let {
+                    it.addGeotagMarker(effect.latestLocation)
+                    it.moveCamera(effect.latestLocation)
+                }
+            }
+            GoBackEffect -> {
+                popBackStack.postValue(true.toConsumable())
+            }
+            is CreateGeotag -> {
+                geotagsInteractor.createGeotag(effect.metadata).let {
+                    stateMachine.handleAction(GeotagResultAction(it))
+                }
+            }
+            is ShowToastEffect -> {
+                osUtilsProvider.makeToast(effect.stringResource)
+            }
+            ShowMapNotReadyErrorEffect -> {
+                snackbar.postValue(
+                    osUtilsProvider.stringFromResource(
+                        R.string.map_is_not_ready_yet
+                    ).toConsumable()
+                )
+            }
+            is ShowMetadataErrorEffect -> {
+                val metadataString = effect.metadataItems.joinToString("\n") {
+                    val key = it.first.nullIfBlank() ?: emptyStringPlaceholder
+                    val value = it.second.nullIfBlank() ?: emptyStringPlaceholder
+                    "$key: $value"
+                }
+
+                when (effect.metadataError) {
+                    NoMetadata -> {
+                        resourceProvider.stringFromResource(
+                            R.string.add_geotag_validation_no_metadata
+                        )
+                    }
+                    EmptyMetadata -> {
+                        resourceProvider.stringFromResource(
+                            R.string.add_geotag_validation_empty_metadata
+                        ).let {
+                            resourceProvider.stringFromResource(
+                                R.string.add_geotag_validation_wrong_metadata,
+                                metadataString,
+                                it
+                            )
+                        }
+                    }
+                    is DuplicateKeys -> {
+                        resourceProvider.stringFromResource(
+                            R.string.add_geotag_validation_duplicate_keys,
+                            effect.metadataError.keys.joinToString("\n")
+                        ).let {
+                            resourceProvider.stringFromResource(
+                                R.string.add_geotag_validation_wrong_metadata,
+                                metadataString,
+                                it
+                            )
+                        }
+                    }
+                    is EmptyKeys -> {
+                        resourceProvider.stringFromResource(
+                            R.string.add_geotag_validation_empty_keys,
+                            effect.metadataError.values.joinToString("\n")
+                        ).let {
+                            resourceProvider.stringFromResource(
+                                R.string.add_geotag_validation_wrong_metadata,
+                                metadataString,
+                                it
+                            )
+                        }
+                    }
+                    is EmptyValues -> {
+                        resourceProvider.stringFromResource(
+                            R.string.add_geotag_validation_empty_values,
+                            effect.metadataError.keys.joinToString("\n")
+                        ).let {
+                            resourceProvider.stringFromResource(
+                                R.string.add_geotag_validation_wrong_metadata,
+                                metadataString,
+                                it
+                            )
+                        }
+                    }
+                }.let {
+                    snackbar.postValue(it.toConsumable())
+                }
+            }
+        } as Any?
+    }
+
     fun onCreateClick(items: MutableList<EditableKeyValueItem>) {
-        stateMachine.handleAction(CreateButtonClickAction(items.map { it.key to it.value }.toMap()))
+        stateMachine.handleAction(CreateButtonClickAction(items.map { it.key to it.value }))
     }
 
     private fun formatUnderscoreName(name: String): String {

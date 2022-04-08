@@ -3,15 +3,21 @@ package com.hypertrack.android.utils
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import org.json.JSONObject
 
-typealias JsonObjectString = String
-typealias JsonMap = Map<String, Any>
+fun String.prettifyJson(): String {
+    return try {
+        JSONObject(this).toString(4)
+    } catch (_: Exception) {
+        this
+    }
+}
 
-fun Moshi.mapToJson(map: JsonMap): JsonObjectString {
+fun Moshi.mapToJson(map: Map<String, Any>): String {
     return this.createAnyMapAdapter().toJson(map)
 }
 
-fun Moshi.parse(jsonString: JsonObjectString): Map<String, Any> {
+fun Moshi.parse(jsonString: String): Map<String, Any> {
     return this.createAnyMapAdapter().fromJson(jsonString)
         ?: throw IllegalArgumentException(jsonString)
 }

@@ -8,4 +8,7 @@ sealed class Action
 data class LatestLocationResultReceivedAction(val result: LatestLocationResult) : Action()
 data class MapReadyAction(val map: HypertrackMapWrapper) : Action()
 data class GeotagResultAction(val result: GeotagCreationResult) : Action()
-data class CreateButtonClickAction(val metadata: Map<String, String>) : Action()
+data class CreateButtonClickAction(
+    // Pair<key, value>
+    val metadata: List<Pair<String, String>>
+) : Action()

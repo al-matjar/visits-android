@@ -2,7 +2,6 @@ package com.hypertrack.android.api.graphql.models
 
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.models.RemoteLocation
-import com.hypertrack.android.utils.JsonObjectString
 import com.hypertrack.android.utils.datetime.dateTimeFromString
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -13,7 +12,7 @@ class GraphQlGeotagMarker(
     @field:Json(name = "id") val id: String,
     @field:Json(name = "recorded_at") val recordedAtString: String,
     @field:Json(name = "location") val remoteLocation: RemoteLocation,
-    @field:Json(name = "metadata") val metadata: JsonObjectString,
+    @field:Json(name = "metadata") val metadata: String,
 ) {
     val createdAt: ZonedDateTime = dateTimeFromString(recordedAtString)
 

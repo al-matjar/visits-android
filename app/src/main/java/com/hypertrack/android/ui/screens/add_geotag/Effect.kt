@@ -9,7 +9,13 @@ sealed class Effect {
 }
 
 data class SetViewStateEffect(val viewState: ViewState) : Effect()
-data class ShowErrorMessageEffect(val text: String) : Effect()
+data class ShowMetadataErrorEffect(
+    // Pair<key, value>
+    val metadataItems: List<Pair<String, String>>,
+    val metadataError: MetadataError
+) : Effect()
+
+object ShowMapNotReadyErrorEffect : Effect()
 data class ShowToastEffect(@StringRes val stringResource: Int) : Effect()
 data class CreateGeotag(val metadata: Map<String, String>) : Effect()
 object GoBackEffect : Effect()

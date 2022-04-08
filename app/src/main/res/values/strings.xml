@@ -226,8 +226,13 @@
     <string name="add_geotag">Add geotag</string>
     <string name="add_geotag_add_field">Add data field</string>
     <string name="add_geotag_hint">Create a geotag to mark specific location and add additional info to this mark</string>
-    <string name="add_geotag_validation_empty_key_or_value">Data keys and values can\'t be empty</string>
-    <string name="add_geotag_validation_empty_metadata">You need to add at least one data field to create a geotag</string>
+    <string name="add_geotag_validation_wrong_metadata">Wrong geotag metadata:\n%s\n\n%s</string>
+    <string name="add_geotag_validation_no_metadata">You have to add at least one data field to create a geotag</string>
+    <string name="add_geotag_validation_empty_metadata">You have to provide key and value for all fields</string>
+    <string name="add_geotag_validation_duplicate_keys">Duplicate keys:\n%s</string>
+    <string name="add_geotag_validation_empty_keys">Empty keys:\n%s</string>
+    <string name="add_geotag_validation_empty_values">Empty values:\n%s</string>
+    <string name="add_geotag_empty_placeholder">[empty]</string>
     <string name="add_geotag_create_button">Create</string>
     <string name="add_geotag_success">Geotag was successfully created</string>
     <string name="add_geotag_error_hint">Unable to create geotag</string>
