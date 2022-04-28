@@ -10,11 +10,17 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.utils.Injector
+import com.hypertrack.android.utils.JustFailure
+import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.catchException
 import com.hypertrack.sdk.logger.HTLogger
 import com.hypertrack.sdk.pipelines.PushTokenError
 import com.hypertrack.sdk.pipelines.PushTokenSuccess
 import com.hypertrack.sdk.pipelines.RefreshPushTokenStep
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.handleCoroutineException
+import kotlinx.coroutines.runBlocking
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -22,14 +28,16 @@ import kotlin.coroutines.suspendCoroutine
 class VisitsMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
-//        Log.v("hypertrack-verbose", "Got firebase token: $token")
+        if (MyApplication.DEBUG_MODE) {
+            Log.v(javaClass.simpleName, "Got Firebase token: $token")
+        }
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        try {
-            MyApplication.injector.getPushReceiver().onPushReceived(this, remoteMessage)
-        } catch (e: Exception) {
-            Injector.crashReportsProvider
+        runBlocking {
+            Injector.getHandlePushUseCase().execute(remoteMessage)
+                .catchException { Injector.crashReportsProvider.logException(it) }
+                .collect()
         }
     }
 
@@ -38,6 +46,12 @@ class VisitsMessagingService : FirebaseMessagingService() {
         suspend fun getFirebaseToken(): String = suspendCoroutine {
             FirebaseMessaging.getInstance().token
                 .addOnSuccessListener { token ->
+                    if (MyApplication.DEBUG_MODE) {
+                        Log.v(
+                            VisitsMessagingService::class.java.simpleName,
+                            "Got Firebase token: $token"
+                        )
+                    }
                     it.resume(token)
                 }
                 .addOnFailureListener { e ->

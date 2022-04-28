@@ -188,4 +188,15 @@
         android:id="@+id/addGeotagFragment"
         android:name="com.hypertrack.android.ui.screens.add_geotag.AddGeotagFragment"
         android:label="AddGeotagFragment" />
+    <fragment
+        android:id="@+id/outageFragment"
+        android:name="com.hypertrack.android.ui.screens.outage.OutageFragment"
+        android:label="OutageFragment">
+        <argument
+            android:name="outageNotification"
+            app:argType="com.hypertrack.android.use_case.OutageNotification" />
+    </fragment>
+    <action
+        android:id="@+id/action_global_outageFragment"
+        app:destination="@id/outageFragment" />
 </navigation>

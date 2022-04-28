@@ -19,6 +19,7 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.summary.SummaryV
 import com.hypertrack.android.ui.screens.permission_request.PermissionRequestViewModel
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModel
 import com.hypertrack.android.ui.screens.add_geotag.AddGeotagViewModel
+import com.hypertrack.android.ui.screens.outage.OutageViewModel
 import com.hypertrack.android.ui.screens.select_trip_destination.SelectTripDestinationViewModel
 import com.hypertrack.android.ui.screens.send_feedback.SendFeedbackViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
@@ -53,6 +54,9 @@ class UserScopeViewModelFactory(
             crashReportsProvider
         )
         return when (modelClass) {
+            OutageViewModel::class.java -> OutageViewModel(
+                baseDependencies
+            ) as T
             SendFeedbackViewModel::class.java -> SendFeedbackViewModel(
                 baseDependencies,
                 feedbackInteractor,

@@ -13,7 +13,6 @@ import com.hypertrack.android.api.graphql.models.GraphQlDeviceStatusMarkerInacti
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.interactors.history.GraphQlHistoryInteractor
 import com.hypertrack.android.interactors.history.HistoryInteractor
-import com.hypertrack.android.messaging.PushReceiver
 import com.hypertrack.android.repository.*
 import com.hypertrack.android.deeplink.BranchIoDeepLinkProcessor
 import com.hypertrack.android.deeplink.BranchWrapper
@@ -36,6 +35,7 @@ import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.select_destination.DestinationData
+import com.hypertrack.android.use_case.HandlePushUseCase
 import com.hypertrack.android.utils.formatters.*
 import com.hypertrack.logistics.android.github.R
 import com.hypertrack.sdk.HyperTrack
@@ -153,7 +153,6 @@ object Injector {
                 moshi
             ),
             geocodingInteractor,
-            NotificationsInteractor(),
             loginInteractor,
             crashReportsProvider,
             osUtilsProvider,
@@ -587,13 +586,15 @@ object Injector {
     private fun getCognitoLoginProvider(context: Context): CognitoAccountLoginProvider =
         CognitoAccountLoginProviderImpl(context)
 
-    fun getPushReceiver(): PushReceiver {
-        return PushReceiver(
-            { getAccountRepo(MyApplication.context) },
-            { getUserScope().tripsInteractor },
-            appScope.notificationsInteractor,
+    fun getHandlePushUseCase(): HandlePushUseCase {
+        return HandlePushUseCase(
+            appScope.appContext,
+            appScope.moshi,
             crashReportsProvider,
-            getMoshi()
+            getOsUtilsProvider(MyApplication.context),
+            NotificationUtil,
+            { userScope?.tripsInteractor },
+            { getAccountRepo(appScope.appContext).isLoggedIn }
         )
     }
 
@@ -633,7 +634,6 @@ class AppScope(
     val preferencesRepository: PreferencesRepository,
     val deeplinkInteractor: DeeplinkInteractor,
     val geocodingInteractor: GeocodingInteractor,
-    val notificationsInteractor: NotificationsInteractor,
     val loginInteractor: LoginInteractor,
     val crashReportsProvider: CrashReportsProvider,
     val osUtilsProvider: OsUtilsProvider,

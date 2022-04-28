@@ -24,11 +24,6 @@ open class ProgressDialogFragment(layoutId: Int) : BaseFragment<MainActivity>(la
         dismissProgress()
     }
 
-    companion object {
-        const val TRIP_NOTIFICATION_ID = 1
-        const val SYNC_NOTIFICATION_ID = 4242
-    }
-
 }
 
 class AnimatedDialog(context: Context) : Dialog(context, R.style.LoaderDialog) {

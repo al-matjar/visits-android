@@ -1,7 +1,10 @@
 package com.hypertrack.android.ui
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.AttributeSet
+import android.view.View
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDestination
@@ -11,7 +14,12 @@ import com.hypertrack.android.ui.base.NavActivity
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragment
+import com.hypertrack.android.use_case.HandlePushUseCase
+import com.hypertrack.android.use_case.OutageNotification
+import com.hypertrack.android.use_case.TripUpdateNotification
 import com.hypertrack.android.utils.*
+import com.hypertrack.android.utils.NotificationUtil.KEY_NOTIFICATION_DATA
+import com.hypertrack.android.utils.NotificationUtil.KEY_NOTIFICATION_TYPE
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.activity_main.*
@@ -32,34 +40,39 @@ class MainActivity : NavActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        intent?.let {
-            if (isFromPushMessage(intent)) {
-                val currentFragment = getCurrentFragment()
-                if (currentFragment is VisitsManagementFragment) {
-                    currentFragment.refreshOrders()
-                } else {
-                    findNavController(R.id.root).navigate(NavGraphDirections.actionGlobalVisitManagementFragment())
-                }
-            } else {
+        try {
+            intent?.let {
+                handleNotification()
                 lifecycleScope.launch {
                     deepLinkProcessor.activityOnNewIntent(this@MainActivity).let {
                         onDeeplinkResult(it)
                     }
                 }
             }
+        } catch (e: Exception) {
+            crashReportsProvider.logException(e)
         }
     }
 
-    private fun isFromPushMessage(intent: Intent): Boolean {
-        return intent.action == Intent.ACTION_SYNC
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        try {
+            handleNotification()
+        } catch (e: Exception) {
+            crashReportsProvider.logException(e)
+        }
     }
 
     override fun onStart() {
         super.onStart()
-        lifecycleScope.launch {
-            deepLinkProcessor.activityOnStart(this@MainActivity).let {
-                onDeeplinkResult(it)
+        try {
+            lifecycleScope.launch {
+                deepLinkProcessor.activityOnStart(this@MainActivity).let {
+                    onDeeplinkResult(it)
+                }
             }
+        } catch (e: Exception) {
+            crashReportsProvider.logException(e)
         }
     }
 
@@ -106,6 +119,37 @@ class MainActivity : NavActivity() {
     override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
         return true
+    }
+
+    private fun handleNotification() {
+        intent.getStringExtra(KEY_NOTIFICATION_TYPE)?.let { type ->
+            when (type) {
+                TripUpdateNotification::class.java.simpleName -> {
+                    val currentFragment = getCurrentFragment()
+                    if (currentFragment is VisitsManagementFragment) {
+                        currentFragment.refreshOrders()
+                    } else {
+                        navController.navigate(
+                            NavGraphDirections.actionGlobalVisitManagementFragment()
+                        )
+                    }
+                }
+                OutageNotification::class.java.simpleName -> {
+                    val notificationData = intent.getParcelableExtra<OutageNotification>(
+                        KEY_NOTIFICATION_DATA
+                    )
+                    if (notificationData != null) {
+                        navController.navigate(
+                            NavGraphDirections.actionGlobalOutageFragment(notificationData)
+                        )
+                    } else {
+                        crashReportsProvider.logException(NullPointerException())
+                    }
+                }
+            }
+            intent.removeExtra(KEY_NOTIFICATION_TYPE)
+            intent.removeExtra(KEY_NOTIFICATION_DATA)
+        }
     }
 
     companion object {

@@ -7,6 +7,8 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
 import com.google.android.gms.common.GoogleApiAvailability
@@ -45,27 +47,7 @@ class MyApplication : Application() {
     }
 
     private fun buildNotificationChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-            NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.channel_name),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = getString(R.string.channel_description)
-                notificationManager.createNotificationChannel(this)
-            }
-
-            NotificationChannel(
-                IMPORTANT_CHANNEL_ID,
-                getString(R.string.notification_important_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = getString(R.string.notification_important_channel_description)
-                notificationManager.createNotificationChannel(this)
-            }
-        }
+        NotificationUtil.setUpNotificationChannels(this)
     }
 
     private fun upgradeSecurityProvider(

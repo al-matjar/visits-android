@@ -12,3 +12,19 @@ sealed class Either<A, B> {
         return "Either($str)"
     }
 }
+
+fun <T> tryAsResult(code: () -> T): Result<T> {
+    return try {
+        Success(code.invoke())
+    } catch (e: Exception) {
+        Failure(e)
+    }
+}
+
+fun tryAsSimpleResult(code: () -> Unit): SimpleResult {
+    return try {
+        code.invoke().let { JustSuccess }
+    } catch (e: Exception) {
+        JustFailure(e)
+    }
+}
