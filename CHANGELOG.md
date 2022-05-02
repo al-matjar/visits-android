@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0] - 2022-05-02
+
+### Added
+
+- Notifications for outages
+- More comprehensive error messages on Add geotag
+
 ## [0.15.0] - 2022-04-07
 
 ## Fixed
