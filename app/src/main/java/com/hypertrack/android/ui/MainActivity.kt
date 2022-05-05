@@ -79,6 +79,7 @@ class MainActivity : NavActivity() {
     override fun onResume() {
         super.onResume()
         inForeground = true
+        splashScreenViewModel.activityOnResume()
         crashReportsProvider.log("activity resume")
     }
 

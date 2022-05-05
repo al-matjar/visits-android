@@ -230,7 +230,8 @@ object Injector {
             getPermissionInteractor(),
             crashReportsProvider,
             getOsUtilsProvider(MyApplication.context),
-            appScope.moshi
+            appScope.moshi,
+            hyperTrackServiceProvider = { userScope?.hyperTrackService }
         )
     }
 

@@ -15,7 +15,6 @@ import com.hypertrack.android.ui.screens.splash_screen.SplashScreenFragmentDirec
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
 import com.hypertrack.android.utils.*
 import com.hypertrack.logistics.android.github.R
-import com.squareup.moshi.Types
 import io.mockk.*
 import junit.framework.TestCase.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -671,6 +670,7 @@ class SplashScreenViewModelTest {
                 },
                 deeplinkInteractor,
                 mockk(relaxed = true),
+                hyperTrackService = mockk(relaxed = true),
             )
         }
 

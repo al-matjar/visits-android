@@ -8,12 +8,14 @@ import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.utils.HyperTrackService
 import kotlinx.coroutines.launch
 
 class SplashScreenViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val deeplinkInteractor: DeeplinkInteractor,
     private val permissionsInteractor: PermissionsInteractor,
+    private val hyperTrackService: () -> HyperTrackService?
 ) : BaseViewModel(baseDependencies) {
 
     private val deeplinkDelegate = object : DeeplinkResultDelegate(
@@ -49,6 +51,10 @@ class SplashScreenViewModel(
             deeplinkDelegate.handleDeeplink(result, activity)
             loadingState.postValue(false)
         }
+    }
+
+    fun activityOnResume() {
+        hyperTrackService.invoke()?.showPermissionsPrompt()
     }
 
 }

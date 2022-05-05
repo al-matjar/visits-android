@@ -7,6 +7,7 @@
         <item name="windowNoTitle">true</item>
         <item name="android:windowBackground">@color/colorHyperTrackGreen</item>
         <item name="android:windowFullscreen">true</item>
+        <item name="android:textColor">@color/colorTextDark</item>
     </style>
 
     <style name="ButtonStyle">

@@ -17,6 +17,7 @@
 
     <color name="colorDescription">#9B9B9B</color>
     <color name="colorTitle">#9B9B9B</color>
+    <color name="colorText">#808080</color>
     <color name="colorTextDark">@color/tertiary_2_xdark</color>
     <color name="colorTakePicture">#857777</color>
     <color name="colorBtnDisable">#AAAAAA</color>

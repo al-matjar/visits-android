@@ -2,11 +2,7 @@ package com.hypertrack.android.ui.common
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.hypertrack.android.interactors.DeeplinkInteractor
-import com.hypertrack.android.interactors.LoginInteractor
 import com.hypertrack.android.interactors.PermissionsInteractor
-import com.hypertrack.android.repository.AccountRepository
-import com.hypertrack.android.repository.DriverRepository
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.screens.background_permissions.BackgroundPermissionsViewModel
 import com.hypertrack.android.ui.screens.confirm_email.ConfirmEmailViewModel
@@ -15,6 +11,7 @@ import com.hypertrack.android.ui.screens.sign_up.SignUpViewModel
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
 import com.hypertrack.android.utils.AppScope
 import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.squareup.moshi.Moshi
 
@@ -25,6 +22,7 @@ class ViewModelFactory(
     private val crashReportsProvider: CrashReportsProvider,
     private val osUtilsProvider: OsUtilsProvider,
     private val moshi: Moshi,
+    private val hyperTrackServiceProvider: () -> HyperTrackService?
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -55,6 +53,7 @@ class ViewModelFactory(
                 baseDependencies,
                 appScope.deeplinkInteractor,
                 permissionsInteractor,
+                hyperTrackServiceProvider
             ) as T
             BackgroundPermissionsViewModel::class.java -> BackgroundPermissionsViewModel(
                 baseDependencies,
