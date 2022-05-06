@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.16.1] - 2022-05-06
+
+### Added
+
+- Check permissions on activity resume
+
+### Fixed
+
+- Fixed the system overriding base font color
+
 ## [0.16.0] - 2022-05-02
 
 ### Added
