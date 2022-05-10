@@ -59,6 +59,10 @@ class ProfileFragment : BaseFragment<MainActivity>(R.layout.fragment_profile) {
         bReportAnIssue.setOnClickListener {
             vm.onReportAnIssueClick()
         }
+
+        bOpenDontkillmyapp.setOnClickListener {
+            vm.onOpenDontkillmyappClicked(requireActivity())
+        }
     }
 
 }

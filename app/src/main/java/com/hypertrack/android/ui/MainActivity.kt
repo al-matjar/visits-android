@@ -42,7 +42,7 @@ class MainActivity : NavActivity() {
         super.onNewIntent(intent)
         try {
             intent?.let {
-                handleNotification()
+                handleNotification(intent)
                 lifecycleScope.launch {
                     deepLinkProcessor.activityOnNewIntent(this@MainActivity).let {
                         onDeeplinkResult(it)
@@ -57,7 +57,7 @@ class MainActivity : NavActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
-            handleNotification()
+            handleNotification(intent)
         } catch (e: Exception) {
             crashReportsProvider.logException(e)
         }
@@ -122,7 +122,7 @@ class MainActivity : NavActivity() {
         return true
     }
 
-    private fun handleNotification() {
+    private fun handleNotification(intent: Intent) {
         intent.getStringExtra(KEY_NOTIFICATION_TYPE)?.let { type ->
             when (type) {
                 TripUpdateNotification::class.java.simpleName -> {

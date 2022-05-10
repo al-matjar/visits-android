@@ -149,4 +149,11 @@ class ProfileViewModel(
         )
     }
 
+    fun onOpenDontkillmyappClicked(activity: Activity) {
+        osUtilsProvider.openUrl(
+            activity,
+            resourceProvider.stringFromResource(R.string.dontkillmyapp_url)
+        )
+    }
+
 }

@@ -6,6 +6,10 @@ import android.os.Parcelable
 import android.util.Log
 import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.interactors.TripsInteractor
+import com.hypertrack.android.models.OutageType
+import com.hypertrack.android.models.ServiceTerminated
+import com.hypertrack.android.models.ServiceTerminatedByOs
+import com.hypertrack.android.models.ServiceTerminatedByUser
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.JustFailure
@@ -101,7 +105,9 @@ class HandlePushUseCase(
                                         outageCode = inactiveReason.getValue(KEY_OUTAGE_CODE),
                                         outageType = inactiveReason.getValue(KEY_OUTAGE_TYPE),
                                         outageDisplayName = inactiveReason.getValue(KEY_NAME),
-                                        outageDescription = inactiveReason.getValue(KEY_DESCRIPTION),
+                                        outageDeveloperDescription = inactiveReason.getValue(
+                                            KEY_DESCRIPTION
+                                        ),
                                         userActionRequired = inactiveReason.getValue(
                                             KEY_USER_ACTION_REQUIRED
                                         ),
@@ -156,11 +162,10 @@ class HandlePushUseCase(
                         notificationUtil.sendNotification(
                             context,
                             id = getRandomNotificationId(),
-                            title = notification.outageDisplayName,
-                            text = notification.outageDescription,
+                            title = getNotificationTitle(notification),
+                            text = notification.outageDeveloperDescription,
                             data = notification,
                             type = notification.javaClass.simpleName,
-                            autoCancel = false
                         )
                     } else {
                         JustSuccess
@@ -176,6 +181,16 @@ class HandlePushUseCase(
                 }
             }
         }.asFlow()
+    }
+
+    private fun getNotificationTitle(notification: OutageNotification): String {
+        return when {
+            OutageType.SERVICE_TERMINATED_GROUP.map { it.name }
+                .contains(notification.outageType) -> {
+                resourceProvider.stringFromResource(R.string.notification_service_was_terminated)
+            }
+            else -> notification.outageDisplayName
+        }
     }
 
     private fun getRandomNotificationId(): Int {
@@ -214,7 +229,7 @@ data class OutageNotification(
     val outageCode: String,
     val outageType: String,
     val outageDisplayName: String,
-    val outageDescription: String,
+    val outageDeveloperDescription: String,
     val userActionRequired: String
 ) : PushNotification(), Parcelable
 

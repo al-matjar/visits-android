@@ -10,7 +10,6 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
-import android.location.Geocoder
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.DisplayMetrics
@@ -35,9 +34,6 @@ import com.hypertrack.logistics.android.github.R
 import retrofit2.HttpException
 import java.io.File
 import java.io.IOException
-import java.lang.Thread.sleep
-import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.time.ZoneId
 import java.util.*
 
@@ -215,6 +211,12 @@ public class OsUtilsProvider(
                 crashReportsProvider.logException(IllegalStateException("distanceMeters == null, $latLng $latLng1"))
             }
         } ?: Int.MAX_VALUE
+    }
+
+    fun openUrl(activity: Activity, url: String) {
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = Uri.parse(url)
+        activity.startActivity(intent)
     }
 
     fun getMapsIntent(latLng: LatLng): Intent? {

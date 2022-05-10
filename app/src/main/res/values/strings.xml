@@ -103,6 +103,7 @@
     <string name="notification_important_channel_name">HyperTrack Important Notifications</string>
     <string name="notification_important_channel_description">HyperTrack Visits app notifications</string>
     <string name="notification_new_trip">A new trip was assigned to you</string>
+    <string name="notification_service_was_terminated">Tracking service was terminated</string>
 
     <string name="splash_screen_invalid_link">Invalid link: %s</string>
     <string name="splash_screen_no_key">No publishable_key</string>
@@ -243,6 +244,8 @@
     <string name="profile_measurement_units_imperial">Imperial (miles)</string>
     <string name="profile_report_an_issue">Report an issue</string>
     <string name="profile_report_sent">App state is successfully reported</string>
+    <string name="profile_open_dontkillmyapp">Click to open <b>Dontkillmyapp.com</b> for battery saver whitelisting instructions</string>
+
 
     <string name="select_destination">Select destination</string>
     <string name="select_destination_hint">Enter place name or address</string>
@@ -253,6 +256,9 @@
     <string name="feedback_email">help@hypertrack.com</string>
     <string name="feedback_subject">Visits app Android feedback</string>
     <string name="feedback_email_text">-- Please attach screenshots that demonstrate the issue, if possible --\n\n %s \n\n %s</string>
+
+    <string name="outage_open_dontkillmyapp">Click to open <b>Dontkillmyapp.com</b> for detailed instructions</string>
+    <string name="outage_dontkillmyapp_hint">Select your device manufacturer and follow the instructions to whitelist the app</string>
 
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="geotag">Geotag</string>
@@ -295,6 +301,7 @@
     <string name="created_at">Created at</string>
     <string name="reload">Reload</string>
     <string name="map_is_not_ready_yet">Failed to perform action: Map is not loaded yet</string>
+    <string name="dontkillmyapp_url">https://dontkillmyapp.com</string>
 
     <plurals name="time">
         <item quantity="one">time</item>

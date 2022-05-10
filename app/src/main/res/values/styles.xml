@@ -22,6 +22,11 @@
         <item name="android:textAllCaps">false</item>
     </style>
 
+    <style name="LinkButton" parent="Text">
+        <item name="android:textColor">@color/link</item>
+        <item name="android:padding">16dp</item>
+    </style>
+
     <style name="EndTripButtonStyleLive" parent="Widget.MaterialComponents.Button">
         <item name="android:backgroundTint">@null</item>
         <item name="android:background">@drawable/bg_button_live</item>

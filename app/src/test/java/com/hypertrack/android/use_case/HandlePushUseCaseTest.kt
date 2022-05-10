@@ -8,6 +8,7 @@ import com.hypertrack.android.utils.Injector
 import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.utils.NotificationUtil
 import com.hypertrack.android.utils.createAnyMapAdapter
+import com.hypertrack.logistics.android.github.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -41,7 +42,7 @@ class HandlePushUseCaseTest {
                 notificationUtil.sendNotification(
                     any(),
                     TRIP_NOTIFICATION_ID,
-                    text = "text",
+                    text = R.string.notification_new_trip.toString(),
                     title = null,
                     intentAction = Intent.ACTION_SYNC,
                     type = TripUpdateNotification::class.java.simpleName,
@@ -53,51 +54,82 @@ class HandlePushUseCaseTest {
 
     @Test
     fun `handle outage notification`() {
-        runBlocking {
-            val notificationUtil = notificationUtil()
-            val notificationData = OutageNotification(
-                outageDisplayName = "GPS signal lost",
-                outageDescription = "description",
-                outageCode = "code",
-                userActionRequired = "action",
-                outageType = "service_lost_by_os"
-            )
+        fun test(type: String, expectedTitle: String? = null) {
+            runBlocking {
+                val notificationUtil = notificationUtil()
+                val notificationData = outageNotificationData(type)
 
-            handlePushUseCase(
-                notificationUtil = notificationUtil
-            ).execute(remoteMessage = mockk() {
-                every { data } returns mapOf(
-                    "type" to "outage",
-                    "data" to Injector.getMoshi().createAnyMapAdapter().toJson(
-                        mapOf(
-                            "inactive_reason" to mapOf(
-                                "name" to "GPS signal lost",
-                                "description" to "description",
-                                "code" to "code",
-                                "user_action_required" to "action",
-                                "type" to "service_lost_by_os"
-                            )
+                handlePushUseCase(
+                    notificationUtil = notificationUtil
+                ).execute(remoteMessage = mockk() {
+                    every { data } returns mapOf(
+                        "type" to "outage",
+                        "data" to Injector.getMoshi().createAnyMapAdapter().toJson(
+                            notificationData
                         )
                     )
-                )
-            }).collect()
+                }).collect()
 
-            verify {
-                notificationUtil.sendNotification(
-                    any(),
-                    any(),
-                    title = "GPS signal lost",
-                    text = "description",
-                    intentAction = null,
-                    data = eq(notificationData),
-                    type = OutageNotification::class.java.simpleName,
-                    autoCancel = false
-                )
+                val notification = outageNotification(notificationData)
+                verify {
+                    notificationUtil.sendNotification(
+                        any(),
+                        any(),
+                        title = expectedTitle ?: notification.outageDisplayName,
+                        text = notification.outageDeveloperDescription,
+                        intentAction = null,
+                        data = eq(notification),
+                        type = OutageNotification::class.java.simpleName,
+                        autoCancel = true
+                    )
+                }
             }
         }
+
+        test(
+            "service_terminated",
+            expectedTitle = R.string.notification_service_was_terminated.toString()
+        )
+        test(
+            "service_terminated_by_user",
+            expectedTitle = R.string.notification_service_was_terminated.toString()
+        )
+        test(
+            "service_terminated_by_os",
+            expectedTitle = R.string.notification_service_was_terminated.toString()
+        )
+        test("service_lost_by_os")
     }
 
     companion object {
+        fun outageNotification(map: Map<String, Any>): OutageNotification {
+            return map.getValue("inactive_reason")
+                .let { it as Map<String, String> }
+                .let { inactiveReason ->
+                    OutageNotification(
+                        outageDisplayName = inactiveReason.getValue("name"),
+                        outageDeveloperDescription = inactiveReason.getValue("description"),
+                        outageCode = inactiveReason.getValue("code"),
+                        userActionRequired = inactiveReason.getValue("user_action_required"),
+                        outageType = inactiveReason.getValue("type")
+                    )
+                }
+        }
+
+        fun outageNotificationData(
+            type: String? = null
+        ): Map<String, Any> {
+            return mapOf(
+                "inactive_reason" to mapOf(
+                    "name" to "GPS signal lost",
+                    "description" to "description",
+                    "code" to "code",
+                    "user_action_required" to "action",
+                    "type" to (type ?: "service_lost_by_os")
+                )
+            )
+        }
+
         fun notificationUtil(): NotificationUtil {
             return mockk {
                 every {
@@ -139,7 +171,9 @@ class HandlePushUseCaseTest {
                 },
                 notificationUtil = notificationUtil,
                 resourceProvider = mockk() {
-                    every { stringFromResource(any()) } returns "text"
+                    every { stringFromResource(any()) } answers {
+                        firstArg<Int>().toString()
+                    }
                 },
                 tripsInteractorProvider = {
                     tripsInteractor
