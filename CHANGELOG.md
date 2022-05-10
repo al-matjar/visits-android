@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.16.2] - 2022-05-10
+
+### Added
+
+- Custom title for service terminated notifications
+- Added "Open Dontkillmyapp.com" to Outage screen and Profile screen to open battery saver
+  whitelisting instructions
+
+### Fixed
+
+- Fixed activity intent on push notification
+- Enabled outage notification auto-cancel on click
+
 ## [0.16.1] - 2022-05-06
 
 ### Added
