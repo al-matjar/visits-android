@@ -104,6 +104,10 @@
     <string name="notification_important_channel_description">HyperTrack Visits app notifications</string>
     <string name="notification_new_trip">A new trip was assigned to you</string>
     <string name="notification_service_was_terminated">Tracking service was terminated</string>
+    <string name="notification_geofence_enter">Entered geofence</string>
+    <string name="notification_geofence_exit">Exited geofence</string>
+    <string name="notification_geofence_visit_text">%s at %s</string>
+    <string name="notification_geofence_visit_text_without_name">At %s</string>
 
     <string name="splash_screen_invalid_link">Invalid link: %s</string>
     <string name="splash_screen_no_key">No publishable_key</string>

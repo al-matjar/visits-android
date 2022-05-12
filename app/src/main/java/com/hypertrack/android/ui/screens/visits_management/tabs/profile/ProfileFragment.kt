@@ -12,6 +12,7 @@ import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.adapters.KeyValueAdapter
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
+import com.hypertrack.android.ui.common.util.show
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_profile.*
@@ -62,6 +63,13 @@ class ProfileFragment : BaseFragment<MainActivity>(R.layout.fragment_profile) {
 
         bOpenDontkillmyapp.setOnClickListener {
             vm.onOpenDontkillmyappClicked(requireActivity())
+        }
+
+        if (MyApplication.DEBUG_MODE) {
+            bShowInDashboard.show()
+            bShowInDashboard.setOnClickListener {
+                vm.onShowOnDashboardClick(requireActivity())
+            }
         }
     }
 

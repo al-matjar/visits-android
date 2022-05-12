@@ -156,4 +156,13 @@ class ProfileViewModel(
         )
     }
 
+    fun onShowOnDashboardClick(activity: Activity) {
+        val deviceId = hyperTrackService.deviceId
+        val publishableKey = accountRepositoryProvider.get().publishableKey
+        osUtilsProvider.openUrl(
+            activity,
+            "https://dashboard.hypertrack.com/tracking/$deviceId?view=devices&publishable_key=$publishableKey&on_demand=l1"
+        )
+    }
+
 }

@@ -5,7 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import com.hypertrack.android.models.OutageType
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.use_case.OutageNotification
+import com.hypertrack.android.use_case.handle_push.OutageNotification
 import com.hypertrack.logistics.android.github.R
 
 class OutageViewModel(

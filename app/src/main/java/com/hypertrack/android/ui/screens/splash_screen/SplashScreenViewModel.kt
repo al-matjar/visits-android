@@ -53,7 +53,7 @@ class SplashScreenViewModel(
         }
     }
 
-    fun activityOnResume() {
+    fun activityOnStart() {
         hyperTrackService.invoke()?.showPermissionsPrompt()
     }
 

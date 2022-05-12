@@ -28,3 +28,11 @@ fun tryAsSimpleResult(code: () -> Unit): SimpleResult {
         JustFailure(e)
     }
 }
+
+suspend fun tryAsSimpleResultSuspend(code: suspend () -> Unit): SimpleResult {
+    return try {
+        code.invoke().let { JustSuccess }
+    } catch (e: Exception) {
+        JustFailure(e)
+    }
+}

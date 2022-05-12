@@ -3,11 +3,24 @@ package com.hypertrack.android.use_case
 import android.app.NotificationManager
 import android.content.Intent
 import com.hypertrack.android.interactors.TripsInteractor
-import com.hypertrack.android.use_case.HandlePushUseCase.Companion.TRIP_NOTIFICATION_ID
+import com.hypertrack.android.models.Integration
+import com.hypertrack.android.use_case.handle_push.EnterTime
+import com.hypertrack.android.use_case.handle_push.ExitTime
+import com.hypertrack.android.use_case.handle_push.GeofenceVisitNotification
+import com.hypertrack.android.use_case.handle_push.HandlePushUseCase
+import com.hypertrack.android.use_case.handle_push.HandlePushUseCase.Companion.TRIP_NOTIFICATION_ID
+import com.hypertrack.android.use_case.handle_push.OutageNotification
+import com.hypertrack.android.use_case.handle_push.TripUpdateNotification
 import com.hypertrack.android.utils.Injector
 import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.utils.NotificationUtil
+import com.hypertrack.android.utils.OsUtilsProvider
+import com.hypertrack.android.utils.OsUtilsProviderTest.Companion.resourceProvider
+import com.hypertrack.android.utils.ResourceProvider
 import com.hypertrack.android.utils.createAnyMapAdapter
+import com.hypertrack.android.utils.datetime.toIso
+import com.hypertrack.android.utils.formatters.DateTimeFormatter
+import com.hypertrack.android.utils.formatters.DateTimeFormatterImplTest.Companion.testDatetimeFormatter
 import com.hypertrack.logistics.android.github.R
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,6 +30,7 @@ import io.mockk.verify
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import java.time.ZonedDateTime
 
 class HandlePushUseCaseTest {
 
@@ -101,7 +115,82 @@ class HandlePushUseCaseTest {
         test("service_lost_by_os")
     }
 
+    @Test
+    fun `handle geofence visit notification`() {
+        fun test(
+            enter: ZonedDateTime,
+            exit: ZonedDateTime? = null,
+            name: String? = null,
+            integration: Integration? = null,
+            expectedText: String? = null,
+            expectedTitle: String? = null,
+        ) {
+            runBlocking {
+                val notificationUtil = notificationUtil()
+
+                val notificationData = geofenceVisitNotificationData(
+                    enter = enter,
+                    exit = exit,
+                    name = name,
+                    integration = integration
+                )
+                handlePushUseCase(
+                    notificationUtil = notificationUtil
+                ).execute(remoteMessage = mockk() {
+                    every { data } returns mapOf(
+                        "type" to "geofence_visit",
+                        "data" to Injector.getMoshi().createAnyMapAdapter().toJson(
+                            notificationData
+                        )
+                    )
+                }).collect()
+
+                verify {
+                    notificationUtil.sendNotification(
+                        context = any(),
+                        id = any(),
+                        text = expectedText ?: any(),
+                        title = expectedTitle ?: any(),
+                        data = GeofenceVisitNotification(
+                            geofenceId = "id",
+                            geofenceName = name ?: integration?.name,
+                            geofenceVisitTime = if (exit == null) {
+                                EnterTime(enter)
+                            } else {
+                                ExitTime(enter, exit)
+                            }
+                        ),
+                        type = GeofenceVisitNotification::class.java.simpleName,
+                        autoCancel = true
+                    )
+                }
+            }
+        }
+
+        test(
+            enter = TEST_DATETIME,
+            exit = null,
+            expectedTitle = R.string.notification_geofence_enter.toString(),
+            expectedText = resourceProvider().stringFromResource(
+                R.string.notification_geofence_visit_text_without_name,
+                testDatetimeFormatter().formatTime(TEST_DATETIME)
+            )
+        )
+
+        test(
+            enter = TEST_DATETIME,
+            exit = TEST_DATETIME.plusDays(1),
+            expectedTitle = R.string.notification_geofence_exit.toString(),
+            expectedText = resourceProvider().stringFromResource(
+                R.string.notification_geofence_visit_text_without_name,
+                testDatetimeFormatter().formatTime(TEST_DATETIME.plusDays(1))
+            )
+        )
+    }
+
     companion object {
+        private val TEST_DATETIME = ZonedDateTime.now()
+
         fun outageNotification(map: Map<String, Any>): OutageNotification {
             return map.getValue("inactive_reason")
                 .let { it as Map<String, String> }
@@ -114,6 +203,33 @@ class HandlePushUseCaseTest {
                         outageType = inactiveReason.getValue("type")
                     )
                 }
+        }
+
+        fun geofenceVisitNotificationData(
+            enter: ZonedDateTime,
+            exit: ZonedDateTime? = null,
+            name: String? = null,
+            integration: Integration? = null,
+        ): Map<String, Any> {
+            return mutableMapOf(
+                "arrival" to mapOf(
+                    "recorded_at" to enter
+                        .format(java.time.format.DateTimeFormatter.ISO_DATE_TIME)
+                ),
+                "geofence_id" to "id",
+                "geofence_metadata" to mapOf(
+                    "name" to name,
+                    "integration" to integration
+                )
+            ).apply {
+                exit?.let {
+                    put(
+                        "exit", mapOf(
+                            "recorded_at" to it.format(java.time.format.DateTimeFormatter.ISO_DATE_TIME)
+                        )
+                    )
+                }
+            }
         }
 
         fun outageNotificationData(
@@ -164,20 +280,21 @@ class HandlePushUseCaseTest {
                 },
                 isLoggedInCheck = { true },
                 moshi = Injector.getMoshi(),
-                crashReportsProvider = mockk() {
+                // todo make static in CrashReportsProvideTest
+                crashReportsProvider = mockk {
                     every { logException(any()) } answers {
                         throw firstArg<Exception>()
                     }
-                },
-                notificationUtil = notificationUtil,
-                resourceProvider = mockk() {
-                    every { stringFromResource(any()) } answers {
-                        firstArg<Int>().toString()
+                    every { log(any()) } answers {
+                        println(firstArg<String>())
                     }
                 },
+                notificationUtil = notificationUtil,
+                resourceProvider = resourceProvider(),
                 tripsInteractorProvider = {
                     tripsInteractor
-                }
+                },
+                dateTimeFormatter = testDatetimeFormatter()
             )
         }
     }

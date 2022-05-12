@@ -55,40 +55,39 @@ class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_
         rvIntegrations.setLinearLayoutManager(requireContext())
         rvIntegrations.adapter = adapter
 
-        vm.integrations.observe(viewLifecycleOwner, {
+        vm.integrations.observe(viewLifecycleOwner) {
             adapter.updateItems(it)
             lIntegrationsPlaceholder.setGoneState(it.isNotEmpty())
-        })
+        }
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.loadingState.observe(viewLifecycleOwner) {
             srlIntegrations.isRefreshing = it
             rvIntegrations.setGoneState(it)
             if (it) lIntegrationsPlaceholder.hide()
+        }
 
-//            progress.setGoneState(!it)
-//            if (it) {
-//                loader.playAnimation()
-//            } else {
-//                loader.cancelAnimation()
-//            }
-        })
-
-        vm.error.observe(viewLifecycleOwner, {
+        vm.error.observe(viewLifecycleOwner) {
             it.consume { e ->
                 SnackbarUtil.showErrorSnackbar(view, e.message)
             }
-        })
+        }
 
-        vm.integrationSelectedEvent.observe(viewLifecycleOwner, {
+        vm.integrationSelectedEvent.observe(viewLifecycleOwner) {
             it.consume { integration ->
                 findNavController().previousBackStackEntry?.savedStateHandle?.set(
                     AddPlaceInfoFragment.KEY_INTEGRATION,
                     integration
                 )
                 findNavController().popBackStack()
-                Utils.hideKeyboard(requireActivity())
+                /**
+                 * showing and hiding the keyboard is disabled because of issues on some devices
+                 * (the cause is unknown yet)
+                 * when calling this method caused blocking keyboard state
+                 * and it wasn't showed even on view click
+                 */
+//                Utils.hideKeyboard(requireActivity())
             }
-        })
+        }
 
         srlIntegrations.setOnRefreshListener {
             vm.onRefresh(etSearch.textString())
@@ -100,6 +99,12 @@ class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_
             }
         })
 
-        Utils.showKeyboard(requireActivity(), etSearch)
+        /**
+         * showing and hiding the keyboard is disabled because of issues on some devices
+         * (the cause is unknown yet)
+         * when calling this method caused blocking keyboard state
+         * and it wasn't showed even on view click
+         */
+//        Utils.showKeyboard(requireActivity(), etSearch)
     }
 }

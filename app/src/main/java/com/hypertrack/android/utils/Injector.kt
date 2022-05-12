@@ -35,7 +35,7 @@ import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.select_destination.DestinationData
-import com.hypertrack.android.use_case.HandlePushUseCase
+import com.hypertrack.android.use_case.handle_push.HandlePushUseCase
 import com.hypertrack.android.utils.formatters.*
 import com.hypertrack.logistics.android.github.R
 import com.hypertrack.sdk.HyperTrack
@@ -595,6 +595,7 @@ object Injector {
             getOsUtilsProvider(MyApplication.context),
             NotificationUtil,
             { userScope?.tripsInteractor },
+            appScope.dateTimeFormatter,
             { getAccountRepo(appScope.appContext).isLoggedIn }
         )
     }

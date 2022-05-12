@@ -148,7 +148,6 @@ class GeofenceMetadata(
             .toJsonValue(this) as Map<String, Any>
     }
 
-
     companion object {
         const val KEY_ADDRESS = "address"
         const val KEY_NAME = "name"
@@ -199,7 +198,7 @@ class GeofenceMetadata(
     }
 }
 
-const val KEY_NOTE = "note"
-const val KEY_PHOTOS = "photos"
-const val KEY_USER_LOCATION = "user_location"
+private const val KEY_NOTE = "note"
+private const val KEY_PHOTOS = "photos"
+private const val KEY_USER_LOCATION = "user_location"
 

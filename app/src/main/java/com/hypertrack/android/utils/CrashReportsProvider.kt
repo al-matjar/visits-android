@@ -1,5 +1,6 @@
 package com.hypertrack.android.utils
 
+import android.util.Log
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.squareup.moshi.JsonClass
 import kotlinx.coroutines.CancellationException
@@ -37,9 +38,9 @@ class FirebaseCrashReportsProvider : CrashReportsProvider {
 
     //todo keys to enum
     override fun log(txt: String) {
-//        if(MyApplication.DEBUG_MODE) {
-//            Log.v("hypertrack-verbose", txt)
-//        }
+        if (MyApplication.DEBUG_MODE) {
+            Log.v(javaClass.simpleName, txt)
+        }
         FirebaseCrashlytics.getInstance().log(txt)
     }
 

@@ -194,7 +194,7 @@
         android:label="OutageFragment">
         <argument
             android:name="outageNotification"
-            app:argType="com.hypertrack.android.use_case.OutageNotification" />
+            app:argType="com.hypertrack.android.use_case.handle_push.OutageNotification" />
     </fragment>
     <action
         android:id="@+id/action_global_outageFragment"

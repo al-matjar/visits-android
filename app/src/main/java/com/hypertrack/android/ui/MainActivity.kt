@@ -1,29 +1,27 @@
 package com.hypertrack.android.ui
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.AttributeSet
-import android.view.View
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavDestination
-import androidx.navigation.findNavController
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.ui.base.NavActivity
-import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.screens.splash_screen.SplashScreenViewModel
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragment
-import com.hypertrack.android.use_case.HandlePushUseCase
-import com.hypertrack.android.use_case.OutageNotification
-import com.hypertrack.android.use_case.TripUpdateNotification
+import com.hypertrack.android.use_case.handle_push.EnterTime
+import com.hypertrack.android.use_case.handle_push.ExitTime
+import com.hypertrack.android.use_case.handle_push.GeofenceVisitNotification
+import com.hypertrack.android.use_case.handle_push.OutageNotification
+import com.hypertrack.android.use_case.handle_push.TripUpdateNotification
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.NotificationUtil.KEY_NOTIFICATION_DATA
 import com.hypertrack.android.utils.NotificationUtil.KEY_NOTIFICATION_TYPE
+import com.hypertrack.android.utils.datetime.dateTimeFromString
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import com.hypertrack.logistics.android.github.R
-import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
 
 class MainActivity : NavActivity() {
 
@@ -66,11 +64,13 @@ class MainActivity : NavActivity() {
     override fun onStart() {
         super.onStart()
         try {
+            crashReportsProvider.log("activity start")
             lifecycleScope.launch {
                 deepLinkProcessor.activityOnStart(this@MainActivity).let {
                     onDeeplinkResult(it)
                 }
             }
+            splashScreenViewModel.activityOnStart()
         } catch (e: Exception) {
             crashReportsProvider.logException(e)
         }
@@ -79,7 +79,6 @@ class MainActivity : NavActivity() {
     override fun onResume() {
         super.onResume()
         inForeground = true
-        splashScreenViewModel.activityOnResume()
         crashReportsProvider.log("activity resume")
     }
 
@@ -142,6 +141,20 @@ class MainActivity : NavActivity() {
                     if (notificationData != null) {
                         navController.navigate(
                             NavGraphDirections.actionGlobalOutageFragment(notificationData)
+                        )
+                    } else {
+                        crashReportsProvider.logException(NullPointerException())
+                    }
+                }
+                GeofenceVisitNotification::class.java.simpleName -> {
+                    val notificationData = intent.getParcelableExtra<GeofenceVisitNotification>(
+                        KEY_NOTIFICATION_DATA
+                    )
+                    if (notificationData != null) {
+                        navController.navigate(
+                            NavGraphDirections.actionGlobalPlaceDetailsFragment(
+                                notificationData.geofenceId
+                            )
                         )
                     } else {
                         crashReportsProvider.logException(NullPointerException())
