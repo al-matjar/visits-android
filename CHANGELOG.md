@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.16.3] - 2022-05-17
+
+### Added
+
+- Geofence visit notifications
+
+### Fixed
+
+- Screen flickering when permissions are denied
+- Keyboard not showing on Add Integration screen for some devices
+
 ## [0.16.2] - 2022-05-10
 
 ### Added
