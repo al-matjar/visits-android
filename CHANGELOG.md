@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.4] - 2022-05-24
+
+### Changed
+
+- Notifications now use new payload format
+
 ## [0.16.3] - 2022-05-17
 
 ### Added
