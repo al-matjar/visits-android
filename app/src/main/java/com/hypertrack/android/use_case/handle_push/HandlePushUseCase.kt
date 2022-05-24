@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.interactors.TripsInteractor
+import com.hypertrack.android.models.LiveAppBackendNotification
 import com.hypertrack.android.models.OutageType
 import com.hypertrack.android.models.webhook.GeofenceWebhook
 import com.hypertrack.android.models.webhook.OutageWebhook
@@ -11,6 +12,7 @@ import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
+import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.NotificationUtil
 import com.hypertrack.android.utils.ResourceProvider
 import com.hypertrack.android.utils.Result
@@ -47,14 +49,23 @@ class HandlePushUseCase(
     fun execute(remoteMessage: RemoteMessage): Flow<Unit> {
         return suspend {
             crashReportsProvider.log("Got push notification: ${remoteMessage.data}")
-            getPushData(remoteMessage)
+            getRemoteMessageData(remoteMessage)
         }.asFlow().flatMapSuccess { data ->
-            parseNotificationData(data)
+            deserializeNotification(data)
         }.flatMapSimpleSuccess { notification ->
             handleNotification(notification)
         }.flatMapConcat {
             when (it) {
                 is JustFailure -> {
+                    if (MyApplication.DEBUG_MODE) {
+                        NotificationUtil.sendNotification(
+                            context,
+                            DEBUG_NOTIFICATION_ID,
+                            title = "Unknown notification",
+                            text = remoteMessage.data.toString(),
+                            type = "debug"
+                        )
+                    }
                     crashReportsProvider.logException(it.exception)
                 }
                 JustSuccess -> {
@@ -64,7 +75,7 @@ class HandlePushUseCase(
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    private fun getPushData(remoteMessage: RemoteMessage): Result<Map<String, String>> {
+    private fun getRemoteMessageData(remoteMessage: RemoteMessage): Result<Map<String, String>> {
         return tryAsResult {
             remoteMessage.data.ifEmpty {
                 try {
@@ -86,56 +97,57 @@ class HandlePushUseCase(
         }
     }
 
-    private fun parseNotificationData(data: Map<String, String>): Flow<Result<PushNotification>> {
+    private fun deserializeNotification(data: Map<String, String>): Flow<Result<PushNotification>> {
         return tryAsResult {
             when {
                 data[KEY_HYPERTRACK] != null -> {
                     SdkNotification.asSuccess()
                 }
-                data[KEY_NOTIFICATION_TYPE] != null
-                        && data[KEY_PUSH_DATA] != null -> {
-                    val type = data[KEY_NOTIFICATION_TYPE]
-                    val pushData = moshi.createAnyMapAdapter()
-                        .fromJson(data.getValue(KEY_PUSH_DATA) as String) ?: mapOf()
-                    when (type) {
-                        TYPE_OUTAGE -> {
-                            moshi.adapter(OutageWebhook::class.java)
-                                .fromJsonValue(pushData)?.let {
-                                    OutageNotification(
-                                        outageCode = it.inactiveReason.outageCode,
-                                        outageType = it.inactiveReason.outageType,
-                                        outageDisplayName = it.inactiveReason.outageDisplayName,
-                                        outageDeveloperDescription = it.inactiveReason
-                                            .outageDeveloperDescription,
-                                        userActionRequired = it.inactiveReason.userActionRequired,
-                                    ).asSuccess()
-                                } ?: Failure(NullPointerException("moshi: $data"))
-                        }
-                        TYPE_GEOFENCE_VISIT -> {
-                            moshi.adapter(GeofenceWebhook::class.java)
-                                .fromJsonValue(pushData)?.let { webhook ->
-                                    GeofenceVisitNotification(
-                                        geofenceId = webhook.geofenceId,
-                                        geofenceVisitTime = if (webhook.exit == null) {
-                                            EnterTime(dateTimeFromString(webhook.arrival.recordedAt))
-                                        } else {
-                                            ExitTime(
-                                                enterDateTime = dateTimeFromString(webhook.arrival.recordedAt),
-                                                exitDateTime = dateTimeFromString(webhook.exit.recordedAt),
-                                            )
-                                        },
-                                        geofenceName = webhook.metadata?.name
-                                            ?: webhook.metadata?.integration?.name
-                                    ).asSuccess()
-                                } ?: Failure(NullPointerException("moshi: $data"))
-                        }
-                        else -> {
-                            UnknownPushNotificationException(data).asFailure()
-                        }
-                    }
-                }
-                data[KEY_VISITS] != null -> {
-                    TripUpdateNotification.asSuccess()
+                data[KEY_PUSH] != null -> {
+                    moshi.adapter(LiveAppBackendNotification::class.java)
+                        .fromJson(data.getValue(KEY_PUSH))
+                        ?.let { labNotification ->
+                            val labPushData = labNotification.data ?: mapOf()
+                            when (labNotification.type) {
+                                TYPE_TRIP_UPDATE -> {
+                                    TripUpdateNotification.asSuccess()
+                                }
+                                TYPE_OUTAGE -> {
+                                    moshi.adapter(OutageWebhook::class.java)
+                                        .fromJsonValue(labPushData)?.let {
+                                            OutageNotification(
+                                                outageCode = it.inactiveReason.outageCode,
+                                                outageType = it.inactiveReason.outageType,
+                                                outageDisplayName = it.inactiveReason.outageDisplayName,
+                                                outageDeveloperDescription = it.inactiveReason
+                                                    .outageDeveloperDescription,
+                                                userActionRequired = it.inactiveReason.userActionRequired,
+                                            ).asSuccess()
+                                        } ?: Failure(NullPointerException("moshi: $data"))
+                                }
+                                TYPE_GEOFENCE_VISIT -> {
+                                    moshi.adapter(GeofenceWebhook::class.java)
+                                        .fromJsonValue(labPushData)?.let { webhook ->
+                                            GeofenceVisitNotification(
+                                                geofenceId = webhook.geofenceId,
+                                                geofenceVisitTime = if (webhook.exit == null) {
+                                                    EnterTime(dateTimeFromString(webhook.arrival.recordedAt))
+                                                } else {
+                                                    ExitTime(
+                                                        enterDateTime = dateTimeFromString(webhook.arrival.recordedAt),
+                                                        exitDateTime = dateTimeFromString(webhook.exit.recordedAt),
+                                                    )
+                                                },
+                                                geofenceName = webhook.metadata?.name
+                                                    ?: webhook.metadata?.integration?.name
+                                            ).asSuccess()
+                                        } ?: Failure(NullPointerException("moshi: $data"))
+                                }
+                                else -> {
+                                    UnknownPushNotificationException(data).asFailure()
+                                }
+                            }
+                        } ?: throw NullPointerException()
                 }
                 else -> {
                     UnknownPushNotificationException(data).asFailure()
@@ -233,13 +245,13 @@ class HandlePushUseCase(
     }
 
     companion object {
+        const val DEBUG_NOTIFICATION_ID = 0
         const val TRIP_NOTIFICATION_ID = 1
 
-        private const val KEY_PUSH_DATA = "data"
+        private const val KEY_PUSH = "lab_notification"
         private const val KEY_HYPERTRACK = "hypertrack"
-        private const val KEY_NOTIFICATION_TYPE = "type"
-        private const val KEY_VISITS = "visits"
 
+        private const val TYPE_TRIP_UPDATE = "trip_update"
         private const val TYPE_OUTAGE = "outage"
         private const val TYPE_GEOFENCE_VISIT = "geofence_visit"
     }

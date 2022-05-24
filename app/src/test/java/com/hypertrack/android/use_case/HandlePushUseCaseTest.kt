@@ -2,6 +2,7 @@ package com.hypertrack.android.use_case
 
 import android.app.NotificationManager
 import android.content.Intent
+import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.interactors.TripsInteractor
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.use_case.handle_push.EnterTime
@@ -14,12 +15,8 @@ import com.hypertrack.android.use_case.handle_push.TripUpdateNotification
 import com.hypertrack.android.utils.Injector
 import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.utils.NotificationUtil
-import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.OsUtilsProviderTest.Companion.resourceProvider
-import com.hypertrack.android.utils.ResourceProvider
 import com.hypertrack.android.utils.createAnyMapAdapter
-import com.hypertrack.android.utils.datetime.toIso
-import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DateTimeFormatterImplTest.Companion.testDatetimeFormatter
 import com.hypertrack.logistics.android.github.R
 import io.mockk.coEvery
@@ -45,11 +42,12 @@ class HandlePushUseCaseTest {
             handlePushUseCase(
                 tripsInteractor = tripsInteractor,
                 notificationUtil = notificationUtil
-            ).execute(remoteMessage = mockk() {
-                every { data } returns mapOf(
-                    "visits" to "refresh"
+            ).execute(
+                remoteMessage(
+                    type = "trip_update",
+                    pushData = null
                 )
-            }).collect()
+            ).collect()
 
             coVerify(exactly = 1) { tripsInteractor.refreshTrips() }
             verify {
@@ -75,14 +73,12 @@ class HandlePushUseCaseTest {
 
                 handlePushUseCase(
                     notificationUtil = notificationUtil
-                ).execute(remoteMessage = mockk() {
-                    every { data } returns mapOf(
-                        "type" to "outage",
-                        "data" to Injector.getMoshi().createAnyMapAdapter().toJson(
-                            notificationData
-                        )
+                ).execute(
+                    remoteMessage(
+                        type = "outage",
+                        pushData = notificationData
                     )
-                }).collect()
+                ).collect()
 
                 val notification = outageNotification(notificationData)
                 verify {
@@ -136,14 +132,12 @@ class HandlePushUseCaseTest {
                 )
                 handlePushUseCase(
                     notificationUtil = notificationUtil
-                ).execute(remoteMessage = mockk() {
-                    every { data } returns mapOf(
-                        "type" to "geofence_visit",
-                        "data" to Injector.getMoshi().createAnyMapAdapter().toJson(
-                            notificationData
-                        )
+                ).execute(
+                    remoteMessage(
+                        type = "geofence_visit",
+                        pushData = notificationData
                     )
-                }).collect()
+                ).collect()
 
                 verify {
                     notificationUtil.sendNotification(
@@ -244,6 +238,20 @@ class HandlePushUseCaseTest {
                     "type" to (type ?: "service_lost_by_os")
                 )
             )
+        }
+
+        private fun remoteMessage(type: String, pushData: Map<String, Any>?): RemoteMessage {
+            return mockk {
+                every { data } returns mapOf(
+                    "lab_notification" to mutableMapOf<String, Any>(
+                        "type" to type
+                    ).also { labNotification ->
+                        pushData?.let { labNotification["data"] = it }
+                    }.let {
+                        Injector.getMoshi().createAnyMapAdapter().toJson(it)
+                    }
+                )
+            }
         }
 
         fun notificationUtil(): NotificationUtil {
