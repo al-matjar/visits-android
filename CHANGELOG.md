@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.17.0] - 2022-06-04
+
+### Fixed
+
+- Fix Sign in screen showing on deeplink login
+- Fix tracking state indicator
+
+### Changed
+
+- Hypertrack SDK 6.0.4
+
 ## [0.16.4] - 2022-05-24
 
 ### Changed
