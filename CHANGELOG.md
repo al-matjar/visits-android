@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.17.2] - 2022-06-06
+
+### Fixed
+
+- Fix error and logout on app update
+
 ## [0.17.1] - 2022-06-06
 
 ### Fixed
