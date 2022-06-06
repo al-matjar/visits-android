@@ -16,6 +16,8 @@ class MyApplication : Application() {
         newInjector.appOnCreate(this)
     }
 
+    override fun toString(): String = javaClass.simpleName
+
     companion object {
         const val TAG = "MyApplication"
         const val CHANNEL_ID = "default_notification_channel"

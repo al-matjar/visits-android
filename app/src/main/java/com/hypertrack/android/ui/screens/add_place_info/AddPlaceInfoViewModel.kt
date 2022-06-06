@@ -56,6 +56,7 @@ class AddPlaceInfoViewModel(
     private val reducer = AddPlaceInfoReducer(resourceProvider, distanceFormatter)
     private val stateMachine = StateMachine<Action, State, Effect>(
         javaClass.simpleName,
+        crashReportsProvider,
         Initial,
         viewModelScope,
         Dispatchers.Main,

@@ -54,6 +54,7 @@ class GraphQlHistoryInteractor(
 
     private val stateMachine = StateMachine<Action, HistoryState, Effect>(
         javaClass.simpleName,
+        crashReportsProvider,
         HistoryState(mapOf()),
         scope,
         stateMachineContext,

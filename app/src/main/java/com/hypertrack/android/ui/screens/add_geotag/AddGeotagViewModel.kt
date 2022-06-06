@@ -41,6 +41,7 @@ class AddGeotagViewModel(
 
     private val stateMachine = StateMachine<Action, State, Effect>(
         this::class.java.simpleName,
+        crashReportsProvider,
         InitialState,
         viewModelScope,
         Dispatchers.Main,

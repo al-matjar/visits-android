@@ -7,6 +7,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDirections
 import com.google.android.datatransport.runtime.Destination
 import com.hypertrack.android.interactors.app.AppErrorAction
+import com.hypertrack.android.interactors.app.UserLoggedIn
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.Consumable
@@ -37,7 +38,12 @@ class HandleNotificationClickUseCase(
     private val destination: MutableLiveData<Consumable<NavDirections>>,
 ) {
 
-    fun execute(intent: Intent, currentFragment: Fragment): Flow<AppErrorAction?> {
+    fun execute(
+        // to allow execution only in this state
+        userLoggedIn: UserLoggedIn,
+        intent: Intent,
+        currentFragment: Fragment
+    ): Flow<AppErrorAction?> {
         return {
             intent.getStringExtra(KEY_NOTIFICATION_TYPE)?.let { type ->
                 when (type) {

@@ -162,6 +162,7 @@ class HandlePushUseCase(
         state: UserLoggedIn,
         notification: PushNotification
     ): Flow<SimpleResult> {
+        crashReportsProvider.log("Parsed notification: $notification")
         return when (notification) {
             TripUpdateNotification -> {
                 state.userScope.tripsInteractor.refreshTrips()
@@ -251,5 +252,13 @@ class HandlePushUseCase(
         private const val TYPE_GEOFENCE_VISIT = "geofence_visit"
     }
 
+}
+
+fun RemoteMessage.formatToString(): String {
+    return listOfNotNull(
+        data.toString(),
+        notification?.title,
+        notification?.body
+    ).toString()
 }
 

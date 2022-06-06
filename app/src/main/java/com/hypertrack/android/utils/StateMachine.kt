@@ -26,6 +26,7 @@ data class ReducerResult<S, E>(val newState: S, val effects: Set<E>) {
 //todo dedicated package
 class StateMachine<A, S, E>(
     private val tag: String,
+    private val crashReportsProvider: CrashReportsProvider,
     initialState: S,
     private val scope: CoroutineScope,
     private val context: CoroutineContext,
@@ -45,19 +46,25 @@ class StateMachine<A, S, E>(
                 _state = it.newState
                 val effects = stateChangeEffects.invoke(it.newState) + it.effects
                 applyEffects(effects)
-                if (BuildConfig.DEBUG) {
-                    val msg = StringBuilder()
-                    msg.appendLine(tag)
-                    msg.appendLine("v $action")
-                    msg.appendLine("= ${it.newState}")
-                    msg.appendLine("effects: [")
-                    effects.forEach { effect ->
-                        msg.appendLine("\t> $effect")
-                    }
-                    msg.appendLine("]")
-                    Log.v("hypertrack-sm", msg.toString())
-                }
+                log(format(action, it.newState, effects))
             }
         }
+    }
+
+    private fun format(action: A, newState: S, effects: Set<E>): String {
+        val msg = StringBuilder()
+        msg.appendLine(tag)
+        msg.appendLine("v $action")
+        msg.appendLine("= $newState")
+        msg.appendLine("effects: [")
+        effects.forEach { effect ->
+            msg.appendLine("\t> $effect")
+        }
+        msg.appendLine("]")
+        return msg.toString()
+    }
+
+    private fun log(txt: String) {
+        crashReportsProvider.log(txt)
     }
 }

@@ -2,6 +2,7 @@ package com.hypertrack.android.ui.activity
 
 import android.app.Activity
 import android.content.Intent
+import android.icu.text.UnicodeSetIterator
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
@@ -63,7 +64,9 @@ class ActivityViewModel(
 
     fun onCreate(intent: Intent?, currentFragment: Fragment) {
         intent?.let {
-            handleEffect(handleNotificationClickUseCase.execute(intent, currentFragment))
+            ifLoggedIn {
+                handleEffect(handleNotificationClickUseCase.execute(it, intent, currentFragment))
+            }
         }
     }
 
@@ -86,7 +89,15 @@ class ActivityViewModel(
         Log.v(javaClass.simpleName, "onNewIntent")
         intent?.let {
             if (isFromPushMessage(intent)) {
-                handleEffect(handleNotificationClickUseCase.execute(intent, currentFragment))
+                ifLoggedIn {
+                    handleEffect(
+                        handleNotificationClickUseCase.execute(
+                            it,
+                            intent,
+                            currentFragment
+                        )
+                    )
+                }
             } else {
                 branchWrapper.activityOnNewIntent(activity, intent) {
                     appInteractor.handleAction(DeeplinkCheckedAction(it))
@@ -131,6 +142,24 @@ class ActivityViewModel(
                 }
             }
             is NotInitialized -> {
+            }
+        }
+    }
+
+    private fun ifLoggedIn(block: (UserLoggedIn) -> Unit) {
+        appState.requireValue().let {
+            when (it) {
+                is Initialized -> {
+                    when (it.userState) {
+                        is UserLoggedIn -> {
+                            block.invoke(it.userState)
+                        }
+                        UserNotLoggedIn -> {
+                        }
+                    }
+                }
+                is NotInitialized -> {
+                }
             }
         }
     }

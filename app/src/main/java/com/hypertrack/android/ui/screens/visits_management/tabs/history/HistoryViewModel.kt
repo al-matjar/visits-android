@@ -69,6 +69,7 @@ class HistoryViewModel(
 
     private val stateMachine = StateMachine<Action, State, Effect>(
         javaClass.simpleName,
+        crashReportsProvider,
         Initial(LocalDate.now(), Loading(), null),
         viewModelScope,
         Dispatchers.Main,

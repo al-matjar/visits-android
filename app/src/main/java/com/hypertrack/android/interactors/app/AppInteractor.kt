@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
 import com.hypertrack.android.di.AppScope
+import com.hypertrack.android.di.Injector.crashReportsProvider
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.toConsumable
 import com.hypertrack.android.use_case.app.InitAppUseCase
@@ -44,6 +45,7 @@ class AppInteractor(
     private val appReducer = AppReducer(useCases, appScope)
     private val appStateMachine = StateMachine<AppAction, AppState, Effect>(
         "AppState",
+        appScope.crashReportsProvider,
         initialState,
         appScope.appCoroutineScope,
         Dispatchers.Default,

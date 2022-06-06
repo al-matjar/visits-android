@@ -67,6 +67,7 @@ class SignInViewModel(
 
     private val stateMachine = StateMachine<Action, State, Effect>(
         javaClass.simpleName,
+        crashReportsProvider,
         State(
             login = "",
             password = "",

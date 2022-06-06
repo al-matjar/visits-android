@@ -31,10 +31,6 @@ class NavigateToUserScopeScreensUseCase {
             }
         }.mapSuccess {
             when (it) {
-                DoNothing -> TODO()
-                SignIn -> {
-                    NavGraphDirections.actionGlobalSignInFragment()
-                }
                 VisitsManagement -> {
                     NavGraphDirections.actionGlobalVisitManagementFragment()
                 }
