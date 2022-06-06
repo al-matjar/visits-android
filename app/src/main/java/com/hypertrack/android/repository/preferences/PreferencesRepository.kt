@@ -1,5 +1,6 @@
 package com.hypertrack.android.repository.preferences
 
+import com.hypertrack.android.interactors.app.Email
 import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.models.auth.BasicAuthAccessTokenConfig
 import com.hypertrack.android.repository.MyPreferences
@@ -10,6 +11,7 @@ import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.asSuccess
 import com.hypertrack.android.utils.tryAsResult
 import com.squareup.moshi.Moshi
+import org.json.JSONObject
 
 class PreferencesRepository(
     private val myPreferences: MyPreferences,
@@ -70,6 +72,17 @@ class PreferencesRepository(
         KEY_USER_DATA,
         preferences
     ) {
+        override fun load(): Result<UserData?> {
+            return super.load().flatMap {
+                it?.let { Success(it) }
+                    ?: tryAsResult {
+                        getLegacyUserData().also { legacyUserData ->
+                            save(legacyUserData)
+                        }
+                    }
+            }
+        }
+
         override fun serialize(data: UserData): Result<String> {
             return tryAsResult {
                 moshi.adapter(UserData::class.java).toJson(data)
@@ -111,8 +124,21 @@ class PreferencesRepository(
         }
     }
 
+    private fun getLegacyUserData(): UserData? {
+        return preferences.getString(LEGACY_USER_KEY, null)?.let {
+            UserData(
+                email = Email(JSONObject(it).getString(LEGACY_KEY_EMAIL)),
+                phone = null,
+                metadata = null
+            )
+        }
+    }
+
+
     companion object {
-        private const val PREFIX = "com.hypertrack.android"
+        private const val LEGACY_KEY_EMAIL = "email"
+        private const val LEGACY_USER_KEY = "com.hypertrack.android.utils.user"
+        private const val PREFIX = "com.hypertrack.android."
         private const val KEY_UNITS_IMPERIAL = PREFIX + "units_imperial"
         private const val KEY_ACCESS_TOKEN = PREFIX + "access_token"
         private const val KEY_USER_DATA = PREFIX + "user_data"
