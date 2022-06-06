@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.17.1] - 2022-06-06
+
+### Fixed
+
+- Fix crash on notification click when user is not logged in
+
 ## [0.17.0] - 2022-06-04
 
 ### Fixed
