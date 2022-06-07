@@ -3,9 +3,7 @@
 package com.hypertrack.android.utils
 
 import android.util.Log
-import com.hypertrack.android.interactors.app.AppErrorAction
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
@@ -84,5 +82,3 @@ fun <T> Flow<T>.log(tag: String): Flow<T> {
         it
     }
 }
-
-

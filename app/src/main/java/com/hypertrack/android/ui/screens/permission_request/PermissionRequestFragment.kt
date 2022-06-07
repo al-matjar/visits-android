@@ -14,7 +14,7 @@ import kotlinx.android.synthetic.main.fragment_permission_request.*
 class PermissionRequestFragment : ProgressDialogFragment(R.layout.fragment_permission_request) {
 
     private val vm: PermissionRequestViewModel by viewModels {
-        Injector.provideUserScopeViewModelFactory()
+        Injector.provideViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -32,13 +32,13 @@ class PermissionRequestFragment : ProgressDialogFragment(R.layout.fragment_permi
             btnAllow.setGoneState(!show)
         }
 
-        btnSkip.setOnClickListener { vm.onSkipClicked() }
-        btnAllow.setOnClickListener { vm.requestPermissions(mainActivity()) }
+        btnSkip.setOnClickListener { vm.handleAction(OnSkipClickedAction) }
+        btnAllow.setOnClickListener { vm.handleAction(RequestPermissionsAction(mainActivity())) }
 
     }
 
     override fun onResume() {
         super.onResume()
-        vm.onResume(mainActivity())
+        vm.handleAction(OnResumeAction(mainActivity()))
     }
 }

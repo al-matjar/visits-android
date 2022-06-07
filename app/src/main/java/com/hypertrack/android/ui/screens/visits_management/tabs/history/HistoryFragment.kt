@@ -64,7 +64,7 @@ import java.time.LocalDate
 class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
 
     private val vm: HistoryViewModel by viewModels {
-        Injector.provideUserScopeViewModelFactory()
+        Injector.provideViewModelFactory()
     }
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>

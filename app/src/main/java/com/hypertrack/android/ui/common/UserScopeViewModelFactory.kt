@@ -65,18 +65,6 @@ class UserScopeViewModelFactory(
                 appScope.geocodingInteractor,
                 userScope.deviceLocationProvider,
             ) as T
-            CurrentTripViewModel::class.java -> CurrentTripViewModel(
-                baseDependencies,
-                appInteractor.appState,
-                appScope.appCoroutineScope,
-                userScope.tripsInteractor,
-                userScope.placesInteractor,
-                appScope.geocodingInteractor,
-                userScope.tripsUpdateTimerInteractor,
-                userScope.deviceLocationProvider,
-                appScope.dateTimeFormatter,
-                appScope.timeFormatter
-            ) as T
             SelectDestinationViewModel::class.java -> SelectDestinationViewModel(
                 baseDependencies,
                 userScope.placesInteractor,
@@ -93,41 +81,11 @@ class UserScopeViewModelFactory(
                 appScope.geofenceAddressDelegate,
                 appScope.geofenceNameDelegate
             ) as T
-            PermissionRequestViewModel::class.java -> PermissionRequestViewModel(
-                baseDependencies,
-                userScope.permissionsInteractor,
-                userScope.hyperTrackService
-            ) as T
             SummaryViewModel::class.java -> SummaryViewModel(
                 baseDependencies,
                 userScope.summaryInteractor,
                 appScope.distanceFormatter,
                 appScope.timeFormatter
-            ) as T
-            HistoryViewModel::class.java -> HistoryViewModel(
-                baseDependencies,
-                userScope.historyInteractor,
-                appScope.geocodingInteractor,
-                appScope.geofenceVisitAddressDelegate,
-                appScope.geofenceVisitDisplayDelegate,
-                appScope.deviceStatusMarkerDisplayDelegate,
-                appScope.geotagDisplayDelegate,
-                appScope.timeFormatter,
-                appScope.distanceFormatter,
-                userScope.deviceLocationProvider,
-                appScope.mapItemsFactory,
-                BaseHistoryStyle(appScope.appContext)
-            ) as T
-            VisitsManagementViewModel::class.java -> VisitsManagementViewModel(
-                baseDependencies,
-                appInteractor.appState,
-                userScope.historyInteractorLegacy,
-                userScope.hyperTrackService,
-                appScope.preferencesRepository,
-            ) as T
-            BackgroundPermissionsViewModel::class.java -> BackgroundPermissionsViewModel(
-                baseDependencies,
-                userScope.permissionsInteractor
             ) as T
             ProfileViewModel::class.java -> ProfileViewModel(
                 baseDependencies,

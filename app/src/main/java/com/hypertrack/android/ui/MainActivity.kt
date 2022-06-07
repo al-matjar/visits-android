@@ -122,6 +122,8 @@ class MainActivity : NavActivity() {
         return true
     }
 
+    override fun toString(): String = javaClass.simpleName
+
     companion object {
         var inForeground: Boolean = false
     }

@@ -3,7 +3,6 @@ package com.hypertrack.android.interactors.app
 import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.deeplink.DeeplinkParams
-import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.TripCreationScope
@@ -11,7 +10,6 @@ import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.utils.IllegalActionException
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.ReducerResult
-import java.lang.IllegalStateException
 
 class AppReducer(
     private val useCases: UseCases,

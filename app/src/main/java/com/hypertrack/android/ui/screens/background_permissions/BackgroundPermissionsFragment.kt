@@ -24,7 +24,7 @@ class BackgroundPermissionsFragment :
     BaseFragment<MainActivity>(R.layout.fragment_background_permission) {
 
     private val vm: BackgroundPermissionsViewModel by viewModels {
-        Injector.provideUserScopeViewModelFactory()
+        Injector.provideViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -51,17 +51,18 @@ class BackgroundPermissionsFragment :
         })
 
         btnContinue.setOnClickListener {
-            vm.onAllowClick(mainActivity())
+            vm.handleAction(OnAllowClick(mainActivity()))
         }
     }
 
     //todo migrate to new approach
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        vm.onPermissionResult(mainActivity())
+        vm.handleAction(OnPermissionsResult(mainActivity()))
     }
 }

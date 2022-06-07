@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
 import com.hypertrack.android.di.AppScope
-import com.hypertrack.android.di.Injector.crashReportsProvider
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.toConsumable
 import com.hypertrack.android.use_case.app.InitAppUseCase
@@ -18,6 +17,7 @@ import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.catch
@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class AppInteractor(
-    private val appScope: AppScope,
+    val appScope: AppScope,
 ) {
 
     private val effectsDispatcher = Dispatchers.Default

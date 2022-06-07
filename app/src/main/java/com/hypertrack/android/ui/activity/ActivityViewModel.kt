@@ -2,7 +2,6 @@ package com.hypertrack.android.ui.activity
 
 import android.app.Activity
 import android.content.Intent
-import android.icu.text.UnicodeSetIterator
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData

@@ -22,39 +22,23 @@ import kotlinx.android.synthetic.main.inflate_current_trip.*
 import kotlinx.android.synthetic.main.progress_bar.*
 import kotlinx.coroutines.FlowPreview
 
-@FlowPreview
 class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_trip) {
 
     private lateinit var bottomHolderSheetBehavior: BottomSheetBehavior<*>
 
     private val vm: CurrentTripViewModel by viewModels {
-        Injector.provideUserScopeViewModelFactory()
+        Injector.provideViewModelFactory()
     }
 
     private val ordersAdapter by lazy { vm.createOrdersAdapter() }
 
-    private lateinit var map: GoogleMap
-    private val mapStyleActive by lazy {
-        MapStyleOptions.loadRawResourceStyle(
-            requireContext(),
-            R.raw.style_map
-        )
-    }
-    private val mapStyleInactive by lazy {
-        MapStyleOptions.loadRawResourceStyle(
-            requireContext(),
-            R.raw.style_map_silver
-        )
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        vm.onViewCreated()
+        vm.handleAction(OnViewCreatedAction)
 
         (childFragmentManager.findFragmentById(R.id.googleMap) as SupportMapFragment).getMapAsync {
-            map = it
-            vm.onMapReady(requireContext(), it)
+            vm.handleAction(InitMapAction(requireContext(), it))
         }
 
         bottomHolderSheetBehavior = BottomSheetBehavior.from(bottom_holder)
@@ -63,50 +47,44 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
         recycler_view.setLinearLayoutManager(requireContext())
         recycler_view.adapter = ordersAdapter.apply {
             onItemClickListener = {
-                vm.onOrderClick(it.id)
+                vm.handleAction(OnOrderClickAction(it.id))
             }
         }
 
         bottomHolder.setOnClickListener {
             if (bottomHolderSheetBehavior.state != BottomSheetBehavior.STATE_EXPANDED) {
-                bottomHolderSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED)
-                vm.onTripFocused()
+                bottomHolderSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                vm.handleAction(OnTripFocusedAction)
             } else {
                 bottomHolderSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED)
             }
         }
 
-        vm.userLocation.observe(viewLifecycleOwner, {
-            location_button.setGoneState(it == null)
-        })
-
-        vm.destination.observe(viewLifecycleOwner, {
-            findNavController().navigate(it)
-        })
-
-        vm.tripData.observe(viewLifecycleOwner, {
-            lTrip.setGoneState(it == null)
-            it?.let { displayTrip(it) }
-            googleMap.setPadding(
-                0, 0, 0,
-                if (it != null) {
-                    requireContext().resources
-                        .getDimension(R.dimen.current_trip_bottom_bar_start_height).toInt()
-                } else 0
-            )
-        })
-
-        vm.showWhereAreYouGoing.observe(viewLifecycleOwner, {
-            whereAreYouGoing.setGoneState(!it)
-        })
-
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, {
-            it.consume {
-                SnackbarUtil.showErrorSnackbar(view, it)
+        vm.viewState.observe(viewLifecycleOwner) { viewState ->
+            location_button.setGoneState(viewState.userLocation == null)
+            whereAreYouGoing.setGoneState(!viewState.showWhereAreYouGoingButton)
+            viewState.tripData.let { tripData ->
+                lTrip.setGoneState(tripData == null)
+                tripData?.let { displayTrip(it) }
+                googleMap.setPadding(
+                    0, 0, 0,
+                    if (tripData != null) {
+                        requireContext().resources
+                            .getDimension(R.dimen.current_trip_bottom_bar_start_height).toInt()
+                    } else 0
+                )
             }
-        })
+        }
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.destination.observe(viewLifecycleOwner) {
+            findNavController().navigate(it)
+        }
+
+        vm.errorHandler.errorText.observe(viewLifecycleOwner) {
+            SnackbarUtil.showErrorSnackbar(view, it)
+        }
+
+        vm.loadingState.observe(viewLifecycleOwner) {
             whereAreYouGoing.setGoneState(it)
             progress.setGoneState(!it)
             if (it) {
@@ -114,33 +92,18 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
             } else {
                 loader.cancelAnimation()
             }
-        })
-
-        vm.mapActiveState.observe(viewLifecycleOwner, {
-            it?.let {
-                //todo workaround for a bug on some devices
-                if (this::map.isInitialized) {
-                    map.setMapStyle(
-                        if (it) {
-                            mapStyleActive
-                        } else {
-                            mapStyleInactive
-                        }
-                    )
-                }
-            }
-        })
+        }
 
         whereAreYouGoing.setOnClickListener {
-            vm.onWhereAreYouGoingClick()
+            vm.handleAction(OnWhereAreYouGoingClickAction)
         }
 
         shareButton.setOnClickListener {
-            vm.onShareTripClick()
+            vm.handleAction(OnShareTripClickAction)
         }
 
         bAddOrder.setOnClickListener {
-            vm.onAddOrderClick()
+            vm.handleAction(OnAddOrderClickAction)
         }
 
         bCompleteTrip.setOnClickListener {
@@ -148,27 +111,27 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
         }
 
         location_button.setOnClickListener {
-            vm.onMyLocationClick()
+            vm.handleAction(OnMyLocationClickAction)
         }
 
         if (MyApplication.DEBUG_MODE) {
             trip_to.setOnClickListener {
-                vm.onCompleteClick()
+                vm.handleAction(OnCompleteClickAction)
             }
         }
     }
 
     override fun onPause() {
-        vm.onPause()
+        vm.handleAction(OnPauseAction)
         super.onPause()
     }
 
     override fun onResume() {
         super.onResume()
-        vm.onResume()
+        vm.handleAction(OnResumeAction)
     }
 
-    private fun displayTrip(trip: CurrentTripViewModel.TripData) {
+    private fun displayTrip(trip: TripData) {
         trip.nextOrder.let { order ->
             bCompleteTrip.setGoneState(order != null)
             shareButton.setGoneState(order == null)
@@ -216,7 +179,7 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
                 R.string.current_trip_complete_confirmation.stringFromResource()
             )
             .setPositiveButton(R.string.yes) { dialog, which ->
-                vm.onCompleteClick()
+                vm.handleAction(OnCompleteClickAction)
             }
             .setNegativeButton(R.string.no) { _, _ ->
             }

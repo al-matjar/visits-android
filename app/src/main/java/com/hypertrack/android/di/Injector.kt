@@ -82,7 +82,7 @@ object Injector {
     fun provideViewModelFactory(): ViewModelFactory {
         return when (val state = appInteractor.appState.requireValue()) {
             is NotInitialized -> {
-                throw IllegalStateException("App is not initialized")
+                ViewModelFactory(appInteractor, state.appScope, state.useCases)
             }
             is Initialized -> {
                 ViewModelFactory(appInteractor, state.appScope, state.useCases)

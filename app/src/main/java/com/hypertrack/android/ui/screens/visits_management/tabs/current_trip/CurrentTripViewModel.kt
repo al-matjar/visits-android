@@ -4,317 +4,111 @@ import android.content.Context
 import androidx.lifecycle.*
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
-import com.hypertrack.android.interactors.GeocodingInteractor
-import com.hypertrack.android.interactors.PlacesInteractor
-import com.hypertrack.android.interactors.TripsInteractor
-import com.hypertrack.android.interactors.TripsUpdateTimerInteractor
-import com.hypertrack.android.models.local.Geofence
-import com.hypertrack.android.models.local.Order
-import com.hypertrack.android.interactors.app.AppState
-import com.hypertrack.android.interactors.app.NotInitialized
+import com.hypertrack.android.di.UserScope
+import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.DestroyTripCreationScopeAction
 import com.hypertrack.android.interactors.app.Initialized
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.interactors.app.NotInitialized
+import com.hypertrack.android.interactors.app.UserLoggedIn
+import com.hypertrack.android.interactors.app.UserNotLoggedIn
+import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.repository.TripCreationError
 import com.hypertrack.android.repository.TripCreationSuccess
 import com.hypertrack.android.ui.base.*
-import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
-import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.common.util.*
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersAdapter
-import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
-import com.hypertrack.android.utils.formatters.DateTimeFormatter
-import com.hypertrack.android.utils.formatters.TimeValueFormatter
+import com.hypertrack.android.utils.StateMachine
+import com.hypertrack.android.utils.catchException
 import com.hypertrack.logistics.android.github.R
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.lang.IllegalStateException
 
+@Suppress("OPT_IN_USAGE")
 class CurrentTripViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val appState: LiveData<AppState>,
-    private val appCoroutineScope: CoroutineScope,
-    private val tripsInteractor: TripsInteractor,
-    private val placesInteractor: PlacesInteractor,
-    private val geocodingInteractor: GeocodingInteractor,
-    private val tripsUpdateTimerInteractor: TripsUpdateTimerInteractor,
-    private val locationProvider: DeviceLocationProvider,
-    private val dateTimeFormatter: DateTimeFormatter,
-    private val timeFormatter: TimeValueFormatter,
+    private val appInteractor: AppInteractor,
 ) : BaseViewModel(baseDependencies) {
 
+    private val reducer = CurrentTripReducer(
+        appInteractor.appState,
+        loadingState,
+        this::getViewState
+    )
+    private val stateMachine = StateMachine<Action, State, Effect>(
+        javaClass.simpleName,
+        crashReportsProvider,
+        NotInitializedState(
+            userLocation = null
+        ),
+        viewModelScope,
+        Dispatchers.Default,
+        reducer::reduce,
+        this::applyEffects,
+        reducer::stateChangeEffects
+    )
+
     private val addressDelegate =
-        OrderAddressDelegate(geocodingInteractor, osUtilsProvider, dateTimeFormatter)
-
-    private val isTracking = MediatorLiveData<Boolean>().apply {
-        addSource(appState) {
-            it.isSdkTracking().let { isTracking ->
-                if (value != isTracking) {
-                    updateValue(isTracking)
-                }
-            }
-        }
+        OrderAddressDelegate(
+            appInteractor.appScope.geocodingInteractor,
+            osUtilsProvider,
+            appInteractor.appScope.dateTimeFormatter
+        )
+    private val mapStyleActive by lazy {
+        MapStyleOptions.loadRawResourceStyle(
+            appInteractor.appScope.appContext,
+            R.raw.style_map
+        )
     }
-
-    private val map = MutableLiveData<HypertrackMapWrapper>()
-
-    init {
-        map.observeManaged {
-            displayUserLocation(it, userLocation.value)
-        }
+    private val mapStyleInactive by lazy {
+        MapStyleOptions.loadRawResourceStyle(
+            appInteractor.appScope.appContext,
+            R.raw.style_map_silver
+        )
     }
 
     private lateinit var geofencesMapDelegate: GeofencesMapDelegate
-
-    override val errorHandler = ErrorHandler(
-        osUtilsProvider,
-        crashReportsProvider,
-        exceptionSource = MediatorLiveData<Consumable<Exception>>().apply {
-            addSource(tripsInteractor.errorFlow.asLiveData()) {
-                postValue(it)
-            }
-            addSource(placesInteractor.errorFlow.asLiveData()) {
-                postValue(it)
-            }
-        })
-
-    val tripData = MediatorLiveData<TripData?>()
-
     private var locationMarker: Marker? = null
-    val userLocation: MediatorLiveData<LatLng?> = MediatorLiveData<LatLng?>().apply {
-        postValue(null)
-        addSource(locationProvider.deviceLocation) {
-            if (map.value != null) {
-                displayUserLocation(map.requireValue(), it)
-            }
-            postValue(it)
-        }
-    }
 
-    private fun displayUserLocation(map: HypertrackMapWrapper, latLng: LatLng?) {
-        locationMarker?.remove()
-        locationMarker = map.addUserLocation(latLng)
-    }
-
-    val showWhereAreYouGoing: LiveData<Boolean> =
-        ZipLiveData(appState, tripData).let {
-            Transformations.map(it) { (appState, trip) ->
-                return@map if (appState != null) {
-                    trip == null && appState.isSdkTracking()
-                } else {
-                    false
-                }
-            }
-        }
-    val mapActiveState: LiveData<Boolean?> = ZipNotNullableLiveData(isTracking, map).let {
-        Transformations.map(it) { (isTracking, map) ->
-            isTracking
-        }
-    }
+    val viewState = MutableLiveData<ViewState>()
 
     init {
-        tripData.addSource(tripsInteractor.currentTrip) { trip ->
-            if (isTracking.requireValue()) {
-                tripData.postValue(trip?.let { TripData(it) })
-                map.value?.let { map -> displayTripOnMap(map, trip) }
-            }
-        }
-        tripData.addSource(map) {
-            if (isTracking.requireValue()) {
-                displayTripOnMap(it, tripData.value?.trip)
-            }
-        }
-        tripData.addSource(isTracking) {
-            if (it) {
-                map.value?.let {
-                    tripsInteractor.currentTrip.value?.let { trip ->
-                        this.tripData.postValue(TripData(trip))
-                        displayTripOnMap(map.requireValue(), trip)
-                    }
-                }
-            } else {
-                tripData.postValue(null)
-            }
-        }
-
-        mapActiveState.observeManaged {
-            if (it != null && map.value != null) {
-                val map = map.requireValue()
-                //todo check geofences delegate
-                if (it) {
-                    val trip = tripsInteractor.currentTrip
-
-                    if (trip.value != null) {
-                        map.animateCameraToTrip(trip.value!!, userLocation.value)
-                    } else {
-                        if (userLocation.value != null) {
-                            map.moveCamera(userLocation.value!!, DEFAULT_ZOOM)
+        appInteractor.appState.observeManaged { appState ->
+            when (appState) {
+                is Initialized -> {
+                    when (appState.userState) {
+                        is UserLoggedIn -> {
+                            handleAction(TrackingStateChangedAction(appState.isSdkTracking()))
                         }
-                    }
-                } else {
-                    map.clear()
-                    if (userLocation.value != null) {
-                        map.moveCamera(userLocation.value!!, DEFAULT_ZOOM)
-                    }
-                }
-            }
-        }
-    }
-
-    fun onViewCreated() {
-        when (val state = appState.requireValue()) {
-            is NotInitialized -> throw IllegalStateException(state.toString())
-            is Initialized -> {
-                if (state.tripCreationScope != null) {
-                    proceedCreatingTrip(state.tripCreationScope.destinationData)
-                } else {
-                    if (loadingState.value != true) {
-                        viewModelScope.launch {
-                            tripsInteractor.refreshTrips()
+                        UserNotLoggedIn -> {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    fun onMapReady(context: Context, googleMap: GoogleMap) {
-        val mapWrapper = HypertrackMapWrapper(
-            googleMap, osUtilsProvider, crashReportsProvider, MapParams(
-                enableScroll = true,
-                enableZoomKeys = false,
-                enableMyLocationButton = false,
-                enableMyLocationIndicator = false
-            )
-        ).apply {
-            setOnCameraMovedListener {
-                geofencesMapDelegate.onCameraIdle()
-            }
-        }
-
-        geofencesMapDelegate = object : GeofencesMapDelegate(
-            context,
-            mapWrapper,
-            placesInteractor,
-            osUtilsProvider,
-            {
-                destination.postValue(
-                    VisitsManagementFragmentDirections.actionVisitManagementFragmentToPlaceDetailsFragment(
-                        geofenceId = it.value
-                    )
-                )
-            }
-        ) {
-            override fun updateGeofencesOnMap(
-                mapWrapper: HypertrackMapWrapper,
-                geofences: List<Geofence>
-            ) {
-                if (tripData.value == null) {
-                    super.updateGeofencesOnMap(mapWrapper, geofences)
-                }
-                displayUserLocation(mapWrapper, userLocation.value)
-            }
-
-            override fun onCameraIdle() {
-                if (tripData.value == null) {
-                    super.onCameraIdle()
+                is NotInitialized -> {
                 }
             }
         }
-
-        this.userLocation.observeManaged {
-            if (tripData.value == null && it != null) {
-                mapWrapper.moveCamera(it)
-            }
-        }
-
-        map.postValue(mapWrapper)
     }
 
-    fun onWhereAreYouGoingClick() {
-        destination.postValue(
-            VisitsManagementFragmentDirections
-                .actionVisitManagementFragmentToSelectTripDestinationFragment()
-        )
-    }
-
-    private fun proceedCreatingTrip(destinationData: DestinationData) {
-        loadingState.updateValue(true)
-        appCoroutineScope.launch {
-            when (val res =
-                tripsInteractor.createTrip(destinationData.latLng, destinationData.address)) {
-                is TripCreationSuccess -> {
-                }
-                is TripCreationError -> {
-                    errorHandler.postException(res.exception)
-                }
-            }
-            loadingState.postValue(false)
-        }
-    }
-
-    fun onShareTripClick() {
-        tripData.value!!.trip.views?.shareUrl?.let {
-            osUtilsProvider.shareText(
-                text = it,
-                title = osUtilsProvider.stringFromResource(R.string.share_trip_via)
-            )
-        }
-    }
-
-    fun onOrderClick(id: String) {
-        destination.postValue(
-            VisitsManagementFragmentDirections.actionVisitManagementFragmentToOrderDetailsFragment(
-                id
-            )
-        )
-    }
-
-    fun onCompleteClick() {
-        loadingState.postValue(true)
-        viewModelScope.launch {
-            tripsInteractor.completeTrip(tripData.value!!.trip.id).let {
-                when (it) {
-                    JustSuccess -> {
-                        map.value?.clear()
-                    }
-                    is JustFailure -> {
-                        errorHandler.postException(it.exception)
-                    }
-                }
-                loadingState.postValue(false)
-            }
-        }
-    }
-
-    fun onAddOrderClick() {
-        destination.postValue(
-            VisitsManagementFragmentDirections.actionVisitManagementFragmentToAddOrderFragment(
-                tripData.value!!.trip.id
-            )
-        )
-    }
-
-    fun onMyLocationClick() {
-        if (map.value != null && userLocation.value != null) {
-            map.requireValue().animateCamera(userLocation.value!!, DEFAULT_ZOOM)
-        }
-    }
-
-    fun onTripFocused() {
-        if (map.value != null && tripData.value != null) {
-            map.requireValue().animateCameraToTrip(tripData.value!!.trip, userLocation.value)
-        }
+    fun handleAction(action: Action) {
+        stateMachine.handleAction(action)
     }
 
     fun createOrdersAdapter(): OrdersAdapter {
         return OrdersAdapter(
-            dateTimeFormatter,
+            appInteractor.appScope.dateTimeFormatter,
             addressDelegate,
             showStatus = false
         )
@@ -327,42 +121,318 @@ class CurrentTripViewModel(
         }
     }
 
-    fun onResume() {
-        tripsUpdateTimerInteractor.registerObserver(this.javaClass.simpleName)
-    }
-
-    fun onPause() {
-        tripsUpdateTimerInteractor.unregisterObserver(this.javaClass.simpleName)
-    }
-
-    //todo fix map padding on first trip zoom
-    private fun displayTripOnMap(map: HypertrackMapWrapper, it: LocalTrip?) {
-        it?.let {
-            map.clear()
-            map.addTrip(it)
-            map.animateCameraToTrip(it, userLocation.value)
+    private fun applyEffects(effects: Set<Effect>) {
+        for (effect in effects) {
+            applyEffect(effect)
         }
     }
 
-    inner class TripData(val trip: LocalTrip) {
-        val nextOrder = trip.nextOrder?.let { OrderData(it) }
-        val ongoingOrders = trip.ongoingOrders
-        val ongoingOrderText = osUtilsProvider
-            .stringFromResource(R.string.you_have_ongoing_orders).let {
-                val size = trip.ongoingOrders.size
-                val plural = osUtilsProvider.getQuantityString(R.plurals.order, size)
-                String.format(it, size, plural)
-            }
+    private fun applyEffect(effect: Effect) {
+        appInteractor.appScope.appCoroutineScope.launch {
+            getEffectFlow(effect)
+                .catchException {
+                    crashReportsProvider.logException(it)
+                    errorHandler.postException(it)
+                }.collect()
+        }
     }
 
-    inner class OrderData(val order: Order) {
-        val address = order.shortAddress
-            ?: resourceProvider.stringFromResource(R.string.address_not_available)
-        val etaString = order.eta?.let { dateTimeFormatter.formatTime(it) }
-            ?: osUtilsProvider.stringFromResource(R.string.orders_list_eta_unavailable)
-        val etaAvailable = order.eta != null
-        val awayText = order.awaySeconds?.let { seconds ->
-            timeFormatter.formatSeconds(seconds.toInt())
+    private fun getEffectFlow(effect: Effect): Flow<Unit> {
+        return when (effect) {
+            is ErrorEffect -> {
+                getErrorFlow(effect.exception)
+            }
+            is UpdateViewStateEffect -> {
+                { viewState.postValue(effect.viewState) }.asFlow()
+            }
+            is SubscribeOnUserScopeEventsEffect -> {
+                getSubscribeOnUserScopeEventsFlow(effect.userScope)
+            }
+            is AddUserLocationToMap -> {
+                {
+                    locationMarker?.remove()
+                    locationMarker = effect.map.addUserLocation(effect.location)
+                }.asFlow().flowOn(Dispatchers.Main)
+            }
+            is ClearAndDisplayTripAndUserLocationOnMapEffect -> {
+                {
+                    effect.map.clear()
+                    effect.map.addTrip(effect.trip)
+                    effect.map.addUserLocation(effect.userLocation)
+                    effect.map.animateCameraToTrip(effect.trip, effect.userLocation)
+                }.asFlow().flowOn(Dispatchers.Main)
+            }
+            is ClearMapEffect -> {
+                { effect.map.clear() }.asFlow().flowOn(Dispatchers.Main)
+            }
+            is MoveMapEffect -> {
+                { effect.map.moveCamera(effect.position, DEFAULT_ZOOM) }.asFlow()
+                    .flowOn(Dispatchers.Main)
+            }
+            is ClearAndMoveMapEffect -> {
+                {
+                    effect.map.clear()
+                    effect.map.moveCamera(effect.position, DEFAULT_ZOOM)
+                }.asFlow().flowOn(Dispatchers.Main)
+            }
+            is ClearMapAndDisplayUserLocationEffect -> {
+                {
+                    effect.map.clear()
+                    effect.map.addUserLocation(effect.userLocation)
+                    Unit
+                }.asFlow().flowOn(Dispatchers.Main)
+            }
+            is PrepareMapEffect -> {
+                getPrepareMapFlow(effect.context, effect.map, effect.userScope)
+            }
+            is AnimateMapToTripEffect -> {
+                //todo fix map padding on first trip zoom
+                { effect.map.animateCameraToTrip(effect.trip, effect.userLocation) }.asFlow()
+                    .flowOn(Dispatchers.Main)
+            }
+            is AnimateMapEffect -> {
+                { effect.map.animateCamera(effect.position, DEFAULT_ZOOM) }.asFlow()
+                    .flowOn(Dispatchers.Main)
+            }
+            is SetMapActiveState -> {
+                {
+                    effect.map.googleMap.setMapStyle(
+                        if (effect.active) {
+                            mapStyleActive
+                        } else {
+                            mapStyleInactive
+                        }
+                    )
+                    Unit
+                }.asFlow().flowOn(Dispatchers.Main)
+            }
+            is ProceedTripCreationEffect -> {
+                getProceedCreatingTripFlow(
+                    effect.userScope,
+                    effect.destinationData
+                )
+            }
+            is RefreshTripsEffect -> {
+                suspend { effect.userScope.tripsInteractor.refreshTrips() }.asFlow()
+            }
+            is NavigateEffect -> {
+                { destination.postValue(effect.destination) }.asFlow()
+            }
+            is CompleteTripEffect -> {
+                getOnCompleteClickFlow(effect.tripId, effect.map, effect.userScope)
+            }
+            is ShareTripLinkEffect -> {
+                {
+                    effect.url.let {
+                        osUtilsProvider.shareText(
+                            text = it,
+                            title = osUtilsProvider.stringFromResource(R.string.share_trip_via)
+                        )
+                    }
+                }.asFlow()
+            }
+            is StartTripUpdateTimer -> {
+                {
+                    effect.userScope.tripsUpdateTimerInteractor
+                        .registerObserver(this.javaClass.simpleName)
+                }.asFlow()
+            }
+            is StopTripUpdateTimer -> {
+                {
+                    effect.userScope.tripsUpdateTimerInteractor
+                        .unregisterObserver(this.javaClass.simpleName)
+                }.asFlow()
+            }
+        }
+    }
+
+    private fun getErrorFlow(exception: Exception): Flow<Unit> {
+        return {
+            errorHandler.postException(exception)
+            crashReportsProvider.logException(exception)
+        }.asFlow()
+    }
+
+    private fun getSubscribeOnUserScopeEventsFlow(userScope: UserScope): Flow<Unit> {
+        return {
+            val observer = { e: Consumable<Exception> ->
+                e.consume {
+                    handleAction(ErrorAction(it))
+                }
+            }
+            userScope.tripsInteractor.errorFlow.asLiveData().observeManaged(observer)
+            userScope.placesInteractor.errorFlow.asLiveData().observeManaged(observer)
+
+            userScope.deviceLocationProvider.deviceLocation.observeManaged {
+                handleAction(UserLocationChangedAction(it))
+            }
+
+            userScope.tripsInteractor.currentTrip.observeManaged { trip ->
+                handleAction(TripUpdatedAction(trip))
+            }
+        }.asFlow().flowOn(Dispatchers.Main)
+    }
+
+    private fun getPrepareMapFlow(
+        context: Context,
+        googleMap: GoogleMap,
+        userScope: UserScope
+    ): Flow<Unit> {
+        return {
+            val mapWrapper = HypertrackMapWrapper(
+                googleMap, osUtilsProvider, crashReportsProvider, MapParams(
+                    enableScroll = true,
+                    enableZoomKeys = false,
+                    enableMyLocationButton = false,
+                    enableMyLocationIndicator = false
+                )
+            ).apply {
+                setOnCameraMovedListener {
+                    geofencesMapDelegate.onCameraIdle()
+                }
+            }
+
+            geofencesMapDelegate = object : GeofencesMapDelegate(
+                context,
+                mapWrapper,
+                userScope.placesInteractor,
+                osUtilsProvider,
+                {
+                    destination.postValue(
+                        VisitsManagementFragmentDirections.actionVisitManagementFragmentToPlaceDetailsFragment(
+                            geofenceId = it.value
+                        )
+                    )
+                }
+            ) {
+                override fun updateGeofencesOnMap(
+                    mapWrapper: HypertrackMapWrapper,
+                    geofences: List<Geofence>
+                ) {
+                    if (userScope.tripsInteractor.currentTrip.value == null) {
+                        super.updateGeofencesOnMap(mapWrapper, geofences)
+                    }
+                    // the update clears the map, so we need to add user location back
+                    handleAction(OnGeofencesUpdateAction)
+                }
+
+                override fun onCameraIdle() {
+                    if (userScope.tripsInteractor.currentTrip.value == null) {
+                        super.onCameraIdle()
+                    }
+                }
+            }
+            mapWrapper
+        }.asFlow()
+            .map {
+                handleAction(OnMapReadyAction(context, it))
+                Unit
+            }
+            .flowOn(Dispatchers.Main)
+    }
+
+    private fun getProceedCreatingTripFlow(
+        userScope: UserScope,
+        destinationData: DestinationData
+    ): Flow<Unit> {
+        return suspend {
+            appInteractor.handleAction(DestroyTripCreationScopeAction)
+            loadingState.updateValue(true)
+            userScope.tripsInteractor.createTrip(
+                destinationData.latLng,
+                destinationData.address
+            ).let { res ->
+                when (res) {
+                    is TripCreationSuccess -> {
+                    }
+                    is TripCreationError -> {
+                        errorHandler.postException(res.exception)
+                    }
+                }
+            }
+            loadingState.postValue(false)
+        }.asFlow().flowOn(Dispatchers.Main)
+    }
+
+    private fun getOnCompleteClickFlow(
+        tripId: String,
+        map: HypertrackMapWrapper?,
+        userScope: UserScope
+    ): Flow<Unit> {
+        return suspend {
+            loadingState.postValue(true)
+            userScope.tripsInteractor.completeTrip(tripId)
+        }.asFlow()
+            .flowOn(appInteractor.appScope.stateMachineContext)
+            .map {
+                when (it) {
+                    JustSuccess -> map?.clear()
+                    is JustFailure -> errorHandler.postException(it.exception)
+                }
+                loadingState.postValue(false)
+            }
+            .flowOn(Dispatchers.Main)
+    }
+
+    private fun getViewState(state: State): ViewState {
+        return when (state) {
+            is NotInitializedState -> {
+                ViewState(
+                    showWhereAreYouGoingButton = false,
+                    tripData = null,
+                    userLocation = null
+                )
+            }
+            is InitializedState -> {
+                when (state.trackingState) {
+                    NotTracking -> {
+                        ViewState(
+                            showWhereAreYouGoingButton = false,
+                            tripData = null,
+                            userLocation = null
+                        )
+                    }
+                    is Tracking -> {
+                        val trip = state.trackingState.trip
+                        ViewState(
+                            showWhereAreYouGoingButton = trip == null,
+                            tripData = trip?.let {
+                                TripData(
+                                    nextOrder = trip.nextOrder?.let { order ->
+                                        OrderData(
+                                            address = order.shortAddress
+                                                ?: resourceProvider.stringFromResource(R.string.address_not_available),
+                                            etaString = order.eta?.let {
+                                                appInteractor.appScope.dateTimeFormatter.formatTime(
+                                                    it
+                                                )
+                                            }
+                                                ?: osUtilsProvider.stringFromResource(R.string.orders_list_eta_unavailable),
+                                            etaAvailable = order.eta != null,
+                                            awayText = order.awaySeconds?.let { seconds ->
+                                                appInteractor.appScope.timeFormatter.formatSeconds(
+                                                    seconds.toInt()
+                                                )
+                                            }
+                                        )
+                                    },
+                                    ongoingOrders = trip.ongoingOrders,
+                                    ongoingOrderText = osUtilsProvider
+                                        .stringFromResource(R.string.you_have_ongoing_orders).let {
+                                            val size = trip.ongoingOrders.size
+                                            val plural = osUtilsProvider.getQuantityString(
+                                                R.plurals.order,
+                                                size
+                                            )
+                                            String.format(it, size, plural)
+                                        }
+                                )
+                            },
+                            userLocation = state.trackingState.userLocation
+                        )
+                    }
+                }
+            }
         }
     }
 

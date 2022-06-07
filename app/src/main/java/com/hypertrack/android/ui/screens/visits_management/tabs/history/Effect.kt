@@ -6,6 +6,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
+import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.models.local.Geotag
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.models.local.LocalHistory
@@ -44,7 +45,7 @@ data class UpdateViewStateEffect(val viewState: ViewState) : Effect()
 
 data class ShowDatePickerDialogEffect(val date: LocalDate) : Effect()
 
-data class LoadHistoryEffect(val date: LocalDate) : Effect()
+data class LoadHistoryEffect(val userScope: UserScope, val date: LocalDate) : Effect()
 
 data class SendErrorToCrashlytics(val exception: Exception) : Effect()
 

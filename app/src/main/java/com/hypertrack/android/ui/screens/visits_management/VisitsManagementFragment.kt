@@ -39,8 +39,8 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
     )
     private val tabs = Injector.provideTabs()
 
-    private val visitsManagementViewModel: VisitsManagementViewModel by viewModels {
-        Injector.provideUserScopeViewModelFactory()
+    private val vm: VisitsManagementViewModel by viewModels {
+        Injector.provideViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -48,30 +48,31 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
 
         initViewPager()
 
-        visitsManagementViewModel.trackingIndicatorState.observe(viewLifecycleOwner) { state ->
+        vm.trackingIndicatorState.observe(viewLifecycleOwner) { state ->
             tvTrackerStatus.setBackgroundColor(requireContext().getColor(state.color))
             tvTrackerStatus.setText(state.statusMessageResource)
             swClockIn.setStateWithoutTriggeringListener(state.isTracking)
             tvClockHint.setText(state.trackingMessageResource)
         }
 
-        visitsManagementViewModel.showProgressbar.observe(viewLifecycleOwner) { show ->
+        vm.showProgressbar.observe(viewLifecycleOwner) { show ->
             if (show) showProgress() else dismissProgress()
         }
 
         swClockIn.setOnCheckedChangeListener { view, isChecked ->
-            visitsManagementViewModel.onTrackingSwitchClicked(isChecked)
+            vm.handleAction(TrackingSwitchClickedAction(isChecked))
         }
 
-        visitsManagementViewModel.errorHandler.errorText.observe(viewLifecycleOwner, { error ->
+        vm.errorHandler.errorText.observe(viewLifecycleOwner, { error ->
             SnackbarUtil.showErrorSnackbar(view, error)
         })
 
-        visitsManagementViewModel.destination.observe(viewLifecycleOwner, {
+        vm.destination.observe(viewLifecycleOwner, {
             findNavController().navigate(it)
         })
 
-        visitsManagementViewModel.refreshHistory()
+        vm.handleAction(OnViewCreatedAction)
+        vm.handleAction(RefreshHistoryAction)
 
         args.tab?.let { tab ->
             viewpager.currentItem = tabs.indexOf(args.tab)

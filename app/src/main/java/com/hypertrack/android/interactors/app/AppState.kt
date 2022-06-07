@@ -25,8 +25,10 @@ sealed class AppState {
             is NotInitialized -> false
         }
     }
+
 }
 
+//todo rename to AppNotInitialized
 data class NotInitialized(
     val appScope: AppScope,
     val useCases: UseCases,
@@ -37,6 +39,7 @@ data class NotInitialized(
     val pendingPushNotification: RemoteMessage?
 ) : AppState()
 
+//todo rename to AppInitialized
 data class Initialized(
     val appScope: AppScope,
     val useCases: UseCases,

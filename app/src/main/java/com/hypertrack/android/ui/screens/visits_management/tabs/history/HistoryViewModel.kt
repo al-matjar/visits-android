@@ -4,8 +4,13 @@ import androidx.lifecycle.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
+import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.GeocodingInteractor
-import com.hypertrack.android.interactors.history.HistoryInteractor
+import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.Initialized
+import com.hypertrack.android.interactors.app.NotInitialized
+import com.hypertrack.android.interactors.app.UserLoggedIn
+import com.hypertrack.android.interactors.app.UserNotLoggedIn
 import com.hypertrack.android.interactors.history.HistoryState
 import com.hypertrack.android.models.*
 import com.hypertrack.android.models.local.DeviceStatusMarkerActive
@@ -25,6 +30,7 @@ import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.util.LocationUtils
+import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.formatters.DistanceFormatter
@@ -40,7 +46,7 @@ import java.time.format.FormatStyle
 
 class HistoryViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val historyInteractor: HistoryInteractor,
+    private val appInteractor: AppInteractor,
     private val geocodingInteractor: GeocodingInteractor,
     private val geofenceVisitAddressDelegate: GeofenceVisitAddressDelegate,
     private val visitDisplayDelegate: GeofenceVisitDisplayDelegate,
@@ -48,7 +54,6 @@ class HistoryViewModel(
     private val geotagDisplayDelegate: GeotagDisplayDelegate,
     private val timeValueFormatter: TimeValueFormatter,
     private val distanceFormatter: DistanceFormatter,
-    private val deviceLocationProvider: DeviceLocationProvider,
     private val mapItemsFactory: HypertrackMapItemsFactory,
     val style: BaseHistoryStyle
 ) : BaseViewModel(baseDependencies) {
@@ -79,18 +84,67 @@ class HistoryViewModel(
     )
 
     init {
-        historyInteractor.history.observeManaged {
-            stateMachine.handleAction(HistoryUpdatedAction(it))
+        appInteractor.appState.observeManaged { state ->
+            when (state) {
+                is Initialized -> {
+                    when (state.userState) {
+                        is UserLoggedIn -> {
+                            val userScope = state.userState.userScope
+                            userScope.historyInteractor.history.observeManaged {
+                                stateMachine.handleAction(HistoryUpdatedAction(it))
+                            }
+
+                            userScope.deviceLocationProvider.getCurrentLocation { location ->
+                                location?.let { latLng ->
+                                    stateMachine.handleAction(UserLocationReceived(latLng))
+                                }
+                            }
+                        }
+                        UserNotLoggedIn -> {
+                            crashReportsProvider.logException(IllegalStateException(state.toString()))
+                        }
+                    }
+                }
+                is NotInitialized -> {
+                    crashReportsProvider.logException(IllegalStateException(state.toString()))
+                }
+            }
         }
 
-        deviceLocationProvider.getCurrentLocation { location ->
-            location?.let { latLng ->
-                stateMachine.handleAction(UserLocationReceived(latLng))
+    }
+
+    private fun handleAction(state: State, action: Action): ReducerResult<State, Effect> {
+        val appState = appInteractor.appState.requireValue()
+        return when (appState) {
+            is Initialized -> {
+                when (appState.userState) {
+                    is UserLoggedIn -> {
+                        handleActionIfLoggedIn(state, action, appState.userState.userScope)
+                    }
+                    UserNotLoggedIn -> {
+                        state.withEffects(
+                            SendErrorToCrashlytics(
+                                IllegalActionException(action, state)
+                            )
+                        )
+                    }
+                }
+            }
+            is NotInitialized -> {
+                state.withEffects(
+                    SendErrorToCrashlytics(
+                        IllegalActionException(action, state)
+                    )
+                )
             }
         }
     }
 
-    private fun handleAction(state: State, action: Action): ReducerResult<State, Effect> {
+    private fun handleActionIfLoggedIn(
+        state: State,
+        action: Action,
+        userScope: UserScope
+    ): ReducerResult<State, Effect> {
         return when (action) {
             is MapReadyAction -> {
                 when (state) {
@@ -248,7 +302,7 @@ class HistoryViewModel(
                     }
                     is MapReadyState -> {
                         state.copy(date = action.date, historyData = Loading())
-                            .withEffects(LoadHistoryEffect(action.date))
+                            .withEffects(LoadHistoryEffect(userScope, action.date))
                     }
                 }
             }
@@ -282,8 +336,8 @@ class HistoryViewModel(
             }
             OnReloadPressedAction, OnResumeAction -> {
                 when (state) {
-                    is Initial -> state.withEffects(LoadHistoryEffect(state.date))
-                    is MapReadyState -> state.withEffects(LoadHistoryEffect(state.date))
+                    is Initial -> state.withEffects(LoadHistoryEffect(userScope, state.date))
+                    is MapReadyState -> state.withEffects(LoadHistoryEffect(userScope, state.date))
                 }
             }
             OnTimelineHeaderClickAction -> {
@@ -372,7 +426,7 @@ class HistoryViewModel(
                 openDatePickerDialogEvent.postValue(effect.date)
             }
             is LoadHistoryEffect -> {
-                historyInteractor.loadHistory(effect.date)
+                effect.userScope.historyInteractor.loadHistory(effect.date)
             }
             is SendErrorToCrashlytics -> {
                 crashReportsProvider.logException(effect.exception)
