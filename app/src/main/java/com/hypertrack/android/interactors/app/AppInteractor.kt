@@ -48,7 +48,7 @@ class AppInteractor(
         appScope.crashReportsProvider,
         initialState,
         appScope.appCoroutineScope,
-        Dispatchers.Default,
+        appScope.stateMachineContext,
         appReducer::reduce,
         this::applyEffects,
         this::stateChangeEffects

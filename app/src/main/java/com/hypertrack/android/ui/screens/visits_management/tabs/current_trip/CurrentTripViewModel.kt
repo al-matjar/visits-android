@@ -54,7 +54,7 @@ class CurrentTripViewModel(
             userLocation = null
         ),
         viewModelScope,
-        Dispatchers.Default,
+        appInteractor.appScope.stateMachineContext,
         reducer::reduce,
         this::applyEffects,
         reducer::stateChangeEffects

@@ -68,6 +68,8 @@ class FirebaseCrashReportsProvider(appContext: Context) : CrashReportsProvider {
                         this is HttpException ||
                         this is NonReportableException
                 -> false
+                // todo catch and fix all cases
+                this is CancellationException -> false
                 else -> true
             }
         } else true
