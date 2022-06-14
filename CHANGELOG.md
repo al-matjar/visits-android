@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.17.4] - 2022-06-14
+
+### Fixed
+
+- Fixed minor issues
+
 ## [0.17.3] - 2022-06-10
 
 ### Fixed
