@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Visits</string>
     <string name="now">Now</string>
-    <string name="enter_driver_id">enter driver id</string>
     <string name="hyperTrackPublishKey">paste your publishable key here</string>
     <string name="channel_name">HyperTrack Notifications</string>
     <string name="channel_id">HyperTrack</string>
@@ -14,35 +13,10 @@
     <string name="visit_notes">Visit Notes</string>
     <string name="visit_picture">Proof of Visit</string>
     <string name="take_picture">Take Picture</string>
-    <string name="mark_completed">Mark Completed</string>
-    <string name="completed">Completed or Canceled</string>
-    <string name="use_the_link_to_login">Please use the link to login or contact your manager to get one</string>
-    <string name="visits">Visits</string>
-    <string name="background_location_permission_rationale">The permission is required to automatically start tracking location based on your work schedule (without you having to open app). The app will always show a notification when tracking is active.</string>
-    <string name="background_location_permission_option_hint">To adjust the permission press</string>
-    <string name="continue_btn_text">Allow</string>
-    <string name="whitelisting_btn_text">Go to Settings</string>
-    <string name="title_activity_permission_request">PermissionRequestActivity</string>
-    <string name="allow_background_location_access">Allow All the Time Location Access</string>
     <string name="hypertrack_logistics_app">HyperTrack Visits App</string>
-    <string name="submit_driver_id">Next</string>
-    <string name="check_in">Add Visit</string>
     <string name="clock_in">Clock In</string>
-    <string name="check_out">Complete Visit</string>
     <string name="clock_out">Clock Out</string>
-    <string name="pick_up">On my way</string>
     <string name="cancel">Cancel Visit</string>
-    <string name="unnamed_street">Unnamed street</string>
-    <string name="unknown_city">Unknown city</string>
-    <string name="unknown_country">Nowhere</string>
-    <string name="unknown_location_at">\"Unknown location at \"</string>
-    <string name="trip_to">Trip to</string>
-    <string name="geofence_at">Geofence at</string>
-    <string name="local_visit_on">Local Visit On </string>
-    <string name="item_singular">Item</string>
-    <string name="item_plural">Items</string>
-    <string name="visited">Visited</string>
-    <string name="pending">Pending</string>
     <string name="no_planned_visits">No trips assigned to you</string>
     <string name="account_login_header_text">Sign into your account</string>
     <string name="login_hint">Cannot get login from the deeplink. Sign in or contact your manager to get the link.</string>
@@ -57,10 +31,6 @@
     <string name="vist_note_updated">Visit note was updated</string>
     <string name="cannot_create_file_msg">Can\'t create a file for a picture. Check if there\'s enough space</string>
     <string name="whitelisting_rational">Disable power optimization to make tracking durable</string>
-    <string name="summary_total_tracking_time">Tracked duration</string>
-    <string name="summary_drive">Drives</string>
-    <string name="summary_walk">Walks</string>
-    <string name="summary_stop">Stops</string>
     <string name="clock_hint_tracking_on">Pressing the switch will stop location tracking</string>
     <string name="clock_hint_tracking_off">Pressing the switch will start location tracking</string>
     <string name="cancel_visit_confirmation">Are you sure you want to cancel this visit?</string>
@@ -75,25 +45,24 @@
     <string name="meters">%s m</string>
     <string name="close">Close</string>
     <string name="device_id">Device ID</string>
-    <string name="driver_id">Driver ID</string>
     <string name="app_version">App Version</string>
     <string name="bottom_app_bar_logo_content_desc">Opens history timeline</string>
     <string name="retry">Retry</string>
     <string name="photo_upload_unknown_error">Unknown error during uploading photo</string>
     <string name="history_error">Error when loading history</string>
     <string name="skip">Skip</string>
-    <string name="unknown_error">Unknown error</string>
     <string name="wrong_code">Code is incorrect</string>
     <string name="code_from_clipboard">Code have pasted from clipboard</string>
     <string name="password_too_short">Password length must be 8 characters or more </string>
     <string name="invalid_email">Invalid email</string>
     <string name="editable_key_hint">Field name</string>
     <string name="editable_value_hint">Value</string>
-
-    <string name="network_error">Network error. Please check your internet connection</string>
-
     <string name="directions_button">Show in Maps app</string>
     <string name="address_hint">Please check the address below and if it empty or wrong, enter the correct value (if possible)</string>
+
+    <string name="error_unknown">Unknown error</string>
+    <string name="error_network">Network error. Please check your internet connection</string>
+    <string name="error_server">Unknown server error</string>
 
     <string name="notification_important_channel_name">HyperTrack Important Notifications</string>
     <string name="notification_important_channel_description">HyperTrack Visits app notifications</string>
@@ -108,11 +77,12 @@
     <string name="splash_screen_no_key">No publishable_key</string>
     <string name="splash_screen_no_username">No email or phone_number</string>
     <string name="splash_screen_duplicate_fields">Duplicate fields</string>
-    <string name="splash_screen_deprecated_deeplink">The deeplink you\'re using is deprecated</string>
+    <string name="splash_screen_deprecated_deeplink">The deeplink you\'re using is deprecated. Please contact your manager to get a new one</string>
 
     <string name="sign_in_deeplink_issues">Having issues with the deeplink?</string>
     <string name="sign_in_deeplink_hint">In case if you have a deeplink \n you have to click it to log in</string>
     <string name="sign_in_paste_deeplink_hint">Paste the deeplink or login token here</string>
+    <string name="sign_in_hardware_id">Hardware ID</string>
     <string name="sign_in_deeplink_invalid_format">Invalid deeplink format.\nCorrect format: \n\n <b>https://hypertrack-logistics.app.link/\u2026</b></string>
 
     <string name="permissions_allow_location_access">Please allow Location permissions</string>
@@ -125,6 +95,12 @@
         - Compute daily stats \n\t\t(like total driven distance)
     </string>
     <string name="permission_rationale_3">We also need to access accelerometer to detect when you drive or walk</string>
+
+    <string name="continue_btn_text">Allow</string>
+    <string name="whitelisting_btn_text">Go to Settings</string>
+    <string name="allow_background_location_access">Allow All the Time Location Access</string>
+    <string name="background_location_permission_rationale">The permission is required to automatically start tracking location based on your work schedule (without you having to open app). The app will always show a notification when tracking is active.</string>
+    <string name="background_location_permission_option_hint">To adjust the permission press</string>
 
     <string name="visits_management_clocked_in">You are clocked in</string>
     <string name="visits_management_clocked_out">You are clocked out</string>
@@ -157,6 +133,11 @@
     <string name="timeline_geotag_dialog_id">Geotag ID</string>
     <string name="timeline_geotag_dialog_title">Geotag at %s</string>
     <string name="timeline_geotag_dialog_metadata">Geotag metadata</string>
+
+    <string name="summary_total_tracking_time">Tracked duration</string>
+    <string name="summary_drive">Drives</string>
+    <string name="summary_walk">Walks</string>
+    <string name="summary_stop">Stops</string>
 
     <string name="orders_list">Orders</string>
     <string name="orders_list_current_trip">Current trip</string>
@@ -226,6 +207,7 @@
     <string name="add_place_info_adjacent_geofence_error">There is another geofence adjacent to this position. Creation of adjacent geofences is prohibited</string>
     <string name="add_place_info_add_integration">Add integration</string>
     <string name="add_place_info_confirm_disabled">You have to provide company name</string>
+    <string name="add_place_info_radius_null">Radius can\'t be empty</string>
 
     <string name="place_integration_search_hint">Enter company name</string>
     <string name="place_integration_empty_placeholder">No entities found</string>
@@ -253,7 +235,6 @@
     <string name="profile_report_an_issue">Report an issue</string>
     <string name="profile_report_sent">App state is successfully reported</string>
     <string name="profile_open_dontkillmyapp">Click to open <b>Dontkillmyapp.com</b> for battery saver whitelisting instructions</string>
-
 
     <string name="select_destination">Select destination</string>
     <string name="select_destination_hint">Enter place name or address</string>

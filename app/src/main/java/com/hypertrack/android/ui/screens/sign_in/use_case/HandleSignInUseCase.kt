@@ -7,7 +7,7 @@ import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.SignedInAction
 import com.hypertrack.android.interactors.app.UserLoggedIn
 import com.hypertrack.android.ui.base.Consumable
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.sign_in.SignInFragmentDirections
 import com.hypertrack.android.utils.SimpleResult
 import com.hypertrack.android.utils.tryAsSimpleResult

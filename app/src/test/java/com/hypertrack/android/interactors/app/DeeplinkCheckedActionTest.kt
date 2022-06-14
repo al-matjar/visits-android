@@ -78,7 +78,7 @@ class DeeplinkCheckedActionTest {
                 )
                 assertTrue(
                     result.effects
-                        .filterIsInstance<ShowAppErrorMessageEffect>()
+                        .filterIsInstance<HandleAppErrorMessageEffect>()
                         .isNotEmpty()
                 )
             }
@@ -119,7 +119,7 @@ class DeeplinkCheckedActionTest {
                 )
                 assertTrue(
                     result.effects
-                        .filterIsInstance<ShowAppErrorMessageEffect>()
+                        .filterIsInstance<HandleAppErrorMessageEffect>()
                         .isNotEmpty()
                 )
             }
@@ -156,7 +156,7 @@ class DeeplinkCheckedActionTest {
                 assertTrue(result.effects.size == 1)
                 assertTrue(
                     result.effects
-                        .filterIsInstance<ShowAppErrorMessageEffect>()
+                        .filterIsInstance<HandleAppErrorMessageEffect>()
                         .isNotEmpty()
                 )
             }
@@ -210,7 +210,7 @@ class DeeplinkCheckedActionTest {
                 assertTrue(result.effects.size == 1)
                 assertTrue(
                     result.effects
-                        .filterIsInstance<ShowAppErrorMessageEffect>()
+                        .filterIsInstance<HandleAppErrorMessageEffect>()
                         .isNotEmpty()
                 )
             }

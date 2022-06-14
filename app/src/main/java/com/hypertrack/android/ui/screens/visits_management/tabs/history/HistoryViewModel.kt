@@ -1,5 +1,6 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.history
 
+import android.util.Log
 import androidx.lifecycle.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -19,7 +20,7 @@ import com.hypertrack.android.models.local.LocalHistory
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.Consumable
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.base.toConsumable
 import com.hypertrack.android.ui.common.delegates.DeviceStatusMarkerDisplayDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
@@ -29,21 +30,29 @@ import com.hypertrack.android.utils.toAddressString
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
+import com.hypertrack.android.ui.common.use_case.get_error_message.asError
 import com.hypertrack.android.ui.common.util.LocationUtils
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.*
+import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.android.utils.formatters.TimeValueFormatter
 
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import retrofit2.HttpException
 import java.lang.IllegalArgumentException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
+@Suppress("OPT_IN_USAGE")
 class HistoryViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val appInteractor: AppInteractor,
@@ -379,125 +388,137 @@ class HistoryViewModel(
     }
 
     private fun applyEffects(effects: Set<Effect>) {
-        try {
-            viewModelScope.launch {
-                effects.forEach { effect ->
-                    handleEffect(effect)
-                }
+        effects.forEach { effect ->
+            runInVmEffectsScope {
+                effectFlow(effect)
+                    .catchException { stateMachine.handleAction(OnErrorAction(it)) }
+                    .collect()
             }
-        } catch (e: Exception) {
-            stateMachine.handleAction(OnErrorAction(e))
         }
     }
 
-    private suspend fun handleEffect(effect: Effect) {
-        when (effect) {
+    private suspend fun effectFlow(effect: Effect): Flow<Unit> {
+        return when (effect) {
             is MoveMapEffect -> {
-                when (effect.target) {
-                    is Either.Left -> effect.map.animateCamera(effect.target.left)
-                    is Either.Right -> effect.map.animateCameraToBounds(effect.target.right)
-                } as Any?
+                {
+                    when (effect.target) {
+                        is Either.Left -> effect.map.animateCamera(effect.target.left)
+                        is Either.Right -> effect.map.animateCameraToBounds(effect.target.right)
+                    }
+                }.asFlow().flowOn(Dispatchers.Main)
             }
             is SetBottomSheetStateEffect -> {
-                setBottomSheetExpandedEvent.postValue(effect.expanded)
-                timelineArrowDirectionDown.postValue(effect.expanded)
+                {
+                    setBottomSheetExpandedEvent.postValue(effect.expanded)
+                    timelineArrowDirectionDown.postValue(effect.expanded)
+                }.asFlow()
             }
             is MoveMapToBoundsEffect -> {
-                effect.map.moveCamera(
-                    CameraUpdateFactory.newLatLngBounds(
-                        effect.latLngBounds,
-                        effect.mapPadding
-                    )
-                )
-            }
-            is UpdateMapEffect -> {
-                effect.map.clear()
-                effect.userLocation?.let {
-                    effect.map.addUserLocation(it)
-                }
-                effect.map.addPolyline(effect.mapHistoryData.historyPolyline.polylineOptions)
-                effect.mapHistoryData.geotags.forEach { effect.map.addMarker(it.markerOptions) }
-                effect.mapHistoryData.geofenceVisits.forEach { effect.map.addMarker(it.markerOptions) }
-            }
-            is UpdateViewStateEffect -> {
-                displayViewState(effect.viewState)
-            }
-            is ShowDatePickerDialogEffect -> {
-                openDatePickerDialogEvent.postValue(effect.date)
-            }
-            is LoadHistoryEffect -> {
-                effect.userScope.historyInteractor.loadHistory(effect.date)
-            }
-            is SendErrorToCrashlytics -> {
-                crashReportsProvider.logException(effect.exception)
-            }
-            is OpenGeofenceVisitInfoDialogEffect -> {
-                effect.visit.id?.let {
-                    openDialogEvent.postValue(
-                        GeofenceVisitDialog(
-                            visitId = effect.visit.id,
-                            geofenceId = effect.visit.geofenceId,
-                            geofenceName = visitDisplayDelegate.getGeofenceName(effect.visit),
-                            geofenceDescription = visitDisplayDelegate.getGeofenceDescription(
-                                effect.visit
-                            ),
-                            integrationName = effect.visit.metadata?.integration?.name,
-                            address = geofenceVisitAddressDelegate.shortAddress(effect.visit),
-                            durationText = visitDisplayDelegate.getDurationText(effect.visit),
-                            routeToText = visitDisplayDelegate.getRouteToText(effect.visit)
+                {
+                    effect.map.moveCamera(
+                        CameraUpdateFactory.newLatLngBounds(
+                            effect.latLngBounds,
+                            effect.mapPadding
                         )
                     )
+                }.asFlow().flowOn(Dispatchers.Main)
+            }
+            is UpdateMapEffect -> {
+                {
+                    effect.map.clear()
+                    effect.userLocation?.let {
+                        effect.map.addUserLocation(it)
+                    }
+                    effect.map.addPolyline(effect.mapHistoryData.historyPolyline.polylineOptions)
+                    effect.mapHistoryData.geotags.forEach { effect.map.addMarker(it.markerOptions) }
+                    effect.mapHistoryData.geofenceVisits.forEach { effect.map.addMarker(it.markerOptions) }
+                }.asFlow().flowOn(Dispatchers.Main)
+            }
+            is UpdateViewStateEffect -> {
+                getViewStateFlow(effect).map {
+                    displayViewState(it)
                 }
             }
+            is ShowDatePickerDialogEffect -> {
+                { openDatePickerDialogEvent.postValue(effect.date) }.asFlow()
+            }
+            is LoadHistoryEffect -> {
+                { effect.userScope.historyInteractor.loadHistory(effect.date) }.asFlow()
+            }
+            is SendErrorToCrashlytics -> {
+                { crashReportsProvider.logException(effect.exception) }.asFlow()
+            }
+            is OpenGeofenceVisitInfoDialogEffect -> {
+                suspend {
+                    effect.visit.id?.let {
+                        openDialogEvent.postValue(
+                            GeofenceVisitDialog(
+                                visitId = effect.visit.id,
+                                geofenceId = effect.visit.geofenceId,
+                                geofenceName = visitDisplayDelegate.getGeofenceName(effect.visit),
+                                geofenceDescription = visitDisplayDelegate.getGeofenceDescription(
+                                    effect.visit
+                                ),
+                                integrationName = effect.visit.metadata?.integration?.name,
+                                address = geofenceVisitAddressDelegate.shortAddress(effect.visit),
+                                durationText = visitDisplayDelegate.getDurationText(effect.visit),
+                                routeToText = visitDisplayDelegate.getRouteToText(effect.visit)
+                            )
+                        )
+                    }
+                }.asFlow().map { }
+            }
             is OpenGeotagInfoDialogEffect -> {
-                openDialogEvent.postValue(
-                    GeotagDialog(
-                        geotagId = effect.geotag.id,
-                        title = geotagDisplayDelegate.getDescription(effect.geotag),
-                        metadataString = geotagDisplayDelegate.formatMetadata(effect.geotag),
-                        routeToText = geotagDisplayDelegate.getRouteToText(effect.geotag),
-                        address = effect.geotag.address
-                            ?: geocodingInteractor.getPlaceFromCoordinates(effect.geotag.location)
-                                ?.toAddressString(strictMode = false)
+                suspend {
+                    openDialogEvent.postValue(
+                        GeotagDialog(
+                            geotagId = effect.geotag.id,
+                            title = geotagDisplayDelegate.getDescription(effect.geotag),
+                            metadataString = geotagDisplayDelegate.formatMetadata(effect.geotag),
+                            routeToText = geotagDisplayDelegate.getRouteToText(effect.geotag),
+                            address = effect.geotag.address
+                                ?: geocodingInteractor.getPlaceFromCoordinates(effect.geotag.location)
+                                    ?.toAddressString(strictMode = false)
+                        )
                     )
-                )
+                }.asFlow()
             }
             is OpenGeofenceDetailsEffect -> {
-                destination.postValue(
-                    VisitsManagementFragmentDirections
-                        .actionVisitManagementFragmentToPlaceDetailsFragment(effect.geofenceId)
-                )
+                {
+                    destination.postValue(
+                        VisitsManagementFragmentDirections
+                            .actionVisitManagementFragmentToPlaceDetailsFragment(effect.geofenceId)
+                    )
+                }.asFlow()
             }
             is IllegalActionEffect -> {
-                crashReportsProvider.logException(
-                    IllegalActionException(
-                        effect.action, effect.state
+                {
+                    crashReportsProvider.logException(
+                        IllegalActionException(
+                            effect.action, effect.state
+                        )
                     )
-                )
+                }.asFlow()
             }
-        } as Any?
+        }
     }
 
     private fun stateChangeEffects(newState: State): Set<Effect> {
         return when (newState) {
             is Initial -> setOf(
                 UpdateViewStateEffect(
-                    getViewStateForHistory(
-                        newState.date,
-                        true,
-                        newState.historyData
-                    )
+                    newState.date,
+                    true,
+                    newState.historyData
                 )
             )
             is MapReadyState -> {
                 setOf(
                     UpdateViewStateEffect(
-                        getViewStateForHistory(
-                            newState.date,
-                            !newState.bottomSheetExpanded,
-                            newState.historyData
-                        )
-                    ),
+                        newState.date,
+                        !newState.bottomSheetExpanded,
+                        newState.historyData
+                    )
                 ) + getUpdateMapEffectIfNeeded(newState)
             }
         }
@@ -576,11 +597,10 @@ class HistoryViewModel(
         )
     }
 
-    private fun getViewStateForHistory(
-        date: LocalDate,
-        showAddGeotagButton: Boolean,
-        historyData: LoadingState<HistoryData>
-    ): ViewState {
+    private fun getViewStateFlow(effect: UpdateViewStateEffect): Flow<ViewState> {
+        val historyData = effect.historyData
+        val date = effect.date
+        val showAddGeotagButton = effect.showAddGeotagButton
         return when (historyData) {
             is LoadingSuccess -> {
                 val summary = historyData.data.summary
@@ -615,7 +635,7 @@ class HistoryViewModel(
                             R.string.timeline_empty_summary
                         }
                     )
-                )
+                ).toFlow()
             }
             is Loading -> {
                 ViewState(
@@ -629,21 +649,25 @@ class HistoryViewModel(
                     showAddGeotagButton = true,
                     totalDriveDurationText = null,
                     totalDriveDistanceText = null,
-                )
+                ).toFlow()
             }
             is LoadingFailure -> {
-                ViewState(
-                    date = null,
-                    showProgressbar = false,
-                    errorText = osUtilsProvider.getErrorMessage(historyData.exception),
-                    tiles = listOf(),
-                    daySummaryTitle = null,
-                    showTimelineRecyclerView = false,
-                    showUpArrow = false,
-                    showAddGeotagButton = true,
-                    totalDriveDurationText = null,
-                    totalDriveDistanceText = null,
-                )
+                getErrorMessageUseCase.execute(
+                    historyData.exception.asError()
+                ).map { errorMessage ->
+                    ViewState(
+                        date = null,
+                        showProgressbar = false,
+                        errorText = errorMessage,
+                        tiles = listOf(),
+                        daySummaryTitle = null,
+                        showTimelineRecyclerView = false,
+                        showUpArrow = false,
+                        showAddGeotagButton = true,
+                        totalDriveDurationText = null,
+                        totalDriveDistanceText = null,
+                    )
+                }
             }
         }
     }
@@ -857,7 +881,7 @@ class HistoryViewModel(
         }
     }
 
-    fun onError(e: Exception) {
+    override fun onError(e: Exception) {
         stateMachine.handleAction(OnErrorAction(e))
     }
 

@@ -1,8 +1,7 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.summary
 
 import androidx.lifecycle.*
-import com.hypertrack.android.interactors.SummaryInteractor
-import com.hypertrack.android.models.HistoryError
+import com.hypertrack.android.interactors.history.SummaryInteractor
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.utils.formatters.DistanceFormatter
@@ -44,8 +43,6 @@ class SummaryViewModel(
                 ),
             )
         }
-
-    val error = MutableLiveData<HistoryError>()
 
     fun refreshSummary() {
         summaryInteractor.refresh()

@@ -12,7 +12,7 @@ import com.hypertrack.android.interactors.app.UserNotLoggedIn
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
-import com.hypertrack.android.utils.IllegalActionException
+import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.ReducerResult
 
 class CurrentTripReducer(

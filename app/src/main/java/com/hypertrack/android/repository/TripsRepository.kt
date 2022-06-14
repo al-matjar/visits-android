@@ -18,10 +18,12 @@ import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.util.toMap
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.SimpleResult
+import com.hypertrack.android.utils.exception.SimpleException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 interface TripsRepository {
     val trips: LiveData<List<LocalTrip>>
@@ -145,7 +147,7 @@ class TripsRepositoryImpl(
             it.orders.isNullOrEmpty() && it.status == TripStatus.ACTIVE.value
         }
         if (legacyTrip != null) {
-            crashReportsProvider.logException(Exception("legacy trip received"))
+            crashReportsProvider.logException(SimpleException("legacy trip received"))
             return listOf()
         } else {
             val localTrips = tripsStorage.getTrips().toMap { it.id }

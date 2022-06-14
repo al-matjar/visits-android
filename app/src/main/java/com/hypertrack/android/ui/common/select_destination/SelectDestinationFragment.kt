@@ -68,63 +68,63 @@ open class SelectDestinationFragment :
             } else false
         }
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             progressbar.setGoneState(!it)
-        })
+        }
 
-        vm.placesResults.observe(viewLifecycleOwner, {
+        vm.placesResults.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             adapter.clear()
             adapter.addAll(it)
             adapter.notifyDataSetChanged()
-        })
+        }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, {
-            SnackbarUtil.showErrorSnackbar(view, it)
-        })
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
+        }
 
-        vm.searchQuery.observe(viewLifecycleOwner, {
+        vm.searchQuery.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             search.silentUpdate(watcher, it)
             search.setSelection(search.textString().length)
             updateClearQueryView()
-        })
+        }
 
-        vm.locationInfo.observe(viewLifecycleOwner, {
+        vm.locationInfo.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             lLocationInfo.setGoneState(it == null)
             it?.let {
                 tvLocationAddress.text = it.address
                 tvPlaceName.text = it.placeName
                 tvPlaceName.setGoneState(it.placeName == null)
             }
-        })
+        }
 
-        vm.showConfirmButton.observe(viewLifecycleOwner, {
+        vm.showConfirmButton.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             confirm.setGoneState(!it)
-        })
+        }
 
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
-        })
+        }
 
-        vm.closeKeyboard.observe(viewLifecycleOwner, {
+        vm.closeKeyboard.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             Utils.hideKeyboard(requireActivity())
-        })
+        }
 
-        vm.goBackEvent.observe(viewLifecycleOwner, {
+        vm.goBackEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().previousBackStackEntry?.savedStateHandle?.set(
                 CurrentTripFragment.KEY_DESTINATION,
                 it
             )
             findNavController().popBackStack()
             Utils.hideKeyboard(requireActivity())
-        })
+        }
 
-        vm.removeSearchFocusEvent.observe(viewLifecycleOwner, {
+        vm.removeSearchFocusEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             search.clearFocus()
-        })
+        }
 
-        vm.showMyLocationButton.observe(viewLifecycleOwner, {
+        vm.showMyLocationButton.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             bMyLocation.setGoneState(!it)
-        })
+        }
 
         bMyLocation.setOnClickListener {
             vm.onMyLocationClick()

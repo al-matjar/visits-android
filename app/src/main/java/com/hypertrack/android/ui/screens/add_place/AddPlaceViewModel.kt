@@ -12,8 +12,8 @@ import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.Consumable
-import com.hypertrack.android.ui.base.ErrorHandler
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.base.observeManaged
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.delegates.GeofenceId
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
@@ -25,6 +25,7 @@ import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.stringFromResource
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.launch
+import org.xml.sax.ErrorHandler
 
 
 class AddPlaceViewModel(
@@ -44,11 +45,11 @@ class AddPlaceViewModel(
 
     override val loadingState = placesInteractor.isLoadingForLocation
 
-    override val errorHandler = ErrorHandler(
-        osUtilsProvider,
-        crashReportsProvider,
-        placesInteractor.errorFlow.asLiveData()
-    )
+    init {
+        placesInteractor.errorFlow.asLiveData().observeManaged { consumable ->
+            consumable.consume { onError(it) }
+        }
+    }
 
     private var radiusCircle: Circle? = null
 

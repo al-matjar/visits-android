@@ -1,14 +1,14 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.orders
 
 import androidx.lifecycle.*
-import com.hypertrack.android.interactors.TripsInteractor
-import com.hypertrack.android.interactors.TripsUpdateTimerInteractor
+import com.hypertrack.android.interactors.trip.TripsInteractor
+import com.hypertrack.android.interactors.trip.TripsUpdateTimerInteractor
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
@@ -24,8 +24,6 @@ class OrdersListViewModel(
     private val dateTimeFormatter: DateTimeFormatter,
     private val addressDelegate: OrderAddressDelegate,
 ) : BaseViewModel(baseDependencies) {
-
-    val error = tripsInteractor.errorFlow.asLiveData()
 
     val trip: LiveData<LocalTrip?> = tripsInteractor.currentTrip
 
@@ -58,6 +56,9 @@ class OrdersListViewModel(
         }
 
     init {
+        tripsInteractor.errorFlow.asLiveData().observeManaged {
+            showExceptionMessageAndReport(it)
+        }
         onRefresh()
     }
 

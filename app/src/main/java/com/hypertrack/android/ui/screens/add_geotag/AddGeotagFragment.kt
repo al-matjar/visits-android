@@ -9,7 +9,8 @@ import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.common.adapters.EditableKeyValueAdapter
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.SnackBarUtil
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
 import com.hypertrack.android.ui.common.util.toViewOrHideIfNull
@@ -49,7 +50,7 @@ class AddGeotagFragment : BaseFragment<MainActivity>(R.layout.fragment_add_geota
         rvGeotagMetadata.setLinearLayoutManager(requireContext())
         rvGeotagMetadata.adapter = metadataAdapter
 
-        vm.viewState.observe(viewLifecycleOwner) { viewState ->
+        vm.viewState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { viewState ->
             viewState.errorText.toViewOrHideIfNull(tvAddGeotagError)
             tvAddGeotagHint.setGoneState(!viewState.showHint)
             listOf(rvGeotagMetadata, bAddField).forEach {
@@ -62,12 +63,12 @@ class AddGeotagFragment : BaseFragment<MainActivity>(R.layout.fragment_add_geota
             map.setGoneState(!viewState.showMap)
         }
 
-        vm.popBackStack.observe(viewLifecycleOwner) {
+        vm.popBackStack.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().popBackStack()
         }
 
-        vm.snackbar.observe(viewLifecycleOwner) {
-            SnackbarUtil.showErrorSnackbar(view, it)
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
         }
 
         bAddField.setOnClickListener {

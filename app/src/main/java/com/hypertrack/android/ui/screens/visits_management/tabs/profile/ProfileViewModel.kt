@@ -14,7 +14,7 @@ import com.hypertrack.android.repository.PublishableKeyRepository
 import com.hypertrack.android.repository.user.UserRepository
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.*

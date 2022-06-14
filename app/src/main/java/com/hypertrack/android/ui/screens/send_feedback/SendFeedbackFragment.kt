@@ -7,6 +7,7 @@ import androidx.navigation.fragment.findNavController
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.textString
 import com.hypertrack.android.utils.stringFromResource
 import com.hypertrack.logistics.android.github.R
@@ -29,9 +30,9 @@ class SendFeedbackFragment : BaseFragment<MainActivity>(R.layout.fragment_send_f
             setHomeButtonEnabled(true)
         }
 
-        vm.popBackStack.observe(viewLifecycleOwner, {
+        vm.popBackStack.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().popBackStack()
-        })
+        }
 
         if (etFeedback.textString().isBlank()) {
             etFeedback.setText(vm.getSavedText())

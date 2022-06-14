@@ -8,7 +8,6 @@ class LiveDataObserverManager {
 
     private val observers = mutableListOf<Pair<LiveData<*>, Observer<*>>>()
 
-
     fun add(pair: Pair<LiveData<*>, Observer<*>>) {
         observers.add(pair)
     }

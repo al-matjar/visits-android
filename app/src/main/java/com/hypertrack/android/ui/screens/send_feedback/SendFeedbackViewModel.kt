@@ -4,7 +4,7 @@ import android.app.Activity
 import com.hypertrack.android.interactors.FeedbackInteractor
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.logistics.android.github.R
 
 class SendFeedbackViewModel(

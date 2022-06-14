@@ -4,6 +4,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import com.hypertrack.android.ui.base.Consumable
 
 fun <T> LiveData<T>.toHotTransformation(): HotLiveDataTransformation<T> {
     return HotLiveDataTransformation(this)
@@ -22,6 +23,10 @@ fun <T> LiveData<T>.requireValue(): T {
 fun <T> MutableLiveData<T>.updateValue(value: T) {
     this.value = value
     postValue(value)
+}
+
+fun <T> MutableLiveData<Consumable<T>>.postValue(item: T) {
+    postValue(Consumable(item))
 }
 
 fun <T> LiveData<T>.observeWithErrorHandling(

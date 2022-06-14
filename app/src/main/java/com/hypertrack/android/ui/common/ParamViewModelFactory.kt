@@ -12,17 +12,19 @@ import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoViewModel
 import com.hypertrack.android.ui.screens.place_details.PlaceDetailsViewModel
 import com.hypertrack.android.ui.screens.order_details.OrderDetailsViewModel
 import com.hypertrack.android.ui.common.select_destination.DestinationData
+import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.add_order_info.AddOrderParams
+import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.utils.formatters.MetersDistanceFormatter
 import kotlinx.coroutines.FlowPreview
 
-@FlowPreview
 @Suppress("UNCHECKED_CAST")
 class ParamViewModelFactory<T>(
     private val param: T,
     private val appInteractor: AppInteractor,
     private val appScope: AppScope,
     private val userScope: UserScope,
+    private val useCases: UseCases
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -62,6 +64,7 @@ class ParamViewModelFactory<T>(
                         appScope.osUtilsProvider,
                         userScope.measurementUnitsRepository
                     ),
+                    useCases.logExceptionToCrashlyticsUseCase
                 ) as T
             }
             AddOrderInfoViewModel::class.java -> AddOrderInfoViewModel(

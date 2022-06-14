@@ -2,18 +2,12 @@ package com.hypertrack.android.ui.screens.visits_management.tabs.history
 
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.Polyline
-import com.google.android.gms.maps.model.PolylineOptions
 import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.models.local.Geotag
 import com.hypertrack.android.models.local.LocalGeofenceVisit
-import com.hypertrack.android.models.local.LocalHistory
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.utils.Either
-import com.hypertrack.android.utils.IllegalActionException
-import java.lang.IllegalArgumentException
+import com.hypertrack.android.utils.LoadingState
 import java.time.LocalDate
 
 sealed class Effect {
@@ -41,7 +35,11 @@ data class UpdateMapEffect(
     val mapHistoryData: MapHistoryData,
 ) : Effect()
 
-data class UpdateViewStateEffect(val viewState: ViewState) : Effect()
+data class UpdateViewStateEffect(
+    val date: LocalDate,
+    val showAddGeotagButton: Boolean,
+    val historyData: LoadingState<HistoryData>
+) : Effect()
 
 data class ShowDatePickerDialogEffect(val date: LocalDate) : Effect()
 

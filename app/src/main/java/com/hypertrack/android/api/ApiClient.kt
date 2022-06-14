@@ -9,6 +9,7 @@ import com.hypertrack.android.models.*
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.utils.*
+import com.hypertrack.android.utils.exception.SimpleException
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -150,7 +151,7 @@ class ApiClient(
                 )
             ) {
                 if (isSuccessful) {
-                    return body().asHistory()
+                    return body()!!.asHistory()
                 } else {
                     return HistoryError(HttpException(this))
                 }
@@ -335,29 +336,25 @@ class ApiClient(
 
 }
 
-private fun HistoryResponse?.asHistory(): HistoryResult {
-    return if (this == null) {
-        HistoryError(null)
-    } else {
-        History(
-            Summary(
-                distance,
-                duration,
-                distance,
-                driveDuration ?: 0,
-                stepsCount ?: 0,
-                walkDuration,
-                stopDuration,
-            ),
-            locations.coordinates.map {
-                Location(
-                    latitude = it.latitude,
-                    longitude = it.longitude
-                ) to it.timestamp
-            },
-            markers.map { it.asMarker() }
-        )
-    }
+private fun HistoryResponse.asHistory(): HistoryResult {
+    return History(
+        Summary(
+            distance,
+            duration,
+            distance,
+            driveDuration ?: 0,
+            stepsCount ?: 0,
+            walkDuration,
+            stopDuration,
+        ),
+        locations.coordinates.map {
+            Location(
+                latitude = it.latitude,
+                longitude = it.longitude
+            ) to it.timestamp
+        },
+        markers.map { it.asMarker() }
+    )
 }
 
 fun HistoryMarker.asMarker(): Marker {
@@ -371,7 +368,7 @@ fun HistoryMarker.asMarker(): Marker {
                 data.metadata ?: emptyMap()
             )
         is HistoryGeofenceMarker -> asGeofenceMarker()
-        else -> throw IllegalArgumentException("Unknown marker type $type")
+        else -> throw SimpleException("Unknown marker type $type")
     }
 }
 

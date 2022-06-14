@@ -1,25 +1,41 @@
-package com.hypertrack.android.interactors
+package com.hypertrack.android.interactors.trip
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.api.*
+import com.hypertrack.android.api.ApiClient
+import com.hypertrack.android.api.OrderCompletionFailure
+import com.hypertrack.android.api.OrderCompletionResponse
+import com.hypertrack.android.api.OrderCompletionSuccess
+import com.hypertrack.android.api.OrderCreationParams
+import com.hypertrack.android.api.TripDestination
+import com.hypertrack.android.interactors.PhotoForUpload
+import com.hypertrack.android.interactors.PhotoUploadQueueInteractor
+import com.hypertrack.android.interactors.PhotoUploadingState
 import com.hypertrack.android.interactors.app.AppState
-import com.hypertrack.android.models.*
-import com.hypertrack.android.models.local.Order
+import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
-import com.hypertrack.android.repository.*
+import com.hypertrack.android.repository.TripCreationResult
+import com.hypertrack.android.repository.TripsRepository
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.ui.common.util.toHotTransformation
-import com.hypertrack.android.utils.*
-import kotlinx.coroutines.*
+import com.hypertrack.android.utils.ImageDecoder
+import com.hypertrack.android.utils.JustFailure
+import com.hypertrack.android.utils.JustSuccess
+import com.hypertrack.android.utils.OsUtilsProvider
+import com.hypertrack.android.utils.SimpleResult
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.util.*
 
@@ -73,7 +89,13 @@ open class TripsInteractorImpl(
     override val errorFlow = MutableSharedFlow<Consumable<Exception>>(
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
+    ).also { errorFlow ->
+        globalScope.launch {
+            tripsRepository.errorFlow.collect {
+                errorFlow.emit(it)
+            }
+        }
+    }
 
     override fun getOrderLiveData(orderId: String): LiveData<Order> {
         return Transformations.switchMap(tripsRepository.trips) {
@@ -350,8 +372,3 @@ fun <T> List<T>.hasSameContent(list: List<T>): Boolean {
     return containsAll(list) && list.containsAll(this)
 }
 
-sealed class AddOrderResult
-object AddOrderSuccess : AddOrderResult()
-class AddOrderError(val e: Exception) : AddOrderResult()
-
-object NotClockedInException : Exception()

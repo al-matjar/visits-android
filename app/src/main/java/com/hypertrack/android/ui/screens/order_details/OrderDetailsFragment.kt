@@ -18,7 +18,8 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.common.adapters.KeyValueAdapter
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.SnackBarUtil
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
 import com.hypertrack.android.ui.common.util.textString
@@ -68,59 +69,57 @@ class OrderDetailsFragment : ProgressDialogFragment(R.layout.fragment_order_deta
             vm.onPhotoClicked(it.photoId)
         }
 
-        vm.address.observe(viewLifecycleOwner) {
+        vm.address.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             tvAddress.text = it
         }
 
-        vm.metadata.observe(viewLifecycleOwner) {
+        vm.metadata.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             metadataAdapter.updateItems(it)
         }
 
-        vm.note.observe(viewLifecycleOwner) {
+        vm.note.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             etVisitNote.setText(it)
         }
 
-        vm.showCompleteButtons.observe(viewLifecycleOwner) {
+        vm.showCompleteButtons.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             orderCompletionGroup.setGoneState(!it)
         }
 
-        vm.showSnoozeButton.observe(viewLifecycleOwner) {
+        vm.showSnoozeButton.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             tvSnooze.setGoneState(!it)
             divider.setGoneState(!it)
         }
 
-        vm.showUnSnoozeButton.observe(viewLifecycleOwner) {
+        vm.showUnSnoozeButton.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             tvUnsnooze.setGoneState(!it)
             divider.setGoneState(!it)
         }
 
-        vm.showAddPhoto.observe(viewLifecycleOwner) {
+        vm.showAddPhoto.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             photosGroup.setGoneState(!it)
         }
 
-        vm.isNoteEditable.observe(viewLifecycleOwner) {
+        vm.isNoteEditable.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             etVisitNote.isEnabled = it
         }
 
-        vm.showNote.observe(viewLifecycleOwner) { show ->
+        vm.showNote.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { show ->
             listOf(etVisitNote, ivVisitNote).forEach { it.setGoneState(!show) }
         }
 
-        vm.loadingState.observe(viewLifecycleOwner) {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             if (it) showProgress() else dismissProgress()
         }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner) { err ->
-            err.consume {
-                SnackbarUtil.showErrorSnackbar(view, it)
-            }
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
         }
 
-        vm.photos.observe(viewLifecycleOwner) {
+        vm.photos.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             displayPhotos(it)
         }
 
-        vm.externalMapsIntent.observe(viewLifecycleOwner) {
+        vm.externalMapsIntent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             it.consume {
                 mainActivity().startActivity(it)
             }

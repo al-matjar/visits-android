@@ -1,8 +1,7 @@
 package com.hypertrack.android.ui.common.select_destination.reducer
 
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
-import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
-import com.hypertrack.android.utils.IllegalActionException
+import com.hypertrack.android.utils.exception.IllegalActionException
 
 class SelectDestinationViewModelReducer {
 

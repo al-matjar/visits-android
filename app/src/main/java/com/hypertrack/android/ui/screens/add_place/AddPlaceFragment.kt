@@ -5,6 +5,7 @@ import android.view.View
 import androidx.fragment.app.viewModels
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationFragment
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_select_destination.*
 import kotlinx.coroutines.FlowPreview
@@ -21,11 +22,11 @@ open class AddPlaceFragment : SelectDestinationFragment() {
 
         toolbar.title = getString(R.string.add_place)
 
-        vm.adjacentGeofenceDialog.observe(viewLifecycleOwner, {
+        vm.adjacentGeofenceDialog.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             it.consume {
                 vm.createConfirmationDialog(requireContext(), it).show()
             }
-        })
+        }
     }
 
 }

@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.MyApplication
 import io.branch.referral.Branch
 import io.branch.referral.BranchError
 import org.json.JSONObject
@@ -65,6 +66,7 @@ class BranchWrapper(
         callback: (DeeplinkResult) -> Unit
     ) {
         try {
+            crashReportsProvider.log("Checking for deeplink")
             uri?.let {
                 crashReportsProvider.log("got deeplink $uri")
             }
@@ -134,12 +136,21 @@ class BranchWrapper(
     companion object {
         const val KEY_BRANCH_FORCE_NEW_SESSION = "branch_force_new_session"
         private const val KEY_CLICKED_BRANCH_LINK = "+clicked_branch_link"
-        const val BRANCH_CONNECTION_TIMEOUT = 30000
+        const val BRANCH_TIMEOUT = 60000
+        private const val BRANCH_CONNECTION_TIMEOUT = 30000
+        private const val BRANCH_INTERVAL_BETWEEN_RETRIES = 1000
+        private const val BRANCH_RETRY_COUNT = 3
 
         fun init(application: Application) {
-            // Branch.enableLogging();
-            Branch.getAutoInstance(application)
-                .setNetworkTimeout(BRANCH_CONNECTION_TIMEOUT)
+//            if(MyApplication.DEBUG_MODE) {
+//                 Branch.enableLogging();
+//            }
+            Branch.getAutoInstance(application).apply {
+                setNetworkTimeout(BRANCH_TIMEOUT)
+                setNetworkConnectTimeout(BRANCH_CONNECTION_TIMEOUT)
+                setRetryCount(BRANCH_RETRY_COUNT)
+                setRetryInterval(BRANCH_INTERVAL_BETWEEN_RETRIES)
+            }
         }
     }
 }
@@ -156,7 +167,3 @@ private fun JSONObject.toStringMap(): Map<String, String> {
     }
 }
 
-class BranchErrorException(
-    val code: Int,
-    val branchMessage: String
-) : Exception("$code: $branchMessage")

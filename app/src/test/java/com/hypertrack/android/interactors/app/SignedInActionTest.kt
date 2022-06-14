@@ -34,18 +34,12 @@ class SignedInActionTest {
             (result.newState as Initialized).let { newState ->
                 println(result.effects)
                 assertEquals(newUserState, newState.userState)
-                assertTrue(result.effects.size == 3)
+                assertTrue(result.effects.size == 2)
                 result.effects
                     .filterIsInstance<CleanupUserScopeEffect>()
                     .first()
                     .let {
                         assertEquals(oldUserScope, it.oldUserScope)
-                    }
-                result.effects
-                    .filterIsInstance<SetCrashReportingDeviceIdentifier>()
-                    .first()
-                    .let {
-                        assertEquals(deviceId, it.deviceId)
                     }
                 result.effects
                     .filterIsInstance<NavigateToUserScopeScreensEffect>()
@@ -77,18 +71,12 @@ class SignedInActionTest {
             (result.newState as Initialized).let { newState ->
                 println(result.effects)
                 assertEquals(newUserState, newState.userState)
-                assertTrue(result.effects.size == 3)
+                assertTrue(result.effects.size == 2)
                 result.effects
                     .filterIsInstance<CleanupUserScopeEffect>()
                     .first()
                     .let {
                         assertEquals(oldUserScope, it.oldUserScope)
-                    }
-                result.effects
-                    .filterIsInstance<SetCrashReportingDeviceIdentifier>()
-                    .first()
-                    .let {
-                        assertEquals(deviceId, it.deviceId)
                     }
                 result.effects
                     .filterIsInstance<NavigateToUserScopeScreensEffect>()

@@ -9,7 +9,7 @@ import com.hypertrack.android.observeAndAssertNull
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.IntegrationsRepository
 import com.hypertrack.android.ui.base.Consumable
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler
 import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoFragment
 import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoFragmentDirections
@@ -48,7 +48,6 @@ class AddPlaceInfoViewModelTest {
     fun `it should show add integration screen on place name click if integrations enabled and don't show if not enabled`() {
         val reducer = AddPlaceInfoReducer(
             mockk(),
-            mockk(),
         )
         val mockLiveData = mockk<MutableLiveData<Consumable<NavDirections>>>(relaxed = true)
         val effectsHandler = AddPlaceInfoEffectsHandler(
@@ -58,6 +57,7 @@ class AddPlaceInfoViewModelTest {
             mockk(),
             mockk(),
             mockLiveData,
+            mockk(),
             mockk(),
             mockk(),
             mockk(),

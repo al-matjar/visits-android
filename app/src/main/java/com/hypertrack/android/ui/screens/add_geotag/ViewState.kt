@@ -28,10 +28,10 @@ class GeotagCreationViewState : ViewState(
     errorText = null
 )
 
-class ErrorViewState(errorMessage: ErrorMessage) : ViewState(
+class ErrorViewState(errorMessage: String) : ViewState(
     createButtonEnabled = false,
     showHint = false,
     showMetadata = false,
     showMap = false,
-    errorText = errorMessage.toString()
+    errorText = errorMessage
 )

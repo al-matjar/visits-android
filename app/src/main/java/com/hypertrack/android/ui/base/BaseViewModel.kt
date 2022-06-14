@@ -4,41 +4,53 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.*
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
+import com.hypertrack.android.ui.common.use_case.ShowErrorUseCase
+import com.hypertrack.android.ui.common.use_case.get_error_message.DisplayableError
+import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionError
+import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
+import com.hypertrack.android.ui.common.use_case.get_error_message.TextError
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.utils.*
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-@Suppress("LeakingThis")
+@Suppress("LeakingThis", "OPT_IN_USAGE")
 open class BaseViewModel(
     private val baseDependencies: BaseViewModelDependencies
 ) : ViewModel() {
+
     protected val crashReportsProvider = baseDependencies.crashReportsProvider
+
     protected val osUtilsProvider = baseDependencies.osUtilsProvider
     protected val resourceProvider = baseDependencies.resourceProvider
 
     val destination = MutableLiveData<Consumable<NavDirections>>()
     val popBackStack = MutableLiveData<Consumable<Boolean>>()
     val snackbar = MutableLiveData<Consumable<String>>()
-
-    open val errorHandler =
-        ErrorHandler(baseDependencies.osUtilsProvider, baseDependencies.crashReportsProvider)
-
+    val showErrorMessageEvent = MutableLiveData<Consumable<ErrorMessage>>()
     open val loadingState = MutableLiveData<Boolean>()
 
-    private val liveDataObserverManager = LiveDataObserverManager()
+    protected val getErrorMessageUseCase = GetErrorMessageUseCase(resourceProvider)
+    protected val showErrorUseCase = ShowErrorUseCase(
+        showErrorMessageEvent,
+        getErrorMessageUseCase
+    )
 
-    protected fun <T> LiveData<T>.observeManaged(observer: Observer<T>) {
-        this.observeManaged(liveDataObserverManager, observer)
-    }
+    private val liveDataObserverManager = LiveDataObserverManager()
 
     fun withLoadingStateAndErrorHandler(code: (suspend () -> Unit)) {
         loadingState.postValue(true)
         viewModelScope.launch(CoroutineExceptionHandler { _, e ->
             if (e is Exception) {
-                errorHandler.postException(e)
+                showExceptionMessageAndReport(e)
                 loadingState.postValue(false)
             } else {
                 crashReportsProvider.logException(e)
@@ -49,14 +61,50 @@ open class BaseViewModel(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    override fun onCleared() {
+        liveDataObserverManager.onCleared()
+    }
+
+    open fun onError(exception: Exception) {
+        // todo avoid infinite loop on error when reporting error
+        showExceptionMessageAndReport(exception)
+    }
+
+    protected fun showExceptionMessageAndReport(consumable: Consumable<Exception>) {
+        consumable.consume {
+            showExceptionMessageAndReport(it)
+        }
+    }
+
+    // todo remove workaround for legacy code (just use flow for effect)
+    protected fun showExceptionMessageAndReport(exception: Exception) {
+        runInVmEffectsScope {
+            crashReportsProvider.logException(exception)
+            showErrorUseCase.execute(ExceptionError(exception)).collect()
+        }
+    }
+
+    // todo remove workaround for legacy code (just use flow for effect)
+    protected fun showError(@StringRes stringRes: Int) {
+        runInVmEffectsScope {
+            showErrorUseCase.execute(TextError(stringRes)).collect()
+        }
+    }
+
+    protected fun <T> LiveData<T>.observeManaged(observer: Observer<T>) {
+        this.observeManaged(liveDataObserverManager, observer)
+    }
+
     protected fun runInVmEffectsScope(block: suspend CoroutineScope.() -> Unit): Job {
         // todo sync with splash screen and activity viewmodel
         return viewModelScope.launch(Dispatchers.Default, block = block)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun onCleared() {
-        liveDataObserverManager.onCleared()
+    fun Flow<DisplayableError>.showErrorMessage(): Flow<Unit> {
+        return flatMapConcat {
+            showErrorUseCase.execute(it)
+        }
     }
 }
 
@@ -65,75 +113,6 @@ class BaseViewModelDependencies(
     val resourceProvider: ResourceProvider,
     val crashReportsProvider: CrashReportsProvider,
 )
-
-class ErrorHandler(
-    private val resourceProvider: ResourceProvider,
-    private val crashReportsProvider: CrashReportsProvider,
-    private val exceptionSource: LiveData<Consumable<Exception>>? = null,
-    private val errorTextSource: LiveData<Consumable<String>>? = null
-) {
-
-    val exception: LiveData<Consumable<Exception>>
-        get() = _exception
-    private val _exception = MediatorLiveData<Consumable<Exception>>().apply {
-        exceptionSource?.let {
-            addSource(exceptionSource) {
-                onExceptionReceived(it.payload)
-                postValue(it)
-            }
-        }
-    }
-
-    val errorText: LiveData<Consumable<String>>
-        get() = _errorText
-    private val _errorText = MediatorLiveData<Consumable<String>>().apply {
-        errorTextSource?.let {
-            addSource(errorTextSource) {
-                postValue(it)
-            }
-        }
-        addSource(_exception) {
-            postValue(it.map {
-                resourceProvider.getErrorMessage(it).text
-            })
-        }
-    }
-
-    fun postConsumable(e: Consumable<Exception>) {
-        onExceptionReceived(e.payload)
-        _exception.postValue(e)
-    }
-
-    fun postException(e: Exception) {
-        onExceptionReceived(e)
-        _exception.postValue(Consumable(e))
-    }
-
-    fun postText(e: String) {
-        _errorText.postValue(Consumable(e))
-    }
-
-    fun postText(@StringRes res: Int) {
-        _errorText.postValue(Consumable(resourceProvider.stringFromResource(res)))
-    }
-
-    private fun onExceptionReceived(e: Exception) {
-        crashReportsProvider.logException(e)
-    }
-
-    fun handle(code: () -> Unit) {
-        try {
-            code.invoke()
-        } catch (e: Exception) {
-            postException(e)
-        }
-    }
-
-}
-
-fun <T> MutableLiveData<Consumable<T>>.postValue(item: T) {
-    postValue(Consumable(item))
-}
 
 fun NavController.navigate(d: Consumable<NavDirections>) {
     d.consume {
@@ -151,3 +130,5 @@ fun withErrorHandling(
         errorHandler.invoke(e)
     }
 }
+
+

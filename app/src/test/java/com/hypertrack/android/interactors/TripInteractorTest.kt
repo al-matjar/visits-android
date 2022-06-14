@@ -1,7 +1,6 @@
 package com.hypertrack.android.interactors
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.api.*
@@ -9,12 +8,13 @@ import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.api.models.RemoteOrder
+import com.hypertrack.android.interactors.trip.TripsInteractor
+import com.hypertrack.android.interactors.trip.TripsInteractorImpl
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.*
-import com.hypertrack.android.use_case.sdk.TrackingStarted
 import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.JustSuccess
 import io.mockk.*

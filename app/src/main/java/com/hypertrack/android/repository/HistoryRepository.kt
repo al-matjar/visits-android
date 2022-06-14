@@ -47,7 +47,7 @@ class HistoryRepositoryImpl(
                     }
                 }
                 is HistoryError -> {
-                    crashReportsProvider.logException(res.error ?: Exception("History error null"))
+                    crashReportsProvider.logException(res.error)
                 }
             }
             return res

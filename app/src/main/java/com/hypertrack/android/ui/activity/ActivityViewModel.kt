@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -25,13 +26,17 @@ import com.hypertrack.android.interactors.app.UserLoggedIn
 import com.hypertrack.android.interactors.app.UserNotLoggedIn
 import com.hypertrack.android.ui.activity.use_case.HandleNotificationClickUseCase
 import com.hypertrack.android.ui.base.Consumable
+import com.hypertrack.android.ui.base.observeManaged
 import com.hypertrack.android.ui.base.withErrorHandling
+import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionError
+import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.NotificationUtil
 import com.hypertrack.android.utils.catchException
-import com.hypertrack.android.utils.format
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +50,7 @@ class ActivityViewModel(
     private val crashReportsProvider: CrashReportsProvider,
     private val branchWrapper: BranchWrapper,
     private val appCoroutineScope: CoroutineScope,
+    private val getErrorMessageUseCase: GetErrorMessageUseCase,
 ) : ViewModel() {
 
     val navigationEvent = MediatorLiveData<Consumable<NavDirections>>().apply {
@@ -52,8 +58,16 @@ class ActivityViewModel(
             postValue(it)
         }
     }
-    val showErrorSnackBarEvent = Transformations.map(appInteractor.appErrorEvent) {
-        it.map { exception -> exception.format() }
+    val showErrorMessageEvent = Transformations.switchMap(appInteractor.appErrorEvent) {
+        MutableLiveData<Consumable<ErrorMessage>>().apply {
+            it.consume {
+                appCoroutineScope.launch {
+                    getErrorMessageUseCase.execute(ExceptionError(it)).collect {
+                        postValue(it)
+                    }
+                }
+            }
+        }
     }
 
     // todo navigate via global nav event
@@ -74,7 +88,6 @@ class ActivityViewModel(
             branchWrapper.activityOnStart(activity, intent?.data) {
                 appInteractor.handleAction(DeeplinkCheckedAction(it))
             }
-
             // todo remove after implementing blockers
             showPermissionPrompt()
         }
@@ -176,7 +189,8 @@ class ActivityViewModelFactory(
             appInteractor.appState,
             appScope.crashReportsProvider,
             appScope.branchWrapper,
-            appScope.appCoroutineScope
+            appScope.appCoroutineScope,
+            useCases.getErrorMessageUseCase
         ) as T
     }
 }

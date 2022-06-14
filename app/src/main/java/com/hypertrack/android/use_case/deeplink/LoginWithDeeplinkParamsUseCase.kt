@@ -62,11 +62,6 @@ class LoginWithDeeplinkParamsUseCase(
                                 validationResult
                             )
                         )
-                            .onEach {
-                                val error = it.failure.failure
-                                val exception = error.toException()
-                                logExceptionToCrashlyticsUseCase.execute(exception)
-                            }
                     }
                 }
             }

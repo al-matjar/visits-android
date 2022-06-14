@@ -7,7 +7,7 @@ import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.TripCreationScope
 import com.hypertrack.android.use_case.app.UseCases
-import com.hypertrack.android.utils.IllegalActionException
+import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.ReducerResult
 
@@ -53,7 +53,7 @@ class AppReducer(
                                 initialized.copy(viewState = SignInState)
                                     .withEffects(
                                         NavigateToSignInEffect,
-                                        ShowAppErrorMessageEffect(deeplinkResult.exception)
+                                        HandleAppErrorMessageEffect(deeplinkResult.exception)
                                     )
                                     .withEffects(pushEffect)
                             }
@@ -123,7 +123,7 @@ class AppReducer(
                                             is UserLoggedIn -> {
                                                 state.copy(viewState = UserScopeScreensState)
                                                     .withEffects(
-                                                        ShowAppErrorMessageEffect(
+                                                        HandleAppErrorMessageEffect(
                                                             action.deeplinkResult.exception
                                                         ),
                                                         NavigateToUserScopeScreensEffect(state.userState)
@@ -131,7 +131,7 @@ class AppReducer(
                                             }
                                             UserNotLoggedIn -> {
                                                 state.copy(viewState = SignInState).withEffects(
-                                                    ShowAppErrorMessageEffect(
+                                                    HandleAppErrorMessageEffect(
                                                         action.deeplinkResult.exception
                                                     ),
                                                     NavigateToSignInEffect
@@ -165,7 +165,7 @@ class AppReducer(
                                     }
                                     is DeeplinkError -> {
                                         state.withEffects(
-                                            ShowAppErrorMessageEffect(
+                                            HandleAppErrorMessageEffect(
                                                 action.deeplinkResult.exception
                                             )
                                         )
@@ -185,10 +185,6 @@ class AppReducer(
                                 CleanupUserScopeEffect(
                                     appScope,
                                     oldUserState.userScope
-                                ),
-                                SetCrashReportingDeviceIdentifier(
-                                    appScope,
-                                    oldUserState.deviceId
                                 )
                             )
                             UserNotLoggedIn -> setOf()
@@ -221,7 +217,7 @@ class AppReducer(
 
                         state.copy(showProgressbar = false)
                             .withEffects(
-                                ShowAppErrorMessageEffect(action.exception)
+                                HandleAppErrorMessageEffect(action.exception)
                             )
                             .withEffects(navigationEffect)
                     }
@@ -269,7 +265,7 @@ class AppReducer(
     private fun handleAction(action: AppErrorAction, state: AppState)
             : ReducerResult<AppState, Effect> {
         return state.withEffects(
-            ShowAppErrorMessageEffect(action.exception)
+            HandleAppErrorMessageEffect(action.exception)
         )
     }
 
@@ -302,7 +298,7 @@ class AppReducer(
                 throw it
             } else {
                 state.withEffects(
-                    ShowAppErrorMessageEffect(it)
+                    HandleAppErrorMessageEffect(it)
                 )
             }
         }
@@ -330,30 +326,6 @@ class AppReducer(
                 setOf()
             }
         }
-    }
-
-    private fun getSignInEffects(
-        oldUserState: UserState,
-        appScope: AppScope,
-        newUserState: UserLoggedIn
-    ): Set<Effect> {
-        return when (oldUserState) {
-            is UserLoggedIn -> setOf(
-                CleanupUserScopeEffect(
-                    appScope,
-                    oldUserState.userScope
-                ),
-                SetCrashReportingDeviceIdentifier(
-                    appScope,
-                    oldUserState.deviceId
-                )
-            )
-            UserNotLoggedIn -> setOf()
-        } + setOf(
-            NavigateToUserScopeScreensEffect(
-                newUserState
-            )
-        )
     }
 
 }

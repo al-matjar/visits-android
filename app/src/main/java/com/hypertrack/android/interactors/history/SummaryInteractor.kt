@@ -1,4 +1,4 @@
-package com.hypertrack.android.interactors
+package com.hypertrack.android.interactors.history
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
@@ -66,18 +66,10 @@ class HistoryInteractorImpl(
                         lastUpdate = updateTime
                     }
                     is HistoryError -> {
-                        errorFlow.emit(
-                            (res.error ?: Exception("History error null")).toConsumable()
-                        )
+                        errorFlow.emit(res.error.toConsumable())
                     }
                 }
             }
-        }
-    }
-
-    fun loadHistory(date: LocalDate) {
-        globalScope.launch {
-            historyRepository.getHistory(date)
         }
     }
 

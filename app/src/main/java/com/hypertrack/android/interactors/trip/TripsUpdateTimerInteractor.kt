@@ -1,6 +1,5 @@
-package com.hypertrack.android.interactors
+package com.hypertrack.android.interactors.trip
 
-import android.util.Log
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

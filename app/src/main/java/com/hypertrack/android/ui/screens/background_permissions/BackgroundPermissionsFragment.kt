@@ -14,6 +14,7 @@ import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.hide
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_background_permission.*
@@ -46,9 +47,9 @@ class BackgroundPermissionsFragment :
             tvOptionHint.hide()
         }
 
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
-        })
+        }
 
         btnContinue.setOnClickListener {
             vm.handleAction(OnAllowClick(mainActivity()))

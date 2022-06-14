@@ -10,6 +10,10 @@ sealed class UserAuthData(
     val metadata: Map<String, Any>?,
 ) {
     abstract val username: String
+
+    override fun toString(): String {
+        return "${javaClass.simpleName}(username=$username, publishableKey=$publishableKey, metadata=$metadata)"
+    }
 }
 
 class EmailAuthData(
@@ -38,7 +42,7 @@ class EmailAndPhoneAuthData(
 }
 
 @JsonClass(generateAdapter = true)
-class Email(val value: String)
+data class Email(val value: String)
 
 @JsonClass(generateAdapter = true)
-class Phone(val value: String)
+data class Phone(val value: String)

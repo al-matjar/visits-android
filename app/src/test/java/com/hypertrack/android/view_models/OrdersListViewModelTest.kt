@@ -5,7 +5,7 @@ import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.interactors.TripInteractorTest
-import com.hypertrack.android.interactors.TripsInteractor
+import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersListViewModel

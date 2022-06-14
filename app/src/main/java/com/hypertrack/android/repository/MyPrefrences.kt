@@ -8,6 +8,7 @@ import com.hypertrack.android.interactors.PhotoForUpload
 import com.hypertrack.android.interactors.PhotoUploadQueueStorage
 import com.hypertrack.android.interactors.PhotoUploadingState
 import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.utils.CrashReportsProvider
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
@@ -20,8 +21,11 @@ interface TripsStorage {
 }
 
 @Deprecated("use PreferencesRepository")
-class MyPreferences(context: Context, private val moshi: Moshi) :
-    AccountDataStorage, TripsStorage, PhotoUploadQueueStorage {
+class MyPreferences(
+    context: Context,
+    private val moshi: Moshi,
+    private val crashReportsProvider: CrashReportsProvider
+) : AccountDataStorage, TripsStorage, PhotoUploadQueueStorage {
 
     val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("hyper_track_pref", Context.MODE_PRIVATE)
@@ -31,6 +35,7 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
         sharedPreferences.edit()?.clear()?.apply()
     }
 
+    @Deprecated("used to get legacy publishable key")
     override fun getAccountData(): AccountData {
         return try {
             moshi.adapter(AccountData::class.java)
@@ -40,6 +45,7 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
         }
     }
 
+    @Deprecated("used clear legacy publishable key")
     override fun saveAccountData(accountData: AccountData) {
         sharedPreferences.edit()
             ?.putString(ACCOUNT_KEY, moshi.adapter(AccountData::class.java).toJson(accountData))
@@ -56,8 +62,8 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
             try {
                 tripsListAdapter
                     .fromJson(sharedPreferences.getString(TRIPS_KEY, "[]")!!) ?: emptyList()
-            } catch (e: Throwable) {
-                Log.w(TAG, "Can't deserialize trips ${e.message}")
+            } catch (e: Exception) {
+                crashReportsProvider.logException(e)
                 emptyList()
             }
         }
@@ -80,7 +86,7 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
                     .fromJson(sharedPreferences.getString(PHOTOS_KEY, "[]")!!)
                     ?: emptyList()).toSet()
             } catch (e: Throwable) {
-                Log.w(TAG, "Can't deserialize photos ${e.message}")
+                crashReportsProvider.logException(e)
                 emptySet()
             }
         }
@@ -125,14 +131,10 @@ class MyPreferences(context: Context, private val moshi: Moshi) :
     }
 
     companion object {
-        const val DRIVER_KEY = "com.hypertrack.android.utils.driver"
-        const val USER_KEY = "com.hypertrack.android.utils.user"
         const val ACCESS_REPO_KEY = "com.hypertrack.android.utils.access_token_repo"
         const val ACCOUNT_KEY = "com.hypertrack.android.utils.accountKey"
         const val TRIPS_KEY = "com.hypertrack.android.utils.trips"
         const val PHOTOS_KEY = "com.hypertrack.android.utils.photos"
-        const val UPLOADING_PHOTOS_KEY = "com.hypertrack.android.utils.uploading_photos"
-        const val TAG = "MyPrefs"
     }
 
 }

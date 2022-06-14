@@ -17,7 +17,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.math.MathUtils
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.SnackBarUtil
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
@@ -99,9 +99,9 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
                 event.consume { showDatePickerDialog(it) }
             }
 
-            vm.errorHandler.errorText.observeWithErrorHandling(viewLifecycleOwner, vm::onError, {
-                SnackbarUtil.showErrorSnackbar(view, it)
-            })
+            vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+                SnackBarUtil.showErrorSnackBar(view, it)
+            }
 
             vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { consumable ->
                 consumable.consume {

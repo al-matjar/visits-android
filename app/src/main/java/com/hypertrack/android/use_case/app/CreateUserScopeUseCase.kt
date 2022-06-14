@@ -1,6 +1,5 @@
 package com.hypertrack.android.use_case.app
 
-import androidx.lifecycle.Transformations
 import com.hypertrack.android.api.AccessTokenAuthenticator
 import com.hypertrack.android.api.AccessTokenInterceptor
 import com.hypertrack.android.api.ApiClient
@@ -13,15 +12,15 @@ import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.FeedbackInteractor
 import com.hypertrack.android.interactors.GeotagsInteractor
 import com.hypertrack.android.interactors.GooglePlacesInteractorImpl
-import com.hypertrack.android.interactors.HistoryInteractorImpl
+import com.hypertrack.android.interactors.history.HistoryInteractorImpl
 import com.hypertrack.android.interactors.PermissionsInteractorImpl
 import com.hypertrack.android.interactors.PhotoUploadQueueInteractorImpl
 import com.hypertrack.android.interactors.PlacesInteractorImpl
 import com.hypertrack.android.interactors.PlacesVisitsInteractor
 import com.hypertrack.android.interactors.PlacesVisitsRepository
-import com.hypertrack.android.interactors.SummaryInteractor
-import com.hypertrack.android.interactors.TripsInteractorImpl
-import com.hypertrack.android.interactors.TripsUpdateTimerInteractor
+import com.hypertrack.android.interactors.history.SummaryInteractor
+import com.hypertrack.android.interactors.trip.TripsInteractorImpl
+import com.hypertrack.android.interactors.trip.TripsUpdateTimerInteractor
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.history.GraphQlHistoryInteractor
 import com.hypertrack.android.models.local.DeviceId
@@ -32,7 +31,6 @@ import com.hypertrack.android.repository.access_token.AccessTokenRepository
 import com.hypertrack.android.repository.MeasurementUnitsRepository
 import com.hypertrack.android.repository.PlacesRepositoryImpl
 import com.hypertrack.android.repository.TripsRepositoryImpl
-import com.hypertrack.android.ui.common.util.toHotTransformation
 import com.hypertrack.android.use_case.app.AppCreationUseCase.Companion.LIVE_API_URL_BASE
 import com.hypertrack.android.use_case.handle_push.HandlePushUseCase
 import com.hypertrack.android.utils.CrashReportsProvider
@@ -41,7 +39,6 @@ import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.Intersect
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.RetryParams
-import com.hypertrack.android.utils.TrackingState
 import com.hypertrack.sdk.HyperTrack
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
@@ -63,7 +60,6 @@ class CreateUserScopeUseCase(
     fun execute(
         hyperTrackSdk: HyperTrack,
         publishableKey: PublishableKey,
-        trackingState: TrackingState
     ): Flow<UserScope> {
         return {
             createUserScope(
@@ -71,7 +67,6 @@ class CreateUserScopeUseCase(
                 appInteractor,
                 hyperTrackSdk,
                 publishableKey,
-                trackingState,
             )
         }.asFlow()
     }
@@ -81,7 +76,6 @@ class CreateUserScopeUseCase(
         appInteractor: AppInteractor,
         hyperTrackSdk: HyperTrack,
         publishableKey: PublishableKey,
-        trackingState: TrackingState
     ): UserScope {
         val crashReportsProvider = appScope.crashReportsProvider
         val osUtilsProvider = appScope.osUtilsProvider

@@ -9,7 +9,8 @@ import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.adapters.KeyValueAdapter
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.SnackBarUtil
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.setGoneState
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
 import com.hypertrack.logistics.android.github.R
@@ -41,32 +42,30 @@ class OrdersFragment : BaseFragment<MainActivity>(R.layout.fragment_orders) {
             vm.onOrderClick(it.id)
         }
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             refreshLayout.isRefreshing = it
-        })
+        }
 
-        vm.metadata.observe(viewLifecycleOwner, {
+        vm.metadata.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             keyValueAdapter.updateItems(it)
-        })
+        }
 
-        vm.orders.observe(viewLifecycleOwner, {
+        vm.orders.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             ordersAdapter.updateItems(it)
-        })
+        }
 
-        vm.trip.observe(viewLifecycleOwner, {
+        vm.trip.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             lTrip.setGoneState(it == null)
             tvNoTripAssigned.setGoneState(it != null)
-        })
+        }
 
-        vm.error.observe(viewLifecycleOwner, { consumable ->
-            consumable.consume {
-                SnackbarUtil.showErrorSnackbar(view, it.message)
-            }
-        })
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
+        }
 
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
-        })
+        }
 
         refreshLayout.setOnRefreshListener {
             vm.onRefresh()

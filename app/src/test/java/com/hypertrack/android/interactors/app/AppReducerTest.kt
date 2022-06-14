@@ -4,7 +4,7 @@ import com.hypertrack.android.TestInjector
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.di.UserScope
-import com.hypertrack.android.interactors.TripsInteractor
+import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.use_case.sdk.TrackingStateUnknown
 import io.mockk.every

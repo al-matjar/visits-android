@@ -7,17 +7,15 @@ import com.hypertrack.android.interactors.PlacesVisitsInteractor
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.Failure
-import com.hypertrack.android.utils.Meters
 import com.hypertrack.android.utils.Success
-import com.hypertrack.android.utils.datetime.prettyFormat
 
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.*
-import java.time.LocalDate
 
 class PlacesVisitsViewModel(
     baseDependencies: BaseViewModelDependencies,
@@ -63,7 +61,7 @@ class PlacesVisitsViewModel(
                         visitsStats.postValue(mapListData(it.data))
                     }
                     is Failure -> {
-                        errorHandler.postException(it.exception)
+                        showExceptionMessageAndReport(it.exception)
                     }
                 }
             }

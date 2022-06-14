@@ -1,20 +1,20 @@
 package com.hypertrack.android.ui.screens.add_place_info
 
-import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.interactors.PlacesInteractor
-import com.hypertrack.android.utils.ErrorMessage
-import com.hypertrack.android.utils.IllegalActionException
+import com.hypertrack.android.ui.common.use_case.get_error_message.ComplexTextError
+import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionError
+import com.hypertrack.android.ui.common.use_case.get_error_message.TextError
+import com.hypertrack.android.ui.common.use_case.get_error_message.UnknownError
+import com.hypertrack.android.ui.common.use_case.get_error_message.asError
+import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.ReducerResult
 import com.hypertrack.android.utils.ResourceProvider
-import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.logistics.android.github.R
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 
 class AddPlaceInfoReducer(
-    private val resourceProvider: ResourceProvider,
+    //todo move formatting to effects
     private val distanceFormatter: DistanceFormatter
 ) {
 
@@ -40,15 +40,24 @@ class AddPlaceInfoReducer(
                     UpdateMapDataAction, is GeofenceNameChangedAction -> {
                         state.withEffects()
                     }
-                    is ErrorAction -> {
-                        Error(action.exception).withEffects()
+                    is OnErrorAction -> {
+                        reduce(action)
                     }
-                    else -> {
+                    is AddressChangedAction,
+                    is ConfirmClickedAction,
+                    is CreateGeofenceAction,
+                    is GeofenceCreationErrorAction,
+                    GeofenceNameClickedAction,
+                    is IntegrationAddedAction,
+                    IntegrationDeletedAction,
+                    is RadiusChangedAction -> {
                         if (MyApplication.DEBUG_MODE) {
-                            Error(IllegalActionException(action, state)).withEffects()
+                            ErrorState(UnknownError)
                         } else {
-                            state.withEffects()
-                        }
+                            state
+                        }.withEffects(
+                            LogExceptionToCrashlytics(IllegalActionException(action, state))
+                        )
                     }
                 }
             }
@@ -63,8 +72,8 @@ class AddPlaceInfoReducer(
                     is ConfirmClickedAction -> {
                         reduce(action, state)
                     }
-                    is ErrorAction -> {
-                        Error(action.exception).withEffects()
+                    is OnErrorAction -> {
+                        reduce(action)
                     }
                     GeofenceNameClickedAction -> {
                         when (state.integrations) {
@@ -86,7 +95,7 @@ class AddPlaceInfoReducer(
                                     .withEffects()
                             }
                             is IntegrationsDisabled -> {
-                                Error(IllegalActionException(action, state)).withEffects()
+                                illegalAction(action, state)
                             }
                         }
                     }
@@ -97,7 +106,7 @@ class AddPlaceInfoReducer(
                                     .withEffects()
                             }
                             is IntegrationsDisabled -> {
-                                Error(IllegalActionException(action, state)).withEffects()
+                                illegalAction(action, state)
                             }
                         }
                     }
@@ -110,8 +119,9 @@ class AddPlaceInfoReducer(
                             }
                             state.copy(radius = radius).withEffects()
                         } catch (e: Exception) {
-                            //todo crashlytics
-                            Error(e).withEffects()
+                            ErrorState(e.asError()).withEffects(
+                                LogExceptionToCrashlytics(e)
+                            )
                         }
                     }
                     is CreateGeofenceAction -> {
@@ -129,11 +139,11 @@ class AddPlaceInfoReducer(
                                 )
                             )
                         } else {
-                            Error(IllegalStateException("radius == null")).withEffects()
+                            ErrorState(R.string.add_place_info_radius_null.asError()).withEffects()
                         }
                     }
                     is InitFinishedAction, is GeofenceCreationErrorAction -> {
-                        Error(IllegalActionException(action, state)).withEffects()
+                        illegalAction(action, state)
                     }
                     is GeofenceNameChangedAction -> {
                         when (state.integrations) {
@@ -148,18 +158,18 @@ class AddPlaceInfoReducer(
                     }
                 }
             }
-            is Error -> {
+            is ErrorState -> {
                 state.withEffects()
             }
             is CreatingGeofence -> {
                 when (action) {
                     is GeofenceCreationErrorAction -> {
                         state.previousState.withEffects(
-                            ShowErrorMessageEffect(ErrorMessage(action.exception).text)
+                            ShowErrorMessageEffect(action.exception.asError())
                         )
                     }
-                    is ErrorAction -> {
-                        Error(action.exception).withEffects()
+                    is OnErrorAction -> {
+                        reduce(action)
                     }
                     else -> {
                         state.withEffects()
@@ -186,21 +196,19 @@ class AddPlaceInfoReducer(
             !radiusValid -> {
                 state.withEffects(
                     ShowErrorMessageEffect(
-                        resourceProvider.stringFromResource(
+                        ComplexTextError(
                             R.string.add_place_geofence_radius_validation_error,
-                            distanceFormatter.formatDistance(PlacesInteractor.MIN_RADIUS),
-                            distanceFormatter.formatDistance(PlacesInteractor.MAX_RADIUS)
+                            arrayOf(
+                                distanceFormatter.formatDistance(PlacesInteractor.MIN_RADIUS),
+                                distanceFormatter.formatDistance(PlacesInteractor.MAX_RADIUS)
+                            )
                         )
                     )
                 )
             }
             !geofenceNameValid -> {
                 state.withEffects(
-                    ShowErrorMessageEffect(
-                        resourceProvider.stringFromResource(
-                            R.string.add_place_info_confirm_disabled
-                        )
-                    )
+                    ShowErrorMessageEffect(R.string.add_place_info_confirm_disabled.asError())
                 )
             }
             else -> {
@@ -212,11 +220,20 @@ class AddPlaceInfoReducer(
                         )
                     )
                 } else {
-                    Error(IllegalStateException("radius must not be null"))
-                        .withEffects()
+                    ErrorState(R.string.add_place_info_radius_null.asError()).withEffects()
                 }
             }
         }
+    }
+
+    private fun illegalAction(action: Action, state: State): ReducerResult<State, Effect> {
+        return ErrorState(UnknownError).withEffects(
+            LogExceptionToCrashlytics(IllegalActionException(action, state))
+        )
+    }
+
+    private fun reduce(errorAction: OnErrorAction): ReducerResult<State, Effect> {
+        return ErrorState(errorAction.error).withEffects()
     }
 
 }

@@ -1,19 +1,22 @@
 package com.hypertrack.android.ui.screens.sign_in
 
 import android.app.Activity
-import android.util.Log
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.deeplink.BranchWrapper
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.ui.base.*
+import com.hypertrack.android.ui.common.use_case.get_error_message.asError
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.sign_in.use_case.ConfirmationRequired
 import com.hypertrack.android.ui.screens.sign_in.use_case.ConfirmationRequiredUseCase
 import com.hypertrack.android.ui.screens.sign_in.use_case.HandleDeeplinkFailureUseCase
 import com.hypertrack.android.ui.screens.sign_in.use_case.HandlePastedDeeplinkOrTokenUseCase
 import com.hypertrack.android.ui.screens.sign_in.use_case.HandleSignInUseCase
+import com.hypertrack.android.ui.screens.sign_in.use_case.SignInInvalidLoginOrPassword
+import com.hypertrack.android.ui.screens.sign_in.use_case.SignInNoSuchUser
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInSuccess
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInWithCognitoUseCase
 import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
@@ -46,7 +49,7 @@ class SignInViewModel(
     private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
     private val logMessageToCrashlyticsUseCase: LogMessageToCrashlyticsUseCase,
     private val branchWrapper: BranchWrapper,
-    private val moshi: Moshi,
+    private val moshi: Moshi
 ) : BaseViewModel(baseDependencies) {
 
     private val signInWithCognitoUseCase = SignInWithCognitoUseCase(
@@ -59,11 +62,13 @@ class SignInViewModel(
         logExceptionToCrashlyticsUseCase,
         branchWrapper,
         osUtilsProvider,
-        resourceProvider,
         moshi
     )
     private val handleSignInUseCase = HandleSignInUseCase(appInteractor, destination)
-    private val handleDeeplinkFailureUseCase = HandleDeeplinkFailureUseCase(resourceProvider)
+    private val handleDeeplinkFailureUseCase = HandleDeeplinkFailureUseCase(
+        logExceptionToCrashlyticsUseCase,
+        showErrorUseCase
+    )
 
     private val stateMachine = StateMachine<Action, State, Effect>(
         javaClass.simpleName,
@@ -71,7 +76,7 @@ class SignInViewModel(
         State(
             login = "",
             password = "",
-            showPasteDeeplinkDialog = false
+            deeplinkIssuesDialog = Hidden
         ),
         viewModelScope,
         Dispatchers.Main,
@@ -81,15 +86,12 @@ class SignInViewModel(
     )
 
     val clearDeeplinkTextEvent = MutableLiveData<Consumable<Unit>>()
-    val errorMessageEvent = MutableLiveData<Consumable<ErrorMessage>>()
 
     val showProgressbar = MediatorLiveData<Boolean>().apply {
         addSource(appInteractor.appState) {
-            Log.v("progress", "source $it")
             postValue(it.isProgressbarVisible())
         }
         addSource(loadingState) {
-            Log.v("progress", "source $it")
             postValue(
                 if (appInteractor.appState.requireValue().isProgressbarVisible()) {
                     true
@@ -103,6 +105,10 @@ class SignInViewModel(
 
     fun handleAction(action: Action) {
         stateMachine.handleAction(action)
+    }
+
+    fun onDeeplinkIssuesClicked() {
+        applyEffect(PrepareOnDeeplinkIssuesClickedActionEffect)
     }
 
     private fun reduce(state: State, action: Action): ReducerResult<State, Effect> {
@@ -124,49 +130,79 @@ class SignInViewModel(
             is DeeplinkOrTokenPastedAction -> {
                 state.withEffects(HandleDeeplinkOrTokenEffect(action.text, action.activity))
             }
-            OnDeeplinkIssuesClickAction -> {
-                state.copy(showPasteDeeplinkDialog = true).withEffects()
+            is OnDeeplinkIssuesClickAction -> {
+                state.copy(deeplinkIssuesDialog = Displayed(action.hardwareId)).withEffects()
             }
             OnCloseClickAction -> {
-                state.copy(showPasteDeeplinkDialog = false).withEffects(
+                state.copy(deeplinkIssuesDialog = Hidden).withEffects(
                     ClearDeeplinkTextEffect
                 )
             }
             is ErrorAction -> {
                 state.withEffects(ErrorEffect(action.exception))
             }
+            CopyHardwareIdAction -> {
+                when (state.deeplinkIssuesDialog) {
+                    is Displayed -> state.withEffects(
+                        CopyHardwareIdEffect(
+                            state.deeplinkIssuesDialog.hardwareId
+                        )
+                    )
+                    Hidden -> state.withEffects()
+                }
+            }
         }
     }
 
     private fun applyEffects(effects: Set<Effect>) {
-        runInVmEffectsScope {
-            effects.forEach {
-                getEffectFlow(it)
-                    .catchException { e ->
-                        crashReportsProvider.logException(e)
-                        errorMessageEvent.postValue(ErrorMessage(e))
-                    }
-                    .collect()
-            }
+        effects.forEach {
+            applyEffect(it)
         }
     }
 
-    private fun getEffectFlow(effect: Effect): Flow<Unit> {
+    private fun applyEffect(effect: Effect) {
+        runInVmEffectsScope {
+            crashReportsProvider.log("Running effect: $effect")
+            getEffectFlow(effect)
+                .map { action ->
+                    action?.let { handleAction(action) }
+                }
+                .catchException { e ->
+                    showExceptionMessageAndReport(e)
+                }
+                .collect()
+        }
+    }
+
+    private fun getEffectFlow(effect: Effect): Flow<Action?> {
         return when (effect) {
             is SignInEffect -> {
-                signInFlow(effect)
+                signInFlow(effect).map { null }
             }
             is UpdateViewStateEffect -> {
-                { viewState.postValue(effect.viewState) }.asFlow()
+                { viewState.postValue(effect.viewState) }.asFlow().map { null }
             }
             is HandleDeeplinkOrTokenEffect -> {
-                pasteDeeplinkOrTokenFlow(effect.text, effect.activity)
+                pasteDeeplinkOrTokenFlow(effect.text, effect.activity).map { null }
             }
             is ErrorEffect -> {
-                handleErrorFlow(JustFailure(effect.exception))
+                { showExceptionMessageAndReport(effect.exception) }.asFlow().map { null }
             }
             ClearDeeplinkTextEffect -> {
-                { clearDeeplinkTextEvent.postValue(Unit) }.asFlow()
+                { clearDeeplinkTextEvent.postValue(Unit) }.asFlow().map { null }
+            }
+            is CopyHardwareIdEffect -> {
+                { osUtilsProvider.copyToClipboard(effect.hardwareId.value) }.asFlow().map { null }
+                    .flowOn(Dispatchers.Main)
+            }
+            is PrepareOnDeeplinkIssuesClickedActionEffect -> {
+                { DeviceInfoUtils.getHardwareId(appInteractor.appScope.appContext) }.asFlow()
+                    .map {
+                        when (it) {
+                            is Success -> OnDeeplinkIssuesClickAction(it.data)
+                            is Failure -> ErrorAction(it.exception)
+                        }
+                    }
             }
         }
     }
@@ -177,12 +213,20 @@ class SignInViewModel(
                 ViewState(
                     isLoginButtonEnabled = state.login.isNotBlank()
                             && state.password.isNotBlank(),
-                    showPasteDeeplink = showProgressbar.requireValue().let {
-                        if (it) {
-                            false
-                        } else {
-                            state.showPasteDeeplinkDialog
-                        }
+                    showDeeplinkIssuesDialog = showProgressbar.requireValue()
+                        .let { showProgressbar ->
+                            if (showProgressbar) {
+                                false
+                            } else {
+                                when (state.deeplinkIssuesDialog) {
+                                    is Displayed -> true
+                                    Hidden -> false
+                                }
+                            }
+                        },
+                    hardwareId = when (state.deeplinkIssuesDialog) {
+                        is Displayed -> state.deeplinkIssuesDialog.hardwareId
+                        Hidden -> null
                     }
                 )
             )
@@ -190,37 +234,46 @@ class SignInViewModel(
     }
 
     private fun signInFlow(effect: SignInEffect): Flow<Unit> {
-        return loadingStateFlow(true)
+        return startLoading()
             .flatMapConcat {
                 signInWithCognitoUseCase.execute(
                     login = effect.login,
                     password = effect.password
                 )
-            }
-            .flatMapSimpleSuccess {
-                when (it) {
-                    is SignInSuccess -> {
-                        loadUserStateAfterSignInUseCase
-                            .execute(it.loggedIn).flowOn(Dispatchers.Main)
-                            .flatMapSimpleSuccess {
-                                handleSignInUseCase.execute(it)
+            }.flatMapConcat { result ->
+                when (result) {
+                    is Success -> {
+                        when (val signInResult = result.data) {
+                            is SignInSuccess -> {
+                                loadUserStateAfterSignInUseCase
+                                    .execute(signInResult.loggedIn).flowOn(Dispatchers.Main)
+                                    .flatMapSimpleSuccess {
+                                        handleSignInUseCase.execute(it)
+                                    }.showErrorAndReportIfFailure()
                             }
+                            ConfirmationRequired -> {
+                                confirmationRequiredUseCase.execute(effect.login)
+                                    .showErrorAndReportIfFailure()
+                            }
+                            SignInInvalidLoginOrPassword -> {
+                                showErrorUseCase.execute(
+                                    R.string.incorrect_username_or_pass.asError()
+                                )
+                            }
+                            SignInNoSuchUser -> {
+                                showErrorUseCase.execute(R.string.user_does_not_exist.asError())
+                            }
+                        }
                     }
-                    ConfirmationRequired -> {
-                        confirmationRequiredUseCase.execute(effect.login)
-                    }
+                    is Failure -> TODO()
                 }
-            }
-            .flatMapConcat {
-                handleErrorFlow(it)
-            }
-            .flatMapConcat {
-                loadingStateFlow(false)
-            }
+                    .map { JustSuccess }.showErrorAndReportIfFailure()
+            }.map { }
+            .stopLoading()
     }
 
     private fun pasteDeeplinkOrTokenFlow(text: String, activity: Activity): Flow<Unit> {
-        return loadingStateFlow(true)
+        return startLoading()
             .flatMapConcat {
                 handlePastedDeeplinkOrTokenUseCase.execute(text, activity)
             }
@@ -248,48 +301,35 @@ class SignInViewModel(
                         handleSignInUseCase.execute(it.success)
                     }
                     is AbstractFailure -> {
-                        handleDeeplinkFailureUseCase.execute(it.failure.failure)
+                        handleDeeplinkFailureUseCase.execute(it.failure.failure).map {
+                            JustSuccess
+                        }
                     }
                 }
             }
-            .flatMapConcat {
-                handleErrorFlow(it)
-            }
-            .flatMapConcat {
-                loadingStateFlow(false)
-            }
+            .showErrorAndReportIfFailure()
+            .stopLoading()
     }
 
-    private fun handleErrorFlow(result: SimpleResult): Flow<Unit> {
-        return when (result) {
-            JustSuccess -> {
-                flowOf(Unit)
-            }
-            is JustFailure -> {
-                {
-                    crashReportsProvider.logException(result.exception)
-                    errorMessageEvent.postValue(mapUiErrorMessage(result.exception))
-                }.asFlow()
+    private fun Flow<SimpleResult>.showErrorAndReportIfFailure(): Flow<Unit> {
+        return flatMapConcat { result ->
+            when (result) {
+                JustSuccess -> {
+                    flowOf(Unit)
+                }
+                is JustFailure -> {
+                    { showExceptionMessageAndReport(result.exception) }.asFlow()
+                }
             }
         }
     }
 
-    private fun loadingStateFlow(isLoading: Boolean): Flow<Unit> {
-        return {
-            Log.v("progress", "post value $isLoading")
-            loadingState.postValue(isLoading)
-        }.asFlow()
+    private fun Flow<Unit>.stopLoading(): Flow<Unit> {
+        return { loadingState.postValue(false) }.asFlow()
     }
 
-    private fun mapUiErrorMessage(exception: Exception): ErrorMessage {
-        return if (MyApplication.DEBUG_MODE) {
-            return ErrorMessage(exception)
-        } else {
-            when (exception) {
-                is SimpleException -> ErrorMessage(exception)
-                else -> ErrorMessage(resourceProvider.stringFromResource(R.string.unknown_error))
-            }
-        }
+    private fun startLoading(): Flow<Unit> {
+        return { loadingState.postValue(false) }.asFlow()
     }
 
 }

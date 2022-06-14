@@ -2,8 +2,11 @@ package com.hypertrack.android.ui.screens.add_place_info
 
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.use_case.get_error_message.DisplayableError
+import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.Optional
 import com.hypertrack.android.utils.ReducerResult
+import java.lang.Exception
 
 sealed class State
 object Initial : State()
@@ -16,8 +19,8 @@ data class Initialized(
 
 data class CreatingGeofence(val previousState: Initialized) : State()
 
-data class Error(
-    val exception: Exception
+data class ErrorState(
+    val error: DisplayableError
 ) : State()
 
 sealed class IntegrationsState {

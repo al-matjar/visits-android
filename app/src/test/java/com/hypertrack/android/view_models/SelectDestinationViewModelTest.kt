@@ -4,7 +4,6 @@ import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModel
 import com.hypertrack.android.ui.common.select_destination.reducer.*
-import com.hypertrack.android.utils.False
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking

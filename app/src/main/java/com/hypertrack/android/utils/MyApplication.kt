@@ -19,7 +19,6 @@ class MyApplication : Application() {
     override fun toString(): String = javaClass.simpleName
 
     companion object {
-        const val TAG = "MyApplication"
         const val CHANNEL_ID = "default_notification_channel"
         const val IMPORTANT_CHANNEL_ID = "important_notification_channel"
         const val SERVICES_API_KEY = BuildConfig.SERVICES_API_KEY

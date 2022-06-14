@@ -1,9 +1,12 @@
+@file:Suppress("OPT_IN_USAGE")
+
 package com.hypertrack.android.ui.screens.add_place_info
 
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.common.config.GservicesValue.value
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.Circle
@@ -14,26 +17,27 @@ import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.models.local.Geofence
-import com.hypertrack.android.repository.CreateGeofenceError
-import com.hypertrack.android.repository.CreateGeofenceSuccess
 import com.hypertrack.android.repository.IntegrationsRepository
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.Consumable
-import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
-import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
-import com.hypertrack.android.ui.screens.add_place.AddPlaceFragmentDirections
+import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionError
+import com.hypertrack.android.ui.common.use_case.get_error_message.asError
+import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.formatters.MetersDistanceFormatter
-import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.IllegalStateException
 
 //todo persist address state in create geofence scope?
 class AddPlaceInfoViewModel(
@@ -45,6 +49,7 @@ class AddPlaceInfoViewModel(
     private val geocodingInteractor: GeocodingInteractor,
     private val integrationsRepository: IntegrationsRepository,
     private val distanceFormatter: MetersDistanceFormatter,
+    private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase
 ) : BaseViewModel(baseDependencies) {
 
     val viewState = MutableLiveData<ViewState>()
@@ -53,7 +58,7 @@ class AddPlaceInfoViewModel(
     private val addressDelegate = GooglePlaceAddressDelegate(osUtilsProvider)
     private lateinit var geofencesMapDelegate: GeofencesMapDelegate
 
-    private val reducer = AddPlaceInfoReducer(resourceProvider, distanceFormatter)
+    private val reducer = AddPlaceInfoReducer(distanceFormatter)
     private val stateMachine = StateMachine<Action, State, Effect>(
         javaClass.simpleName,
         crashReportsProvider,
@@ -71,10 +76,11 @@ class AddPlaceInfoViewModel(
         this::displayRadius,
         viewState,
         destination,
-        errorHandler,
         adjacentGeofenceDialogEvent,
         placesInteractor,
-        resourceProvider
+        getErrorMessageUseCase,
+        showErrorUseCase,
+        logExceptionToCrashlyticsUseCase,
     )
 
     private var radiusShapes: List<Circle>? = null
@@ -155,7 +161,6 @@ class AddPlaceInfoViewModel(
     }
 
 
-
     private fun applyEffects(effects: Set<Effect>) {
         viewModelScope.launch {
             try {
@@ -163,88 +168,19 @@ class AddPlaceInfoViewModel(
                     effectsHandler.applyEffect(effect)
                 }
             } catch (e: Exception) {
-                handleAction(ErrorAction(e))
+                handleErrorFlow(e).collect {
+                    handleAction(it)
+                }
             }
         }
     }
 
     private fun stateChangeEffects(newState: State): Set<Effect> {
-        return when (newState) {
-            is Initial -> {
-                ViewState(
-                    isLoading = true,
-                    address = null,
-                    radius = null,
-                    enableConfirmButton = false,
-                    errorMessage = null,
-                    integrationsViewState = createIntegrationsViewState(
-                        IntegrationsDisabled(null)
-                    )
-                )
-            }
+        return setOf(UpdateViewStateEffect(newState)) + when (newState) {
             is Initialized -> {
-                ViewState(
-                    isLoading = false,
-                    address = newState.address,
-                    radius = newState.radius,
-                    enableConfirmButton = when (newState.integrations) {
-                        is IntegrationsDisabled -> true
-                        is IntegrationsEnabled -> newState.integrations.integration != null
-                    },
-                    errorMessage = null,
-                    integrationsViewState = createIntegrationsViewState(newState.integrations),
-                )
+                setOf(DisplayRadiusEffect(newState.map, newState.radius))
             }
-            is CreatingGeofence -> {
-                ViewState(
-                    isLoading = true,
-                    address = null,
-                    radius = null,
-                    enableConfirmButton = false,
-                    errorMessage = null,
-                    integrationsViewState = createIntegrationsViewState(
-                        IntegrationsDisabled(null)
-                    )
-                )
-            }
-            is Error -> {
-                ViewState(
-                    isLoading = false,
-                    address = null,
-                    radius = null,
-                    enableConfirmButton = false,
-                    errorMessage = ErrorMessage(newState.exception),
-                    integrationsViewState = createIntegrationsViewState(
-                        IntegrationsDisabled(null)
-                    )
-                )
-            }
-        }.let { setOf(UpdateViewStateEffect(it)) }
-            .let {
-                it + when (newState) {
-                    is Initialized -> {
-                        setOf(DisplayRadiusEffect(newState.map, newState.radius))
-                    }
-                    else -> setOf()
-                }
-            }
-    }
-
-    private fun createIntegrationsViewState(
-        integrationsState: IntegrationsState
-    ): IntegrationsViewState {
-        return when (integrationsState) {
-            is IntegrationsDisabled -> NoIntegrations(
-                R.string.add_place_geofence_name,
-                integrationsState.geofenceName
-            )
-            is IntegrationsEnabled -> HasIntegrations(
-                if (integrationsState.integration != null) {
-                    ShowIntegration(integrationsState.integration)
-                } else {
-                    ShowGeofenceName(R.string.add_place_company_name)
-                }
-            )
+            else -> setOf()
         }
     }
 
@@ -294,25 +230,31 @@ class AddPlaceInfoViewModel(
     }
 
 
-
     private suspend fun init(map: HypertrackMapWrapper) {
-        integrationsRepository.hasIntegrations().let { res ->
+        suspend { integrationsRepository.hasIntegrations() }.asFlow().flatMapConcat { res ->
             when (res) {
                 is ResultSuccess -> {
-                    val address = loadAddress()
-                    handleAction(
+                    suspend { loadAddress() }.asFlow().map { address ->
                         InitFinishedAction(
                             map = map,
                             hasIntegrations = res.value,
                             address = address,
                             geofenceName = _name,
                         )
-                    )
+                    }
                 }
                 is ResultError -> {
-                    handleAction(ErrorAction(res.exception))
+                    handleErrorFlow(res.exception)
                 }
             }
+        }.collect {
+            handleAction(it)
+        }
+    }
+
+    private fun handleErrorFlow(exception: Exception): Flow<OnErrorAction> {
+        return logExceptionToCrashlyticsUseCase.execute(exception).map {
+            OnErrorAction(exception.asError())
         }
     }
 

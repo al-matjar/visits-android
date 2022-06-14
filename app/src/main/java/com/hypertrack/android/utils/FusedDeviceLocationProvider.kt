@@ -29,6 +29,7 @@ class FusedDeviceLocationProvider(
 
     override val deviceLocation: MutableLiveData<LatLng?> = MutableLiveData()
 
+    // todo check permissions
     init {
         try {
             locationClient.requestLocationUpdates(LocationRequest.create().apply {

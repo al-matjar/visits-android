@@ -2,12 +2,12 @@ package com.hypertrack.android.ui.screens.confirm_email
 
 import android.app.Activity
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.SignedInAction
 import com.hypertrack.android.interactors.app.UserLoggedIn
 import com.hypertrack.android.ui.base.*
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.use_case.login.LoadUserStateAfterSignInUseCase
 import com.hypertrack.android.use_case.login.OtpError
 import com.hypertrack.android.use_case.login.OtpFailure
@@ -22,7 +22,6 @@ import com.hypertrack.android.utils.AbstractFailure
 import com.hypertrack.android.utils.AbstractSuccess
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.Success
-import com.hypertrack.android.utils.mapSuccess
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -30,7 +29,6 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class ConfirmEmailViewModel(
@@ -120,10 +118,10 @@ class ConfirmEmailViewModel(
                                         )
                                     }
                                     is OtpWrongCode -> {
-                                        errorHandler.postText(R.string.wrong_code)
+                                        showError(R.string.wrong_code)
                                     }
                                     is OtpError -> {
-                                        errorHandler.postException(res.failure.exception)
+                                        showExceptionMessageAndReport(res.failure.exception)
                                     }
                                 }
                             }
@@ -149,7 +147,7 @@ class ConfirmEmailViewModel(
                         )
                     }
                     is ResendError -> {
-                        errorHandler.postException(res.exception)
+                        showExceptionMessageAndReport(res.exception)
                     }
                 }
             }

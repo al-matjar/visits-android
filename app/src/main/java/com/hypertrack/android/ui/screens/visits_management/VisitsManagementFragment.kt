@@ -2,6 +2,7 @@ package com.hypertrack.android.ui.screens.visits_management
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentPagerAdapter
@@ -12,8 +13,9 @@ import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.SimplePageChangedListener
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.SnackBarUtil
 import com.hypertrack.android.ui.common.Tab
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripFragment
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryFragment
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersFragment
@@ -48,14 +50,17 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
 
         initViewPager()
 
-        vm.trackingIndicatorState.observe(viewLifecycleOwner) { state ->
+        vm.trackingIndicatorState.observeWithErrorHandling(
+            viewLifecycleOwner,
+            vm::onError
+        ) { state ->
             tvTrackerStatus.setBackgroundColor(requireContext().getColor(state.color))
             tvTrackerStatus.setText(state.statusMessageResource)
             swClockIn.setStateWithoutTriggeringListener(state.isTracking)
             tvClockHint.setText(state.trackingMessageResource)
         }
 
-        vm.showProgressbar.observe(viewLifecycleOwner) { show ->
+        vm.showProgressbar.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { show ->
             if (show) showProgress() else dismissProgress()
         }
 
@@ -63,13 +68,19 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
             vm.handleAction(TrackingSwitchClickedAction(isChecked))
         }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, { error ->
-            SnackbarUtil.showErrorSnackbar(view, error)
-        })
+        vm.showErrorMessageEvent.observeWithErrorHandling(
+            viewLifecycleOwner,
+            vm::onError
+        ) { error ->
+            SnackBarUtil.showErrorSnackBar(view, error)
+        }
 
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observeWithErrorHandling(
+            viewLifecycleOwner,
+            vm::onError
+        ) {
             findNavController().navigate(it)
-        })
+        }
 
         vm.handleAction(OnViewCreatedAction)
         vm.handleAction(RefreshHistoryAction)

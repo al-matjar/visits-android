@@ -10,6 +10,7 @@ import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.adapters.KeyValueAdapter
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
 import com.hypertrack.android.ui.common.util.show
 import com.hypertrack.android.utils.MyApplication
@@ -48,11 +49,11 @@ class ProfileFragment : BaseFragment<MainActivity>(R.layout.fragment_profile) {
             vm.onCopyItemClick(it)
         }
 
-        vm.profile.observe(viewLifecycleOwner) {
+        vm.profile.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             adapter.updateItems(it)
         }
 
-        vm.destination.observe(viewLifecycleOwner) {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
         }
 

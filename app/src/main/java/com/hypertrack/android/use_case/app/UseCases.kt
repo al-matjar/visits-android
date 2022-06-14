@@ -2,6 +2,7 @@ package com.hypertrack.android.use_case.app
 
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
 import com.hypertrack.android.use_case.login.GetPublishableKeyWithCognitoUseCase
 import com.hypertrack.android.use_case.login.LoadUserStateAfterSignInUseCase
 import com.hypertrack.android.use_case.login.LoadUserStateUseCase
@@ -39,10 +40,16 @@ class UseCases(
         deleteUserScopeDataUseCase
     )
 
+    val setCrashReportingIdUseCase = SetCrashReportingIdUseCase(
+        appScope.crashReportsProvider,
+        appScope.moshi
+    )
+
     val loadUserStateUseCase = LoadUserStateUseCase(
+        appScope.appContext,
         createUserScopeUseCase,
+        setCrashReportingIdUseCase,
         loadUserDataUseCase,
-        appScope.trackingState
     )
 
     val loadUserStateAfterSignInUseCase = LoadUserStateAfterSignInUseCase(
@@ -55,11 +62,6 @@ class UseCases(
 
     val logMessageToCrashlyticsUseCase = LogMessageToCrashlyticsUseCase(
         appScope.crashReportsProvider
-    )
-
-    val setCrashReportingIdUseCase = SetCrashReportingIdUseCase(
-        appScope.crashReportsProvider,
-        appScope.moshi
     )
 
     private val getHypertrackSdkInstanceUseCase = GetHypertrackSdkInstanceUseCase()
@@ -76,7 +78,7 @@ class UseCases(
         appScope.publishableKeyRepository,
     )
 
-    val loginWithDeeplinkUseCase = LoginWithDeeplinkParamsUseCase(
+    val loginWithDeeplinkParamsUseCase = LoginWithDeeplinkParamsUseCase(
         ValidateDeeplinkUseCase(appScope.moshi),
         getConfiguredHypertrackSdkInstanceUseCase,
         loginWithPublishableKeyUseCase,
@@ -105,6 +107,8 @@ class UseCases(
     )
 
     val navigateToUserScopeScreensUseCase = NavigateToUserScopeScreensUseCase()
+
+    val getErrorMessageUseCase = GetErrorMessageUseCase(appScope.resourceProvider)
 
     override fun toString(): String = javaClass.simpleName
 }

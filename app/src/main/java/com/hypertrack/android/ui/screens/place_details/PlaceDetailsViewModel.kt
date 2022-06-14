@@ -56,7 +56,7 @@ class PlaceDetailsViewModel(
                     postValue(res.geofence)
                 }
                 is GeofenceError -> {
-                    errorHandler.postException(res.e)
+                    showExceptionMessageAndReport(res.e)
                 }
             }
             loadingState.postValue(false)

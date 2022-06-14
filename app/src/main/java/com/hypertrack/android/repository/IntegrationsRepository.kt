@@ -7,7 +7,6 @@ import com.hypertrack.android.api.ApiClient
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.utils.MyApplication
-import com.hypertrack.android.utils.ResultEmptySuccess
 import com.hypertrack.android.utils.ResultError
 import com.hypertrack.android.utils.ResultSuccess
 import com.hypertrack.android.utils.ResultValue

@@ -25,6 +25,7 @@ import com.hypertrack.android.use_case.sdk.NewTrackingState
 import com.hypertrack.android.utils.BatteryLevelMonitor
 import com.hypertrack.android.utils.CognitoAccountLoginProvider
 import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.HardwareId
 import com.hypertrack.android.utils.ImageDecoder
 import com.hypertrack.android.utils.NotificationUtil
 import com.hypertrack.android.utils.OsUtilsProvider
@@ -78,7 +79,6 @@ class AppScope(
     val notificationUtil: NotificationUtil,
     val moshi: Moshi,
     // todo remove
-    val trackingState: TrackingState,
     val trackingStateListener: (NewTrackingState) -> Unit,
     val appCoroutineScope: CoroutineScope,
     val stateMachineContext: CoroutineContext,

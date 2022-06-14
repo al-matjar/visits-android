@@ -13,7 +13,6 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.DisplayMetrics
-import android.util.Log
 import android.widget.Toast
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
@@ -30,6 +29,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.util.ClipboardUtil
 import com.hypertrack.android.ui.common.util.LocationUtils
 import com.hypertrack.android.ui.common.util.isEmail
+import com.hypertrack.android.utils.exception.SimpleException
 import com.hypertrack.logistics.android.github.R
 import retrofit2.HttpException
 import java.io.File
@@ -49,8 +49,6 @@ interface ResourceProvider {
         @DrawableRes res: Int,
         @ColorRes color: Int? = null
     ): BitmapDescriptor
-
-    fun getErrorMessage(e: Exception): ErrorMessage
 }
 
 public class OsUtilsProvider(
@@ -258,34 +256,6 @@ public class OsUtilsProvider(
         return Uri.parse(link)
     }
 
-    override fun getErrorMessage(e: Exception): ErrorMessage {
-        //todo NonReportableException
-        return when (e) {
-            is HttpException -> {
-                val errorBody = e.response()?.errorBody()?.string()
-                if (MyApplication.DEBUG_MODE) {
-                    Log.v("hypertrack-verbose", errorBody.toString())
-                }
-                val path = e.response()?.let { response ->
-                    response.raw().request.let { request ->
-                        "${request.method} ${response.code()} ${request.url.encodedPath}"
-                    }
-                }
-                "${path.toString()}\n\n${errorBody.toString()}"
-            }
-            else -> {
-                if (e.isNetworkError()) {
-                    stringFromResource(R.string.network_error)
-                } else {
-                    if (MyApplication.DEBUG_MODE) {
-                        e.printStackTrace()
-                    }
-                    e.format()
-                }
-            }
-        }.let { ErrorMessage(it) }
-    }
-
     companion object {
         const val TAG = "OsUtilsProvider"
         const val SHARE_BROADCAST_ACTION = "com.hypertrack.logistics.SHARE_TRIP"
@@ -293,16 +263,26 @@ public class OsUtilsProvider(
 }
 
 fun Exception.format(): String {
-    return if (this is SimpleException) {
-        message ?: javaClass.simpleName
-    } else {
-        "${javaClass.simpleName}${message?.let { ": $it" }.orEmpty()}"
+    return when (this) {
+        is HttpException -> {
+            val exception = this
+            val errorBody = exception.response()?.errorBody()?.string()
+            val path = exception.response()?.let { response ->
+                response.raw().request.let { request ->
+                    "${request.method} ${response.code()} ${request.url.encodedPath}"
+                }
+            }
+            "${path.toString()}\n\n${errorBody.toString()}"
+        }
+        is SimpleException -> {
+            message ?: javaClass.simpleName
+        }
+        else -> {
+            "${javaClass.simpleName}${message?.let { ": $it" }.orEmpty()}"
+        }
     }
 }
 
 fun Int.stringFromResource(): String {
     return MyApplication.context.getString(this)
 }
-
-// todo change Exception to SimpleException
-class SimpleException(message: String) : Exception(message)

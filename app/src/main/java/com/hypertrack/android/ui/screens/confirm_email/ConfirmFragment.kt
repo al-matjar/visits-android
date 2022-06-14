@@ -11,8 +11,9 @@ import androidx.navigation.fragment.navArgs
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.SnackBarUtil
 import com.hypertrack.android.ui.common.util.Utils
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.views.VerificationCodeView
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_confirm.*
@@ -31,28 +32,28 @@ class ConfirmFragment : ProgressDialogFragment(R.layout.fragment_confirm) {
 
         vm.init(args.email)
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             if (it) showProgress() else dismissProgress()
-        })
+        }
 
-        vm.proceedButtonEnabled.observe(viewLifecycleOwner, {
+        vm.proceedButtonEnabled.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             verified.isSelected = it
             verified.isEnabled = it
-        })
+        }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, {
-            SnackbarUtil.showErrorSnackbar(view, it)
-        })
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
+        }
 
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
-        })
+        }
 
-        vm.clipboardCode.observe(viewLifecycleOwner, {
+        vm.clipboardCode.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             verificationCode.code = it
             Toast.makeText(requireContext(), R.string.code_from_clipboard, LENGTH_SHORT).show()
             Utils.hideKeyboard(mainActivity())
-        })
+        }
 
         view.doOnLayout {
             vm.onClipboardReady()

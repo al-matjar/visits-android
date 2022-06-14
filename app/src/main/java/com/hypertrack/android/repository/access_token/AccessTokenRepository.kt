@@ -1,6 +1,5 @@
 package com.hypertrack.android.repository.access_token
 
-import com.hypertrack.android.api.UserAgentInterceptor
 import com.hypertrack.android.models.auth.AuthCallResponse
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.PublishableKey
@@ -8,7 +7,7 @@ import com.hypertrack.android.repository.preferences.PreferencesRepository
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.Result
-import com.hypertrack.android.utils.SimpleException
+import com.hypertrack.android.utils.exception.SimpleException
 import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.toNullableWithErrorReporting
 import com.squareup.moshi.Moshi
@@ -73,12 +72,12 @@ class AccessTokenRepository(
                     try {
                         val responseObject = moshi.adapter(AuthCallResponse::class.java)
                             .fromJson(it.string())
-                            ?: return@let Error(Exception("failed to parse token JSON"))
+                            ?: return@let Error(IllegalArgumentException("failed to parse token JSON"))
                         Active(responseObject.accessToken)
                     } catch (e: Exception) {
                         Error(e)
                     }
-                } ?: Error(Exception("token body == null"))
+                } ?: Error(IllegalArgumentException("token body == null"))
             }
             response.code == HttpURLConnection.HTTP_FORBIDDEN && response.body?.string()
                 ?.contains("trial ended") == true -> {

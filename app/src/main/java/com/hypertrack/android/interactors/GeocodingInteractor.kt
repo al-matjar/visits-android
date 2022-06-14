@@ -37,17 +37,7 @@ class GeocodingInteractor(
             } catch (e: Exception) {
                 when (e) {
                     is IOException -> {
-                        when {
-                            e.message?.contains("grpc failed") == true -> {
-                                // ignore
-                            }
-                            e.message?.contains("dftn: DEADLINE_EXCEEDED") == true -> {
-                                // ignore
-                            }
-                            else -> {
-                                crashReportsProvider.logException(e)
-                            }
-                        }
+                        // ignore (in most cases it is a connection issue)
                     }
                     else -> {
                         crashReportsProvider.logException(e)

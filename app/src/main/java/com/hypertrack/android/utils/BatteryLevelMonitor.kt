@@ -22,7 +22,7 @@ class BatteryLevelMonitor(
                 try {
                     while (true) {
                         logBatteryLevel()
-                        delay(20 * 60 * 1000)
+                        delay(BATTERY_CHECK_DELAY)
                     }
                 } catch (e: Exception) {
                     crashReportsProvider.logException(e)
@@ -36,6 +36,10 @@ class BatteryLevelMonitor(
     private fun logBatteryLevel() {
         val batLevel: Int = batteryService.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         crashReportsProvider.log("battery_value: $batLevel")
+    }
+
+    companion object {
+        const val BATTERY_CHECK_DELAY = 20 * 60 * 1000L
     }
 
 }

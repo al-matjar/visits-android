@@ -13,7 +13,6 @@ import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.SingleLiveEvent
-import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.delegates.GeofenceId
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
@@ -22,11 +21,11 @@ import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.map.viewportPosition
 import com.hypertrack.android.ui.common.select_destination.reducer.*
 import com.hypertrack.android.ui.common.util.isNearZero
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.add_place.AddPlaceFragmentDirections
 import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.asNonEmpty
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
@@ -75,8 +74,7 @@ open class SelectDestinationViewModel(
                 if (MyApplication.DEBUG_MODE) {
                     throw e
                 } else {
-                    errorHandler.postException(e)
-                    crashReportsProvider.logException(e)
+                    showExceptionMessageAndReport(e)
                 }
             }
         }
@@ -259,7 +257,7 @@ open class SelectDestinationViewModel(
                         sendAction(SearchQueryChanged(query, res.asNonEmpty()))
                     }
                 } catch (e: Exception) {
-                    errorHandler.postException(e)
+                    showExceptionMessageAndReport(e)
                     sendAction(AutocompleteError(query))
                 }
             }

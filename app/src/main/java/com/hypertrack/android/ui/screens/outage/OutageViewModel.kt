@@ -36,8 +36,4 @@ class OutageViewModel(
         )
     }
 
-    fun onError(e: Exception) {
-        crashReportsProvider.logException(e)
-    }
-
 }

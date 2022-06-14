@@ -3,9 +3,9 @@ package com.hypertrack.android.use_case.login
 import com.hypertrack.android.repository.user.UserData
 import com.hypertrack.android.repository.user.UserRepository
 import com.hypertrack.android.utils.Result
-import com.hypertrack.android.utils.SimpleException
 import com.hypertrack.android.utils.asFailure
 import com.hypertrack.android.utils.asSuccess
+import com.hypertrack.android.utils.exception.SimpleException
 import com.hypertrack.android.utils.flatMapSuccess
 import com.hypertrack.android.utils.toFlow
 import kotlinx.coroutines.flow.Flow

@@ -1,54 +1,31 @@
 package com.hypertrack.android.ui.screens.sign_in.use_case
 
-import androidx.annotation.StringRes
-import com.hypertrack.android.use_case.deeplink.DeeplinkException
+import com.hypertrack.android.ui.common.use_case.ShowErrorUseCase
+import com.hypertrack.android.ui.common.use_case.get_error_message.DisplayableError
+import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
+import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.deeplink.DeeplinkFailure
-import com.hypertrack.android.use_case.deeplink.DeprecatedDeeplink
-import com.hypertrack.android.use_case.deeplink.MirroredFieldsInMetadata
-import com.hypertrack.android.use_case.deeplink.NoLogin
-import com.hypertrack.android.use_case.deeplink.NoPublishableKey
-import com.hypertrack.android.utils.JustFailure
-import com.hypertrack.android.utils.ResourceProvider
-import com.hypertrack.android.utils.SimpleException
-import com.hypertrack.android.utils.asSimpleFailure
-import com.hypertrack.android.utils.toFlow
-import com.hypertrack.logistics.android.github.R
+import com.hypertrack.android.utils.ErrorMessage
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 
+@Suppress("OPT_IN_USAGE")
 class HandleDeeplinkFailureUseCase(
-    private val resourceProvider: ResourceProvider
+    private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
+    private val showErrorUseCase: ShowErrorUseCase
 ) {
 
-    // todo use in app deeplink error events
-    fun execute(failure: DeeplinkFailure): Flow<JustFailure> {
-        return when (failure) {
-            is DeeplinkException -> {
-                when (failure.exception) {
-                    is InvalidDeeplinkFormat -> {
-                        simpleException(R.string.sign_in_deeplink_invalid_format)
-                    }
-                    else -> {
-                        failure.exception
-                    }
-                }
-            }
-            NoPublishableKey -> {
-                simpleException(R.string.splash_screen_no_key)
-            }
-            NoLogin -> {
-                simpleException(R.string.splash_screen_no_username)
-            }
-            MirroredFieldsInMetadata -> {
-                simpleException(R.string.splash_screen_duplicate_fields)
-            }
-            DeprecatedDeeplink -> {
-                simpleException(R.string.splash_screen_deprecated_deeplink)
-            }
-        }.asSimpleFailure().toFlow()
-    }
-
-    private fun simpleException(@StringRes res: Int): SimpleException {
-        return SimpleException(resourceProvider.stringFromResource(res))
+    fun execute(failure: DeeplinkFailure): Flow<Unit> {
+        return flowOf(Unit).onEach {
+            logExceptionToCrashlyticsUseCase.execute(failure.toException())
+        }.map {
+            failure.toTextError()
+        }.flatMapConcat {
+            showErrorUseCase.execute(it)
+        }
     }
 
 }

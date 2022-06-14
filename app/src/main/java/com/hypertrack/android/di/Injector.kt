@@ -53,7 +53,6 @@ object Injector {
         val appScope = AppCreationUseCase().execute(
             application,
             crashReportsProvider,
-            trackingState,
             trackingStateListener
         )
         appInteractor = AppInteractor(appScope)
@@ -104,6 +103,7 @@ object Injector {
                             appInteractor,
                             state.appScope,
                             state.userState.userScope,
+                            state.useCases
                         )
                     }
                     UserNotLoggedIn -> {

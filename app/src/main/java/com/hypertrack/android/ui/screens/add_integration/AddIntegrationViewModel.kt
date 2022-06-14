@@ -20,8 +20,6 @@ class AddIntegrationViewModel(
     private val searchFlow = MutableSharedFlow<String>()
     private var searchJob: Job? = null
 
-    val error = integrationsRepository.errorFlow.asLiveData()
-
     val integrations = MutableLiveData<List<Integration>>()
 
     val integrationSelectedEvent = MutableLiveData<Consumable<Integration>>()
@@ -37,6 +35,10 @@ class AddIntegrationViewModel(
             searchFlow.debounce(1000).collect {
                 search(it)
             }
+        }
+
+        integrationsRepository.errorFlow.asLiveData().observeManaged {
+            showExceptionMessageAndReport(it)
         }
     }
 

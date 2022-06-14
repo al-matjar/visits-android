@@ -131,8 +131,8 @@ class CurrentTripViewModel(
         appInteractor.appScope.appCoroutineScope.launch {
             getEffectFlow(effect)
                 .catchException {
-                    crashReportsProvider.logException(it)
-                    errorHandler.postException(it)
+//                    crashReportsProvider.logException(it)
+                    showExceptionMessageAndReport(it)
                 }.collect()
         }
     }
@@ -247,10 +247,7 @@ class CurrentTripViewModel(
     }
 
     private fun getErrorFlow(exception: Exception): Flow<Unit> {
-        return {
-            errorHandler.postException(exception)
-            crashReportsProvider.logException(exception)
-        }.asFlow()
+        return { showExceptionMessageAndReport(exception) }.asFlow()
     }
 
     private fun getSubscribeOnUserScopeEventsFlow(userScope: UserScope): Flow<Unit> {
@@ -346,7 +343,7 @@ class CurrentTripViewModel(
                     is TripCreationSuccess -> {
                     }
                     is TripCreationError -> {
-                        errorHandler.postException(res.exception)
+                        showExceptionMessageAndReport(res.exception)
                     }
                 }
             }
@@ -367,7 +364,7 @@ class CurrentTripViewModel(
             .map {
                 when (it) {
                     JustSuccess -> map?.clear()
-                    is JustFailure -> errorHandler.postException(it.exception)
+                    is JustFailure -> showExceptionMessageAndReport(it.exception)
                 }
                 loadingState.postValue(false)
             }

@@ -2,33 +2,26 @@ package com.hypertrack.android.ui.common.util
 
 import android.view.View
 import android.widget.TextView
+import androidx.core.view.accessibility.AccessibilityEventCompat.setAction
 import com.google.android.material.snackbar.Snackbar
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.format
 import com.hypertrack.logistics.android.github.R
 
 
-object SnackbarUtil {
+object SnackBarUtil {
 
-    fun showErrorMessageSnackbar(view: View, consumable: Consumable<ErrorMessage>) {
-        consumable.consume { errorMessage ->
-            showErrorSnackbar(view, errorMessage)
-        }
-    }
-
-    fun showErrorSnackbar(view: View, errorTextConsumable: Consumable<String>) {
+    fun showErrorSnackBar(view: View, errorTextConsumable: Consumable<ErrorMessage>) {
         errorTextConsumable.consume {
-            showErrorSnackbar(view, it)
+            showErrorSnackBar(view, it)
         }
     }
 
-    fun showErrorSnackbar(view: View, errorMessage: ErrorMessage) {
-        showErrorSnackbar(view, errorMessage.text)
-    }
-
-    fun showErrorSnackbar(view: View, errorText: String?) {
-        errorText.toString().let { text ->
+    fun showErrorSnackBar(view: View, errorMessage: ErrorMessage) {
+        val errorText = errorMessage.text
+        errorText.let { text ->
             val snackbar = Snackbar.make(view, text, Snackbar.LENGTH_INDEFINITE).apply {
                 setAction(MyApplication.context.getString(R.string.close)) {
                     dismiss()
@@ -38,17 +31,19 @@ object SnackbarUtil {
             try {
                 val snackbarView = snackbar.view
                 snackbarView.setOnClickListener {
-                    ClipboardUtil.copyToClipboard(text)
+                    ClipboardUtil.copyToClipboard(
+                        errorMessage.originalException?.format() ?: errorText
+                    )
                 }
                 val snackTextView = snackbarView.findViewById<View>(
                     com.google.android.material.R.id.snackbar_text
                 ) as TextView
                 snackTextView.maxLines = 20
             } catch (_: Exception) {
+                // ignore as not important
             }
             snackbar.show()
         }
     }
-
 
 }

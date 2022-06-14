@@ -32,16 +32,11 @@ data class HandlePushEffect(
     val remoteMessage: RemoteMessage
 ) : Effect()
 
-data class SetCrashReportingDeviceIdentifier(
-    val appScope: AppScope,
-    val deviceId: DeviceId
-) : Effect()
-
 data class NotifyAppStateUpdateEffect(
     val newState: AppState
 ) : Effect()
 
-data class ShowAppErrorMessageEffect(
+data class HandleAppErrorMessageEffect(
     val exception: Exception
 ) : Effect()
 

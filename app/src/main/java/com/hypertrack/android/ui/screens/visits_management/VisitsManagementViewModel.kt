@@ -20,6 +20,7 @@ import com.hypertrack.android.use_case.sdk.TrackingStarted
 import com.hypertrack.android.use_case.sdk.TrackingStateUnknown
 import com.hypertrack.android.use_case.sdk.TrackingStopped
 import com.hypertrack.android.utils.*
+import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -80,8 +81,8 @@ class VisitsManagementViewModel(
                 is Success -> {
                 }
                 is Failure -> {
-                    crashReportsProvider.logException(it.exception)
-                    errorHandler.postException(it.exception)
+//                    crashReportsProvider.logException(it.exception)
+                    showExceptionMessageAndReport(it.exception)
                 }
             }.toFlow()
         }.let { handleEffect(it) }
@@ -90,8 +91,8 @@ class VisitsManagementViewModel(
     private fun handleEffect(effectFlow: Flow<Unit>) {
         runInVmEffectsScope {
             effectFlow.catchException {
-                crashReportsProvider.logException(it)
-                errorHandler.postException(it)
+//                crashReportsProvider.logException(it)
+                showExceptionMessageAndReport(it)
             }.collect()
         }
     }
@@ -99,8 +100,17 @@ class VisitsManagementViewModel(
     private fun init(userScope: UserScope): Flow<Result<Unit>> {
         return tryAsResult {
             userScope.historyInteractorLegacy.errorFlow.asLiveData()
-                .observeManaged {
-                    errorHandler.postConsumable(it)
+                .observeManaged { consumable ->
+                    consumable.consume {
+                        showExceptionMessageAndReport(it)
+                    }
+                }
+
+            userScope.tripsInteractor.errorFlow.asLiveData()
+                .observeManaged { consumable ->
+                    consumable.consume {
+                        showExceptionMessageAndReport(it)
+                    }
                 }
 
             // todo unit test
@@ -113,7 +123,7 @@ class VisitsManagementViewModel(
                         }
                     }
                     is Failure -> {
-                        errorHandler.postException(it.exception)
+                        showExceptionMessageAndReport(it.exception)
                     }
                 }
             }
@@ -148,14 +158,14 @@ class VisitsManagementViewModel(
                         }
                     }
                     UserNotLoggedIn -> {
-                        errorHandler.postException(
+                        showExceptionMessageAndReport(
                             IllegalArgumentException(appState.toString())
                         )
                     }
                 }
             }
             is NotInitialized -> {
-                errorHandler.postException(
+                showExceptionMessageAndReport(
                     IllegalArgumentException(appState.toString())
                 )
             }
@@ -232,9 +242,3 @@ class VisitsManagementViewModel(
     }
 
 }
-
-
-
-
-
-

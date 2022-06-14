@@ -10,9 +10,9 @@ import com.hypertrack.android.interactors.app.UserLoggedIn
 import com.hypertrack.android.interactors.app.UserNotLoggedIn
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.util.requireValue
-import com.hypertrack.android.utils.IllegalActionException
+import com.hypertrack.android.utils.exception.IllegalActionException
 
 class BackgroundPermissionsViewModel(
     baseDependencies: BaseViewModelDependencies,

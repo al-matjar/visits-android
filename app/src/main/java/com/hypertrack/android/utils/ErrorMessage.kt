@@ -1,17 +1,11 @@
 package com.hypertrack.android.utils
 
-import java.lang.Exception
+import com.hypertrack.android.ui.base.Consumable
+import kotlin.Exception
 
 
-data class ErrorMessage(val text: String) {
-    constructor(hint: String, text: String, appendNewLine: Boolean = true) :
-            this(
-                "${
-                    hint
-                }:${
-                    if (appendNewLine) "\n" else " "
-                }$text"
-            )
+data class ErrorMessage(val text: String, val originalException: Exception? = null)
 
-    constructor(exception: Exception) : this(exception.format())
+fun String.toErrorMessage(originalException: Exception? = null): ErrorMessage {
+    return ErrorMessage(this, originalException)
 }

@@ -15,7 +15,7 @@ open class SharedPreferencesNullableBooleanEntry(
     override fun save(data: Boolean?): SimpleResult {
         return tryAsSimpleResult {
             if (data != null) {
-                preferences.edit().putBoolean(key, data).commit()
+                preferences.edit().putBoolean(key, data).apply()
             } else {
                 preferences.edit().remove(key).apply()
             }

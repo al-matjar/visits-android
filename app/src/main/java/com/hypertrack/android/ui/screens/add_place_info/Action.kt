@@ -3,6 +3,8 @@ package com.hypertrack.android.ui.screens.add_place_info
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.use_case.get_error_message.DisplayableError
+import com.hypertrack.android.utils.ErrorMessage
 
 sealed class Action {
     override fun toString(): String = javaClass.simpleName
@@ -16,7 +18,7 @@ class InitFinishedAction(
 ) : Action()
 
 class MapReadyAction(val map: HypertrackMapWrapper) : Action()
-class ErrorAction(val exception: Exception) : Action()
+class OnErrorAction(val error: DisplayableError) : Action()
 class GeofenceCreationErrorAction(val exception: Exception) : Action()
 class IntegrationAddedAction(val integration: Integration) : Action()
 class AddressChangedAction(val address: String) : Action()

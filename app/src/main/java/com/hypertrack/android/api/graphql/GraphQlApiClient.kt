@@ -9,6 +9,7 @@ import com.hypertrack.android.api.graphql.queries.QueryBody
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.PublishableKey
 import com.hypertrack.android.utils.*
+import com.hypertrack.android.utils.exception.SimpleException
 import com.squareup.moshi.Moshi
 import retrofit2.HttpException
 import retrofit2.Response
@@ -66,9 +67,9 @@ class GraphQlApiClient(
                 if (body.data != null) {
                     Success(body.data)
                 } else {
-                    Failure(Exception("GraphQlErrors:\n\n${body.errors?.joinToString(",\n\n")}"))
+                    Failure(SimpleException("GraphQlErrors:\n\n${body.errors?.joinToString(",\n\n")}"))
                 }
-            } ?: Failure(Exception("GraphQL response has null body"))
+            } ?: Failure(SimpleException("GraphQL response has null body"))
         } else {
             Failure(HttpException(response))
         }

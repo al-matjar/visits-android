@@ -5,11 +5,11 @@ import com.hypertrack.android.utils.ReducerResult
 data class State(
     val login: String,
     val password: String,
-    val showPasteDeeplinkDialog: Boolean
+    val deeplinkIssuesDialog: DeeplinkIssuesDialogState
 ) {
     // to avoid showing password in logs
     override fun toString(): String {
-        return "${javaClass.simpleName}(login=$login, showPasteDeeplinkDialog=$showPasteDeeplinkDialog)"
+        return "${javaClass.simpleName}(login=$login, deeplinkIssuesDialog=$deeplinkIssuesDialog)"
     }
 }
 

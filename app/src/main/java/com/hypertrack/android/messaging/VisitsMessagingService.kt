@@ -8,6 +8,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.PushReceivedAction
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.format
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -39,8 +40,8 @@ class VisitsMessagingService : FirebaseMessagingService() {
                     }
                     it.resume(token)
                 }
-                .addOnFailureListener { e ->
-                    it.resume(e.toString())
+                .addOnFailureListener { exception ->
+                    it.resume(exception.format())
                 }
         }
 

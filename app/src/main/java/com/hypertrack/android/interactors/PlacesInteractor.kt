@@ -12,6 +12,7 @@ import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.DataPage
 import com.hypertrack.android.utils.Intersect
 import com.hypertrack.android.utils.OsUtilsProvider
+import com.hypertrack.android.utils.exception.SimpleException
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.*
@@ -314,7 +315,7 @@ class PlacesInteractorImpl(
                     return item
                 }
                 Status.ERROR -> {
-                    throw RuntimeException("Error loading geofences in region $gh")
+                    throw SimpleException("Error loading geofences in region $gh")
                 }
             }
         }

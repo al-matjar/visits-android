@@ -17,7 +17,6 @@ import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.catch
@@ -72,7 +71,6 @@ class AppInteractor(
             appScope.appCoroutineScope.launch {
                 getEffectFlow(effect)
                     .catch { e ->
-                        appScope.crashReportsProvider.logException(e)
                         if (e is Exception) {
                             emit(AppErrorAction(e))
                         } else throw e
@@ -101,7 +99,7 @@ class AppInteractor(
                                     }
                                     is Failure -> {
                                         getEffectFlow(
-                                            ShowAppErrorMessageEffect(result.exception)
+                                            HandleAppErrorMessageEffect(result.exception)
                                         ).map { AppInitializedAction(UserNotLoggedIn) }
                                     }
                                 }
@@ -109,7 +107,7 @@ class AppInteractor(
                     }
             }
             is LoginWithDeeplinkEffect -> {
-                useCases.loginWithDeeplinkUseCase.execute(effect.deeplinkParams)
+                useCases.loginWithDeeplinkParamsUseCase.execute(effect.deeplinkParams)
                     .flowOn(effectsDispatcher)
                     .flatMapConcat {
                         when (it) {
@@ -144,19 +142,11 @@ class AppInteractor(
                 effect.userState.userScope
                     .handlePushUseCase.execute(effect.userState, effect.remoteMessage).map { null }
             }
-            is SetCrashReportingDeviceIdentifier -> {
-                useCases.setCrashReportingIdUseCase.execute(
-                    effect.deviceId,
-                ).map { null }
-            }
             is NotifyAppStateUpdateEffect -> {
                 { _appState.postValue(effect.newState) }.asFlow().map { null }
             }
-            is ShowAppErrorMessageEffect -> {
+            is HandleAppErrorMessageEffect -> {
                 {
-                    if (MyApplication.DEBUG_MODE) {
-                        effect.exception.printStackTrace()
-                    }
                     appScope.crashReportsProvider.logException(effect.exception)
                     _appErrorEvent.postValue(effect.exception.toConsumable())
                 }.asFlow().map { null }

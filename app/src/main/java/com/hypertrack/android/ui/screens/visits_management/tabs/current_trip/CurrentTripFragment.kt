@@ -60,7 +60,7 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
             }
         }
 
-        vm.viewState.observe(viewLifecycleOwner) { viewState ->
+        vm.viewState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { viewState ->
             location_button.setGoneState(viewState.userLocation == null)
             whereAreYouGoing.setGoneState(!viewState.showWhereAreYouGoingButton)
             viewState.tripData.let { tripData ->
@@ -76,15 +76,15 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
             }
         }
 
-        vm.destination.observe(viewLifecycleOwner) {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
         }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner) {
-            SnackbarUtil.showErrorSnackbar(view, it)
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
         }
 
-        vm.loadingState.observe(viewLifecycleOwner) {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             whereAreYouGoing.setGoneState(it)
             progress.setGoneState(!it)
             if (it) {

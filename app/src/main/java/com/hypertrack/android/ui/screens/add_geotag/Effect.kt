@@ -8,7 +8,7 @@ sealed class Effect {
     override fun toString(): String = javaClass.simpleName
 }
 
-data class SetViewStateEffect(val viewState: ViewState) : Effect()
+data class UpdateViewStateEffect(val state: State) : Effect()
 data class ShowMetadataErrorEffect(
     // Pair<key, value>
     val metadataItems: List<Pair<String, String>>,

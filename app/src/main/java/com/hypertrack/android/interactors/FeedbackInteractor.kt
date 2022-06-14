@@ -1,11 +1,13 @@
 package com.hypertrack.android.interactors
 
 import android.app.Activity
+import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.repository.IntegrationsRepositoryImpl
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.OsUtilsProvider
+import com.hypertrack.android.utils.exception.ManuallyTriggeredException
 import com.hypertrack.logistics.android.github.R
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -60,4 +62,3 @@ class FeedbackInteractor(
     }
 }
 
-object ManuallyTriggeredException : Exception()

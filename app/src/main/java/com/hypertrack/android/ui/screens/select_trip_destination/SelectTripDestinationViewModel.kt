@@ -4,7 +4,7 @@ import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.GooglePlacesInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.base.postValue
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModel
 import com.hypertrack.android.utils.DeviceLocationProvider

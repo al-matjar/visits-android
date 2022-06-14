@@ -4,6 +4,9 @@ import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.util.toLatLng
 import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.Result
+import com.hypertrack.android.utils.asFailure
+import com.hypertrack.android.utils.asSuccess
 import com.hypertrack.sdk.GeotagResult
 import com.hypertrack.sdk.OutageReason
 
@@ -11,25 +14,21 @@ class GeotagsInteractor(
     private val hyperTrackService: HyperTrackService
 ) {
     fun getLatestLocation(): LatestLocationResult {
-        return try {
-            return hyperTrackService.latestLocation.let {
-                if (it.isSuccess) {
-                    LatestLocation(it.value.toLatLng())
-                } else {
-                    Outage(it.error)
-                }
+        return hyperTrackService.latestLocation.let {
+            if (it.isSuccess) {
+                LatestLocation(it.value.toLatLng())
+            } else {
+                Outage(it.error)
             }
-        } catch (e: Exception) {
-            Error(e)
         }
     }
 
-    fun createGeotag(metadata: Map<String, String>): GeotagCreationResult {
+    fun createGeotag(metadata: Map<String, String>): Result<GeotagCreationResult> {
         return hyperTrackService.createGeotag(metadata).let {
             when (it) {
-                is GeotagResult.Success, is GeotagResult.SuccessWithDeviation -> GeotagCreationSuccess
-                is GeotagResult.Error -> GeotagCreationError(it.reason)
-                else -> GeotagCreationException(IllegalArgumentException(it.toString()))
+                is GeotagResult.Success, is GeotagResult.SuccessWithDeviation -> GeotagCreationSuccess.asSuccess()
+                is GeotagResult.Error -> GeotagCreationError(it.reason).asSuccess()
+                else -> IllegalArgumentException(it.toString()).asFailure()
             }
         }
     }
@@ -41,7 +40,6 @@ sealed class LatestLocationResult {
 
 data class LatestLocation(val latLng: LatLng) : LatestLocationResult()
 data class Outage(val reason: OutageReason) : LatestLocationResult()
-data class Error(val exception: Exception) : LatestLocationResult()
 
 sealed class GeotagCreationResult {
     override fun toString(): String = javaClass.simpleName
@@ -49,4 +47,3 @@ sealed class GeotagCreationResult {
 
 object GeotagCreationSuccess : GeotagCreationResult()
 data class GeotagCreationError(val reason: GeotagResult.Error.Reason) : GeotagCreationResult()
-data class GeotagCreationException(val exception: Exception) : GeotagCreationResult()

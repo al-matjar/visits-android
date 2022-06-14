@@ -46,7 +46,7 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
 
         findNavController().currentBackStackEntry?.savedStateHandle
             ?.getLiveData<Integration>(KEY_INTEGRATION)
-            ?.observe(viewLifecycleOwner) { result ->
+            ?.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { result ->
                 result?.let {
                     vm.onIntegrationAdded(it)
                     findNavController().currentBackStackEntry?.savedStateHandle
@@ -81,42 +81,36 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
 
         etGeofenceName.addTextChangedListener(geofenceNameListener)
 
-        vm.viewState.observe(viewLifecycleOwner) { viewState ->
-            try {
-                if (viewState.errorMessage == null) {
-                    lError.hide()
-                    confirm.show()
+        vm.viewState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { viewState ->
+            if (viewState.errorMessage == null) {
+                lError.hide()
+                confirm.show()
 
-                    lProgressBar.setGoneState(!viewState.isLoading)
-                    confirm.setGoneState(viewState.isLoading)
+                lProgressBar.setGoneState(!viewState.isLoading)
+                confirm.setGoneState(viewState.isLoading)
 
-                    etAddress.silentUpdate(addressListener, viewState.address)
-                    etRadius.silentUpdate(radiusListener, viewState.radius.orEmpty())
-                    displayIntegrationFieldState(viewState.integrationsViewState)
-                    confirm.isSelected = viewState.enableConfirmButton
-                } else {
-                    lError.show()
-                    lProgressBar.hide()
-                    confirm.hide()
-                    bReload.hide()
-                    tvErrorMessage.text = viewState.errorMessage.text
-                }
-            } catch (e: Exception) {
-                vm.handleAction(ErrorAction(e))
+                etAddress.silentUpdate(addressListener, viewState.address)
+                etRadius.silentUpdate(radiusListener, viewState.radius.orEmpty())
+                displayIntegrationFieldState(viewState.integrationsViewState)
+                confirm.isSelected = viewState.enableConfirmButton
+            } else {
+                lError.show()
+                lProgressBar.hide()
+                confirm.hide()
+                bReload.hide()
+                tvErrorMessage.text = viewState.errorMessage.text
             }
         }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner) {
-            it.consume {
-                SnackbarUtil.showErrorSnackbar(view, it)
-            }
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
         }
 
-        vm.destination.observe(viewLifecycleOwner) {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
         }
 
-        vm.adjacentGeofenceDialogEvent.observe(viewLifecycleOwner) {
+        vm.adjacentGeofenceDialogEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             it.consume {
                 createConfirmationDialog(it).show()
             }

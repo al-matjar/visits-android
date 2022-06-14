@@ -47,19 +47,22 @@ class PlaceDetailsFragment : ProgressDialogFragment(R.layout.fragment_place_deta
         rvVisits.setLinearLayoutManager(requireContext())
         rvVisits.adapter = visitsAdapter
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             srlPlaces.isRefreshing = it
-        })
+        }
 
-        vm.address.observe(viewLifecycleOwner, {
+        vm.address.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             tvAddress.text = it
-        })
+        }
 
-        vm.metadata.observe(viewLifecycleOwner, {
+        vm.metadata.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             metadataAdapter.updateItems(it)
-        })
+        }
 
-        vm.integration.observe(viewLifecycleOwner, { integrationValue ->
+        vm.integration.observeWithErrorHandling(
+            viewLifecycleOwner,
+            vm::onError
+        ) { integrationValue ->
             lIntegration.setGoneState(integrationValue == null)
             integrationValue?.let { integration ->
                 integration.id.toView(tvIntegrationId)
@@ -68,22 +71,22 @@ class PlaceDetailsFragment : ProgressDialogFragment(R.layout.fragment_place_deta
                     it.hide()
                 }
             }
-        })
+        }
 
-        vm.visits.observe(viewLifecycleOwner, {
+        vm.visits.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             visitsAdapter.updateItems(it)
             tvNoVisits.setGoneState(it.isNotEmpty())
-        })
+        }
 
-        vm.externalMapsIntent.observe(viewLifecycleOwner, {
+        vm.externalMapsIntent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             it.consume {
                 mainActivity().startActivity(it)
             }
-        })
+        }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, {
-            SnackbarUtil.showErrorSnackbar(view, it)
-        })
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
+        }
 
 //        srlPlaces.setOnRefreshListener {
 //            vm.onRefresh()

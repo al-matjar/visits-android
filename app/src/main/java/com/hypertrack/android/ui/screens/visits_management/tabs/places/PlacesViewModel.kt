@@ -1,17 +1,15 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.places
 
-import android.util.Log
-import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.delegates.GeofenceNameDelegate
 import com.hypertrack.android.ui.common.delegates.address.GeofenceAddressDelegate
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
-import com.hypertrack.android.utils.toAddressString
 import com.hypertrack.logistics.android.github.R
 
 import kotlinx.coroutines.CancellationException
@@ -89,7 +87,7 @@ class PlacesViewModel(
                     }
                 } catch (e: Exception) {
                     if (e !is CancellationException) {
-                        errorHandler.postException(e)
+                        showExceptionMessageAndReport(e)
                         loadingState.postValue(false)
                     }
                 }

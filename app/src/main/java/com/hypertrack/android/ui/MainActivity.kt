@@ -9,7 +9,7 @@ import com.hypertrack.android.ui.activity.ActivityViewModel
 import com.hypertrack.android.ui.base.NavActivity
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.base.withErrorHandling
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.SnackBarUtil
 import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.utils.*
 import com.hypertrack.logistics.android.github.R
@@ -39,11 +39,11 @@ class MainActivity : NavActivity() {
                 navController.navigate(it)
             }
 
-            activityViewModel.showErrorSnackBarEvent.observeWithErrorHandling(
+            activityViewModel.showErrorMessageEvent.observeWithErrorHandling(
                 this,
                 activityViewModel::onError,
             ) {
-                SnackbarUtil.showErrorSnackbar(root, it)
+                SnackBarUtil.showErrorSnackBar(root, it)
             }
 
             // todo test current fragment null

@@ -14,6 +14,7 @@ import com.hypertrack.android.interactors.TripInteractorTest.Companion.createMoc
 import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.interactors.TripInteractorTest.Companion.createTripInteractorImpl
+import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus

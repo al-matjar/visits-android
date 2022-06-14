@@ -57,24 +57,22 @@ class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_
         rvIntegrations.setLinearLayoutManager(requireContext())
         rvIntegrations.adapter = adapter
 
-        vm.integrations.observe(viewLifecycleOwner) {
+        vm.integrations.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             adapter.updateItems(it)
             lIntegrationsPlaceholder.setGoneState(it.isNotEmpty())
         }
 
-        vm.loadingState.observe(viewLifecycleOwner) {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             srlIntegrations.isRefreshing = it
             rvIntegrations.setGoneState(it)
             if (it) lIntegrationsPlaceholder.hide()
         }
 
-        vm.error.observe(viewLifecycleOwner) {
-            it.consume { e ->
-                SnackbarUtil.showErrorSnackbar(view, e.message)
-            }
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
         }
 
-        vm.integrationSelectedEvent.observe(viewLifecycleOwner) {
+        vm.integrationSelectedEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             it.consume { integration ->
                 findNavController().previousBackStackEntry?.savedStateHandle?.set(
                     AddPlaceInfoFragment.KEY_INTEGRATION,

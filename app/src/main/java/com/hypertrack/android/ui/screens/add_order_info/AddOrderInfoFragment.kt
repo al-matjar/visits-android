@@ -11,7 +11,8 @@ import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.SimpleTextWatcher
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.SnackBarUtil
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.silentUpdate
 import com.hypertrack.android.ui.common.util.textString
 import com.hypertrack.logistics.android.github.R
@@ -56,25 +57,25 @@ class AddOrderInfoFragment : ProgressDialogFragment(R.layout.fragment_add_order_
         }
         etAddress.addTextChangedListener(listener)
 
-        vm.address.observe(viewLifecycleOwner, {
+        vm.address.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             etAddress.silentUpdate(listener, it)
-        })
+        }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, {
-            SnackbarUtil.showErrorSnackbar(view, it)
-        })
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
+        }
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             if (it) showProgress() else dismissProgress()
-        })
+        }
 
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
-        })
+        }
 
-        vm.enableConfirmButton.observe(viewLifecycleOwner, { it ->
+        vm.enableConfirmButton.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { it ->
             confirm.isSelected = it
-        })
+        }
 
         confirm.setOnClickListener {
             vm.onConfirmClicked(

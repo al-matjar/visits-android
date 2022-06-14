@@ -7,10 +7,12 @@ import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.*
 import com.hypertrack.android.ui.common.util.*
+import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_places.*
 
@@ -29,30 +31,30 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
         initPlaces()
         initVisits()
 
-        vm.loadingState.observe(viewLifecycleOwner, {
+        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             paginationProgressbar.setGoneState(!it)
-        })
+        }
 
-        visitsVm.loadingState.observe(viewLifecycleOwner, {
+        visitsVm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             lVisitsPlaceholder.hide()
             visitsProgressbar.setGoneState(!it)
-        })
+        }
 
-        vm.destination.observe(viewLifecycleOwner, {
+        vm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
-        })
+        }
 
-        visitsVm.destination.observe(viewLifecycleOwner, {
+        visitsVm.destination.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             findNavController().navigate(it)
-        })
+        }
 
-        vm.errorHandler.errorText.observe(viewLifecycleOwner, {
-            SnackbarUtil.showErrorSnackbar(view, it)
-        })
-
-        visitsVm.errorHandler.errorText.observe(viewLifecycleOwner, {
-            SnackbarUtil.showErrorSnackbar(view, it)
-        })
+        val errorObserver = { errorMessage: Consumable<ErrorMessage> ->
+            SnackBarUtil.showErrorSnackBar(view, errorMessage)
+        }
+        vm.showErrorMessageEvent
+            .observeWithErrorHandling(viewLifecycleOwner, vm::onError, errorObserver)
+        visitsVm.showErrorMessageEvent
+            .observeWithErrorHandling(viewLifecycleOwner, vm::onError, errorObserver)
 
         srlPlaces.setOnRefreshListener {
             when (state) {
@@ -125,7 +127,7 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
             override val visibleThreshold = 1
         })
 
-        vm.placesPage.observe(viewLifecycleOwner, {
+        vm.placesPage.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             if (it != null) {
                 it.consume {
 //                    Log.v("hypertrack-verbose", "-- page ${it.map { it.geofence.name }}")
@@ -138,7 +140,7 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
                 lPlacesPlaceholder.hide()
                 rvPlaces.show()
             }
-        })
+        }
     }
 
     private fun initVisits() {
@@ -146,12 +148,12 @@ class PlacesFragment : ProgressDialogFragment(R.layout.fragment_places) {
         visitsAdapter = visitsVm.createVisitsAdapter()
         rvVisits.adapter = visitsAdapter
 
-        visitsVm.visitsStats.observe(viewLifecycleOwner, {
+        visitsVm.visitsStats.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             Log.v("hypertrack-verbose", it.toString())
             visitsAdapter.updateItems(it)
             lVisitsPlaceholder.setGoneState(it.isNotEmpty())
             rvVisits.setGoneState(it.isEmpty())
-        })
+        }
     }
 
     companion object {

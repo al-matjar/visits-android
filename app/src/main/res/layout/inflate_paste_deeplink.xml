@@ -44,17 +44,51 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
+            android:id="@+id/textView14"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sign_in_hardware_id"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@+id/bCopyHardwareId"
+            app:layout_constraintStart_toStartOf="@+id/etDeeplink"
+            app:layout_constraintTop_toTopOf="@+id/bCopyHardwareId" />
+
+        <TextView
+            android:id="@+id/tvHardwareId"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:singleLine="false"
+            android:text="TextView"
+            app:layout_constraintBottom_toBottomOf="@+id/textView14"
+            app:layout_constraintEnd_toStartOf="@+id/bCopyHardwareId"
+            app:layout_constraintStart_toEndOf="@+id/textView14"
+            app:layout_constraintTop_toTopOf="@+id/textView14" />
+
+        <ImageView
+            android:id="@+id/bCopyHardwareId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            app:layout_constraintEnd_toEndOf="@+id/etDeeplink"
+            app:layout_constraintTop_toBottomOf="@+id/etDeeplink"
+            app:srcCompat="@drawable/ic_copy" />
+
+        <TextView
             android:id="@+id/bDeeplinkLogin"
             style="@style/ActionButtonStyle"
             android:layout_width="231dp"
             android:layout_height="48dp"
-            android:layout_marginTop="16dp"
             android:layout_marginBottom="32dp"
             android:text="@string/log_in"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/etDeeplink" />
+            app:layout_constraintTop_toBottomOf="@+id/bCopyHardwareId" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

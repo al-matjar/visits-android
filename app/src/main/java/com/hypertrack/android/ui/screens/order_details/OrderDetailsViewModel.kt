@@ -8,11 +8,12 @@ import androidx.lifecycle.*
 import com.google.android.gms.maps.GoogleMap
 import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.*
+import com.hypertrack.android.interactors.trip.NotClockedInException
+import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
-import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.util.format
@@ -22,7 +23,6 @@ import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.logistics.android.github.R
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
 import kotlin.Exception
 
@@ -34,12 +34,6 @@ class OrderDetailsViewModel(
     private val dateTimeFormatter: DateTimeFormatter,
 ) : BaseViewModel(baseDependencies) {
 
-    override val errorHandler =
-        ErrorHandler(
-            osUtilsProvider,
-            baseDependencies.crashReportsProvider,
-            tripsInteractor.errorFlow.asLiveData()
-        )
     private val map = MutableLiveData<HypertrackMapWrapper>()
 
     private val order = tripsInteractor.getOrderLiveData(orderId)
@@ -61,6 +55,10 @@ class OrderDetailsViewModel(
     init {
         Transformations.map(order) { it.note ?: it.metadataNote }.observeManaged {
             note.postValue(it)
+        }
+
+        tripsInteractor.errorFlow.asLiveData().observeManaged { consumable ->
+            consumable.consume { onError(it) }
         }
     }
 
@@ -169,7 +167,7 @@ class OrderDetailsViewModel(
                     JustSuccess -> {
                     }
                     is JustFailure -> {
-                        errorHandler.postException(it.exception)
+                        showExceptionMessageAndReport(it.exception)
                     }
                 }
             }
@@ -182,7 +180,7 @@ class OrderDetailsViewModel(
                 when (it) {
                     JustSuccess -> {
                     }
-                    is JustFailure -> errorHandler.postException(it.exception)
+                    is JustFailure -> showExceptionMessageAndReport(it.exception)
                 }
             }
         }
@@ -200,7 +198,7 @@ class OrderDetailsViewModel(
                 REQUEST_IMAGE_CAPTURE
             )
         } catch (e: Exception) {
-            errorHandler.postText(R.string.cannot_create_file_msg)
+            showError(R.string.cannot_create_file_msg)
         }
     }
 
@@ -255,16 +253,16 @@ class OrderDetailsViewModel(
     private fun handleOrderCompletionResult(res: OrderCompletionResponse) {
         when (res) {
             OrderCompletionCompleted -> {
-                errorHandler.postText(R.string.order_already_completed)
+                showError(R.string.order_already_completed)
             }
             OrderCompletionCanceled -> {
-                errorHandler.postText(R.string.order_already_canceled)
+                showError(R.string.order_already_canceled)
             }
             is OrderCompletionFailure -> {
                 if (res.exception is NotClockedInException) {
-                    errorHandler.postText(R.string.order_not_clocked_in)
+                    showError(R.string.order_not_clocked_in)
                 } else {
-                    errorHandler.postException(res.exception)
+                    showExceptionMessageAndReport(res.exception)
                 }
             }
             else -> {

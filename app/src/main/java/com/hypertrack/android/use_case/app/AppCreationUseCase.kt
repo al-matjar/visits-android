@@ -42,18 +42,23 @@ import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDe
 import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.use_case.sdk.NewTrackingState
+import com.hypertrack.android.use_case.sdk.stringOrNull
 import com.hypertrack.android.utils.BatteryLevelMonitor
 import com.hypertrack.android.utils.CognitoAccountLoginProviderImpl
 import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.DeviceInfoUtils
+import com.hypertrack.android.utils.HardwareId
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.NotificationUtil
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.SimpleImageDecoder
 import com.hypertrack.android.utils.TokenForPublishableKeyExchangeService
 import com.hypertrack.android.utils.TrackingState
+import com.hypertrack.android.utils.exception.SimpleException
 import com.hypertrack.android.utils.formatters.DateTimeFormatterImpl
 import com.hypertrack.android.utils.formatters.LocalizedDistanceFormatter
 import com.hypertrack.android.utils.formatters.TimeValueFormatterImpl
+import com.hypertrack.android.utils.toNullable
 import com.hypertrack.logistics.android.github.R
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.recipes.RuntimeJsonAdapterFactory
@@ -72,7 +77,6 @@ class AppCreationUseCase {
     fun execute(
         application: Application,
         crashReportsProvider: CrashReportsProvider,
-        trackingState: TrackingState,
         trackingStateListener: (NewTrackingState) -> Unit
     ): AppScope {
         buildNotificationChannels(application)
@@ -88,7 +92,6 @@ class AppCreationUseCase {
         val appScope = createAppScope(
             application,
             crashReportsProvider,
-            trackingState,
             trackingStateListener
         )
 
@@ -102,12 +105,11 @@ class AppCreationUseCase {
     private fun createAppScope(
         appContext: Context,
         crashReportsProvider: CrashReportsProvider,
-        trackingState: TrackingState,
         trackingStateListener: (NewTrackingState) -> Unit
     ): AppScope {
         val moshi = createMoshi()
         val osUtilsProvider = OsUtilsProvider(appContext, crashReportsProvider)
-        val myPreferences = MyPreferences(appContext, moshi)
+        val myPreferences = MyPreferences(appContext, moshi, crashReportsProvider)
         val preferencesRepository = PreferencesRepository(
             myPreferences,
             moshi,
@@ -215,7 +217,6 @@ class AppCreationUseCase {
             BatteryLevelMonitor(crashReportsProvider),
             NotificationUtil,
             moshi,
-            trackingState,
             trackingStateListener,
             CoroutineScope(SupervisorJob()),
             Executors.newSingleThreadExecutor().asCoroutineDispatcher(),
@@ -265,7 +266,7 @@ class AppCreationUseCase {
                             GoogleApiAvailability.getInstance()
                                 .showErrorNotification(context, errorCode)
                             crashReportsProvider.logException(
-                                Exception("Security provider installation failed, error code: $errorCode")
+                                SimpleException("Security provider installation failed, error code: $errorCode")
                             )
                         } catch (e: Exception) {
                             crashReportsProvider.logException(e)

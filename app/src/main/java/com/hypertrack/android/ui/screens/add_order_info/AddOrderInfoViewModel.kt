@@ -6,29 +6,25 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.MarkerOptions
-import com.hypertrack.android.interactors.AddOrderError
-import com.hypertrack.android.interactors.AddOrderSuccess
+import com.hypertrack.android.interactors.trip.AddOrderError
+import com.hypertrack.android.interactors.trip.AddOrderSuccess
 import com.hypertrack.android.interactors.GeocodingInteractor
-import com.hypertrack.android.interactors.TripsInteractor
+import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.CreateTripCreationScopeAction
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
-import com.hypertrack.android.ui.base.postValue
 import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
 import com.hypertrack.android.ui.common.select_destination.DestinationData
+import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.add_order.AddOrderFragmentDirections
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
-@FlowPreview
 class AddOrderInfoViewModel(
     private val params: AddOrderParams,
     baseDependencies: BaseViewModelDependencies,
@@ -78,7 +74,7 @@ class AddOrderInfoViewModel(
                                 )
                             }
                             is AddOrderError -> {
-                                errorHandler.postException(res.e)
+                                showExceptionMessageAndReport(res.e)
                             }
                         }
                         loadingState.postValue(false)

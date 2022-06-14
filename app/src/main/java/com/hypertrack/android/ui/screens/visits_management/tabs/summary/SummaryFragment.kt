@@ -5,9 +5,8 @@ import android.view.View
 import androidx.fragment.app.viewModels
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
-import com.hypertrack.android.ui.common.util.SnackbarUtil
+import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.setLinearLayoutManager
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_tab_summary.*
 
@@ -27,18 +26,10 @@ class SummaryFragment : ProgressDialogFragment(R.layout.fragment_tab_summary) {
 
         displayLoadingState(true)
 
-        vm.summary.observe(viewLifecycleOwner, { summary ->
+        vm.summary.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { summary ->
             adapter.updateItems(summary)
             displayLoadingState(false)
-        })
-
-        vm.error.observe(viewLifecycleOwner, { error ->
-            srlSummary.isRefreshing = false
-            SnackbarUtil.showErrorSnackbar(
-                view,
-                error.error?.message ?: MyApplication.context.getString(R.string.history_error)
-            )
-        })
+        }
 
         srlSummary.setOnRefreshListener {
             vm.refreshSummary()

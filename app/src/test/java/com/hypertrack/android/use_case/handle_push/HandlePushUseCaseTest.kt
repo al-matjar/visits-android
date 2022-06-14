@@ -4,7 +4,7 @@ import android.app.NotificationManager
 import android.content.Intent
 import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.TestInjector
-import com.hypertrack.android.interactors.TripsInteractor
+import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.use_case.handle_push.HandlePushUseCase.Companion.TRIP_NOTIFICATION_ID

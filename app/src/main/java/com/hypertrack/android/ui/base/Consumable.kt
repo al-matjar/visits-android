@@ -2,6 +2,7 @@ package com.hypertrack.android.ui.base
 
 import androidx.navigation.NavDirections
 import com.google.android.datatransport.runtime.Destination
+import com.hypertrack.android.utils.ErrorMessage
 
 class Consumable<T>(
     val payload: T,
@@ -43,5 +44,9 @@ fun Boolean.toConsumable(): Consumable<Boolean> {
 }
 
 fun NavDirections.toConsumable(): Consumable<NavDirections> {
+    return Consumable(this)
+}
+
+fun ErrorMessage.toConsumable(): Consumable<ErrorMessage> {
     return Consumable(this)
 }

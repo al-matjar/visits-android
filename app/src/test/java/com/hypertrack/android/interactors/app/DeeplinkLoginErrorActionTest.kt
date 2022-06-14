@@ -3,8 +3,6 @@ package com.hypertrack.android.interactors.app
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appReducer
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.initializedState
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
-import com.hypertrack.android.interactors.app.AppReducerTest.Companion.validDeeplinkParams
-import junit.framework.TestCase
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.junit.Test
@@ -27,7 +25,7 @@ class DeeplinkLoginErrorActionTest {
                 assertFalse(it.showProgressbar)
                 assertTrue(result.effects.size == 2)
                 result.effects.filterIsInstance<NavigateToUserScopeScreensEffect>().first()
-                result.effects.filterIsInstance<ShowAppErrorMessageEffect>().first()
+                result.effects.filterIsInstance<HandleAppErrorMessageEffect>().first()
             }
         }
     }
@@ -46,7 +44,7 @@ class DeeplinkLoginErrorActionTest {
                 assertFalse(it.showProgressbar)
                 assertTrue(result.effects.size == 2)
                 result.effects.filterIsInstance<NavigateToSignInEffect>().first()
-                result.effects.filterIsInstance<ShowAppErrorMessageEffect>().first()
+                result.effects.filterIsInstance<HandleAppErrorMessageEffect>().first()
             }
         }
     }

@@ -32,7 +32,7 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
                 sign_in.isEnabled = isClickable
                 sign_in.isSelected = isClickable
             }
-            it.showPasteDeeplink.let { show ->
+            it.showDeeplinkIssuesDialog.let { show ->
                 bDeeplinkIssues.setGoneState(show)
                 if (show) {
                     lDeeplinkIssues.show()
@@ -44,6 +44,7 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
                     }.alpha(0f)
                 }
             }
+            it.hardwareId?.value?.toView(tvHardwareId)
         }
 
         vm.showProgressbar.observeWithErrorHandling(viewLifecycleOwner, this::onError) { show ->
@@ -90,19 +91,23 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
         sign_in.setOnClickListener {
             vm.handleAction(OnLoginClickAction)
         }
+
+        bCopyHardwareId.setOnClickListener {
+            vm.handleAction(CopyHardwareIdAction)
+        }
     }
 
     private fun setUpDeeplink(view: View) {
-        vm.clearDeeplinkTextEvent.observe(viewLifecycleOwner) {
+        vm.clearDeeplinkTextEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             etDeeplink.setText("")
         }
 
-        vm.errorMessageEvent.observe(viewLifecycleOwner) {
-            SnackbarUtil.showErrorMessageSnackbar(view, it)
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
         }
 
         bDeeplinkIssues.setOnClickListener {
-            vm.handleAction(OnDeeplinkIssuesClickAction)
+            vm.onDeeplinkIssuesClicked()
         }
 
         bClose.setOnClickListener {
