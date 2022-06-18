@@ -793,15 +793,16 @@ class HistoryViewModel(
             is LoadingSuccess -> historyData.data
         }
 
-        return if (history != null) {
+        val historyPoints = history?.mapData?.historyPolyline?.polylineOptions?.points
+        return if (!historyPoints.isNullOrEmpty()) {
             try {
                 LatLngBounds.builder().apply {
-                    history.mapData.historyPolyline.polylineOptions.points.forEach {
+                    historyPoints.forEach {
                         include(it)
                     }
                     userLocation?.let { include(it) }
                 }.build().let {
-                    if (LocationUtils.distanceMeters(it.northeast, it.southwest) ?: 0
+                    if ((LocationUtils.distanceMeters(it.northeast, it.southwest) ?: 0)
                         > ZOOM_RADIUS_THRESHOLD.meters
                     ) {
                         setOf(MoveMapEffect(map, Either.Right(it)))

@@ -1,6 +1,8 @@
 package com.hypertrack.android.repository.preferences
 
+import android.os.Build.VERSION_CODES.P
 import com.hypertrack.android.interactors.app.Email
+import com.hypertrack.android.interactors.app.Phone
 import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.models.auth.BasicAuthAccessTokenConfig
 import com.hypertrack.android.repository.MyPreferences
@@ -126,17 +128,33 @@ class PreferencesRepository(
 
     private fun getLegacyUserData(): UserData? {
         return preferences.getString(LEGACY_USER_KEY, null)?.let {
-            UserData(
-                email = Email(JSONObject(it).getString(LEGACY_KEY_EMAIL)),
-                phone = null,
-                metadata = null
-            )
+            val userDataJson = JSONObject(it)
+            when {
+                userDataJson.has(LEGACY_KEY_EMAIL) -> {
+                    UserData(
+                        email = Email(userDataJson.getString(LEGACY_KEY_EMAIL)),
+                        phone = null,
+                        metadata = null
+                    )
+                }
+                userDataJson.has(LEGACY_KEY_PHONE_NUMBER) -> {
+                    UserData(
+                        email = null,
+                        phone = Phone(userDataJson.getString(LEGACY_KEY_PHONE_NUMBER)),
+                        metadata = null
+                    )
+                }
+                else -> {
+                    null
+                }
+            }
         }
     }
 
 
     companion object {
         private const val LEGACY_KEY_EMAIL = "email"
+        private const val LEGACY_KEY_PHONE_NUMBER = "phoneNumber"
         private const val LEGACY_USER_KEY = "com.hypertrack.android.utils.user"
         private const val PREFIX = "com.hypertrack.android."
         private const val KEY_UNITS_IMPERIAL = PREFIX + "units_imperial"

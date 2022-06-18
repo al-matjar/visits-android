@@ -11,6 +11,7 @@ import retrofit2.HttpException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 
 // todo rename (remove 'provider')
 interface CrashReportsProvider {
@@ -87,6 +88,14 @@ class UserIdentifier(
 
 fun Exception.isNetworkError(): Boolean {
     return when (this) {
+        is SSLException -> {
+            when {
+                message?.contains("Software caused connection abort") == true -> {
+                    true
+                }
+                else -> false
+            }
+        }
         is HttpException,
         is SocketTimeoutException,
         is UnknownHostException,

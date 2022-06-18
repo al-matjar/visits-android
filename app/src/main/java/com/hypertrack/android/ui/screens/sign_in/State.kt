@@ -6,7 +6,12 @@ data class State(
     val login: String,
     val password: String,
     val showPasteDeeplinkDialog: Boolean
-)
+) {
+    // to avoid showing password in logs
+    override fun toString(): String {
+        return "${javaClass.simpleName}(login=$login, showPasteDeeplinkDialog=$showPasteDeeplinkDialog)"
+    }
+}
 
 fun State.withEffects(effects: Set<Effect>): ReducerResult<State, Effect> {
     return ReducerResult(

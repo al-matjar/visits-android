@@ -7,7 +7,13 @@ sealed class Effect {
 }
 
 data class UpdateViewStateEffect(val viewState: ViewState) : Effect()
-data class SignInEffect(val login: String, val password: String) : Effect()
+data class SignInEffect(val login: String, val password: String) : Effect() {
+    // to avoid showing password in logs
+    override fun toString(): String {
+        return "${javaClass.simpleName}(login=$login)"
+    }
+}
+
 data class HandleDeeplinkOrTokenEffect(val text: String, val activity: Activity) : Effect()
 data class ErrorEffect(val exception: Exception) : Effect()
 object ClearDeeplinkTextEffect : Effect()

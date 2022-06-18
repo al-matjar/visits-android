@@ -3,6 +3,7 @@ package com.hypertrack.android.use_case.login
 import com.hypertrack.android.repository.user.UserData
 import com.hypertrack.android.repository.user.UserRepository
 import com.hypertrack.android.utils.Result
+import com.hypertrack.android.utils.SimpleException
 import com.hypertrack.android.utils.asFailure
 import com.hypertrack.android.utils.asSuccess
 import com.hypertrack.android.utils.flatMapSuccess
@@ -19,7 +20,9 @@ class LoadUserDataUseCase(
         return (userRepository.userData.load()).toFlow()
             .flatMapSuccess {
                 it?.asSuccess()?.toFlow()
-                    ?: NullPointerException().asFailure<UserData>().toFlow()
+                    ?: SimpleException(
+                        "Failed to load user data for LoggedIn state. Please clear the app data or reinstall the app"
+                    ).asFailure<UserData>().toFlow()
             }
     }
 

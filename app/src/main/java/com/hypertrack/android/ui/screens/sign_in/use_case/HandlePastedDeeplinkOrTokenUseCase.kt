@@ -177,7 +177,8 @@ class HandlePastedDeeplinkOrTokenUseCase(
         return {
             with(DEEPLINK_REGEX.matcher(link)) {
                 if (matches()) {
-                    osUtilsProvider.parseUri(link).asSuccess()
+                    // trim to avoid branch.io issue if the link have space in the end
+                    osUtilsProvider.parseUri(link.trim()).asSuccess()
                 } else {
                     Failure(InvalidDeeplinkFormat(link))
                 }

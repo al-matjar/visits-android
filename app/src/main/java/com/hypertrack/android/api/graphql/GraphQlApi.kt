@@ -39,7 +39,7 @@ interface GraphQlApi {
     @JsonClass(generateAdapter = true)
     class GraphQlError(
         val message: String,
-        val errorType: String,
+        val errorType: String?,
         val path: List<String>,
     ) {
         override fun toString(): String {
