@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.17.5] - 2022-06-14
+
+### Changed
+
+- Hypertrack SDK 6.1.4
+- Minimum supported Android version - 6.0
+
+### Fixed
+
+- Getting legacy user data.
+- Minor fixes
+
 ## [0.17.4] - 2022-06-14
 
 ### Fixed
