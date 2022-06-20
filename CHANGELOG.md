@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.17.6] - 2022-06-20
+
+### Added
+
+- Deeplink hint to the login screen
+
+### Fixed
+
+- Enabled support for deeplinks with email and phone number
+
 ## [0.17.5] - 2022-06-14
 
 ### Changed
