@@ -34,7 +34,7 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="32dp"
             android:ems="10"
-            android:hint="@string/sign_in_deeplink_hint"
+            android:hint="@string/sign_in_paste_deeplink_hint"
             android:inputType="textMultiLine"
             android:maxLines="5"
             android:minLines="2"

@@ -172,6 +172,7 @@ class AppCreationUseCase {
             UserRepository(preferencesRepository),
             preferencesRepository,
             FileRepositoryImpl(),
+            measurementUnitsRepository,
             OrderAddressDelegate(geocodingInteractor, osUtilsProvider, datetimeFormatter),
             geofenceAddressDelegate,
             geofenceVisitAddressDelegate,

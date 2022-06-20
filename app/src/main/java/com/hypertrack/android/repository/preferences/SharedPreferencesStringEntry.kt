@@ -18,10 +18,15 @@ abstract class SharedPreferencesStringEntry<T>(
 
     override fun save(data: T?): SimpleResult {
         return try {
-            data?.let { serialize(it) }?.flatMapSimple {
-                preferences.edit().putString(key, it).apply()
+            if (data != null) {
+                serialize(data).flatMapSimple {
+                    preferences.edit().putString(key, it).apply()
+                    JustSuccess
+                }
+            } else {
+                preferences.edit().remove(key).apply()
                 JustSuccess
-            } ?: JustSuccess
+            }
         } catch (e: Exception) {
             JustFailure(e)
         }

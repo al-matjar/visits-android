@@ -7,6 +7,7 @@ import com.hypertrack.android.deeplink.BranchWrapper
 import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.repository.access_token.AccessTokenRepository
 import com.hypertrack.android.repository.FileRepository
+import com.hypertrack.android.repository.MeasurementUnitsRepository
 import com.hypertrack.android.repository.MyPreferences
 import com.hypertrack.android.repository.preferences.PreferencesRepository
 import com.hypertrack.android.repository.PublishableKeyRepository
@@ -48,6 +49,7 @@ class AppScope(
     val userRepository: UserRepository,
     val preferencesRepository: PreferencesRepository,
     val fileRepository: FileRepository,
+    val measurementUnitsRepository: MeasurementUnitsRepository,
     // delegates
     val orderAddressDelegate: OrderAddressDelegate,
     val geofenceAddressDelegate: GeofenceAddressDelegate,

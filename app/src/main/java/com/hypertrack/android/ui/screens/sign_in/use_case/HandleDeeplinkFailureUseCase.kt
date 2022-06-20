@@ -4,14 +4,13 @@ import androidx.annotation.StringRes
 import com.hypertrack.android.use_case.deeplink.DeeplinkException
 import com.hypertrack.android.use_case.deeplink.DeeplinkFailure
 import com.hypertrack.android.use_case.deeplink.DeprecatedDeeplink
-import com.hypertrack.android.use_case.deeplink.MultipleLogins
+import com.hypertrack.android.use_case.deeplink.MirroredFieldsInMetadata
 import com.hypertrack.android.use_case.deeplink.NoLogin
 import com.hypertrack.android.use_case.deeplink.NoPublishableKey
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.ResourceProvider
 import com.hypertrack.android.utils.SimpleException
 import com.hypertrack.android.utils.asSimpleFailure
-import com.hypertrack.android.utils.format
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.flow.Flow
@@ -39,11 +38,11 @@ class HandleDeeplinkFailureUseCase(
             NoLogin -> {
                 simpleException(R.string.splash_screen_no_username)
             }
-            MultipleLogins -> {
+            MirroredFieldsInMetadata -> {
                 simpleException(R.string.splash_screen_duplicate_fields)
             }
             DeprecatedDeeplink -> {
-                simpleException(R.string.splash_screen_duplicate_fields)
+                simpleException(R.string.splash_screen_deprecated_deeplink)
             }
         }.asSimpleFailure().toFlow()
     }

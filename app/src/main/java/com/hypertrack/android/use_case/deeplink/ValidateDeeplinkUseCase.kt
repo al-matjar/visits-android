@@ -2,6 +2,7 @@ package com.hypertrack.android.use_case.deeplink
 
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.interactors.app.Email
+import com.hypertrack.android.interactors.app.EmailAndPhoneAuthData
 import com.hypertrack.android.interactors.app.EmailAuthData
 import com.hypertrack.android.interactors.app.Phone
 import com.hypertrack.android.interactors.app.PhoneAuthData
@@ -29,9 +30,11 @@ class ValidateDeeplinkUseCase(
         return try {
             val publishableKey = parameters[DEEPLINK_KEY_PUBLISHABLE_KEY] as String?
             val driverId = parameters[DEEPLINK_KEY_DRIVER_ID] as String?
+            //todo validate email
             val email = parameters[DEEPLINK_KEY_EMAIL] as String?
             val deeplink = parameters[DEEPLINK_KEY_LINK] as String?
             val deeplinkWithoutGetParams = deeplink.urlClearGetParams()
+            //todo validate phone?
             val phoneNumber = parameters[DEEPLINK_KEY_PHONE] as String?
             val metadata: Map<String, Any>? = when (val param = parameters[DEEPLINK_KEY_METADATA]) {
                 is String -> {
@@ -45,28 +48,32 @@ class ValidateDeeplinkUseCase(
                 publishableKey == null -> {
                     DeeplinkValidationError(NoPublishableKey)
                 }
-                email != null && phoneNumber != null -> {
-                    DeeplinkValidationError(MultipleLogins)
-                }
                 email == null && phoneNumber == null && driverId == null -> {
                     DeeplinkValidationError(NoLogin)
                 }
                 email != null && metadata?.contains(DEEPLINK_KEY_EMAIL) == true ||
                         phoneNumber != null && metadata?.containsKey(DEEPLINK_KEY_PHONE) == true -> {
-                    DeeplinkValidationError(MultipleLogins)
+                    DeeplinkValidationError(MirroredFieldsInMetadata)
                 }
                 else -> {
                     when {
                         email != null -> {
-                            //todo validate email
-                            EmailAuthData(
-                                Email(email),
-                                RealPublishableKey(publishableKey),
-                                metadata
-                            ).let { DeeplinkValid(it, deeplinkWithoutGetParams) }
+                            if (phoneNumber != null) {
+                                EmailAndPhoneAuthData(
+                                    Email(email),
+                                    Phone(phoneNumber),
+                                    RealPublishableKey(publishableKey),
+                                    metadata
+                                )
+                            } else {
+                                EmailAuthData(
+                                    Email(email),
+                                    RealPublishableKey(publishableKey),
+                                    metadata
+                                )
+                            }.let { DeeplinkValid(it, deeplinkWithoutGetParams) }
                         }
                         phoneNumber != null -> {
-                            //todo validate phone?
                             PhoneAuthData(
                                 Phone(phoneNumber),
                                 RealPublishableKey(publishableKey),

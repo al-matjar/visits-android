@@ -17,7 +17,6 @@ class PublishableKeyRepository(
         get() = publishableKey.load()
             .toNullableWithErrorReporting(crashReportsProvider) != null
 
-    // todo save and load with use cases
     val publishableKey: KeyValueEntry<RealPublishableKey>
         get() = preferencesRepository.publishableKey
 

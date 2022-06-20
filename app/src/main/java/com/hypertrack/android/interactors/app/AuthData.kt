@@ -12,7 +12,6 @@ sealed class UserAuthData(
     abstract val username: String
 }
 
-@JsonClass(generateAdapter = true)
 class EmailAuthData(
     val email: Email,
     publishableKey: RealPublishableKey,
@@ -21,8 +20,16 @@ class EmailAuthData(
     override val username: String = email.value
 }
 
-@JsonClass(generateAdapter = true)
 class PhoneAuthData(
+    val phone: Phone,
+    publishableKey: RealPublishableKey,
+    metadata: Map<String, Any>?,
+) : UserAuthData(publishableKey, metadata) {
+    override val username: String = phone.value
+}
+
+class EmailAndPhoneAuthData(
+    val email: Email,
     val phone: Phone,
     publishableKey: RealPublishableKey,
     metadata: Map<String, Any>?,

@@ -12,6 +12,7 @@ import com.hypertrack.android.use_case.login.RefreshUserAccessTokenUseCase
 import com.hypertrack.android.use_case.login.ResendEmailConfirmationUseCase
 import com.hypertrack.android.use_case.login.SignInUseCase
 import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkUseCase
+import com.hypertrack.android.use_case.login.DeleteUserScopeDataUseCase
 import com.hypertrack.android.use_case.login.LoadUserDataUseCase
 import com.hypertrack.android.use_case.login.VerifyByOtpCodeUseCase
 import com.hypertrack.android.use_case.sdk.GetConfiguredHypertrackSdkInstanceUseCase
@@ -25,7 +26,18 @@ class UseCases(
 ) {
     private val createUserScopeUseCase = CreateUserScopeUseCase(appScope, appInteractor)
 
-    private val loadUserDataUseCase = LoadUserDataUseCase(appScope.userRepository)
+    private val deleteUserScopeDataUseCase = DeleteUserScopeDataUseCase(
+        appScope.userRepository,
+        appScope.publishableKeyRepository,
+        appScope.measurementUnitsRepository,
+        appScope.accessTokenRepository,
+        appScope.myPreferences,
+    )
+
+    private val loadUserDataUseCase = LoadUserDataUseCase(
+        appScope.userRepository,
+        deleteUserScopeDataUseCase
+    )
 
     val loadUserStateUseCase = LoadUserStateUseCase(
         createUserScopeUseCase,

@@ -9,7 +9,7 @@ sealed class DeeplinkFailure {
             //todo check error message
             is DeeplinkException -> error.exception
             DeprecatedDeeplink -> InvalidDeeplinkException(error.toString())
-            MultipleLogins -> InvalidDeeplinkException(error.toString())
+            MirroredFieldsInMetadata -> InvalidDeeplinkException(error.toString())
             NoLogin -> InvalidDeeplinkException(error.toString())
             NoPublishableKey -> InvalidDeeplinkException(error.toString())
         }
@@ -18,6 +18,6 @@ sealed class DeeplinkFailure {
 
 data class DeeplinkException(val exception: Exception) : DeeplinkFailure()
 object DeprecatedDeeplink : DeeplinkFailure()
-object MultipleLogins : DeeplinkFailure()
+object MirroredFieldsInMetadata : DeeplinkFailure()
 object NoLogin : DeeplinkFailure()
 object NoPublishableKey : DeeplinkFailure()

@@ -110,8 +110,9 @@
     <string name="splash_screen_duplicate_fields">Duplicate fields</string>
     <string name="splash_screen_deprecated_deeplink">The deeplink you\'re using is deprecated</string>
 
-    <string name="sign_in_deeplink_issues">Having issues with deeplink?</string>
-    <string name="sign_in_deeplink_hint">Paste the deeplink or login token here</string>
+    <string name="sign_in_deeplink_issues">Having issues with the deeplink?</string>
+    <string name="sign_in_deeplink_hint">In case if you have a deeplink \n you have to click it to log in</string>
+    <string name="sign_in_paste_deeplink_hint">Paste the deeplink or login token here</string>
     <string name="sign_in_deeplink_invalid_format">Invalid deeplink format.\nCorrect format: \n\n <b>https://hypertrack-logistics.app.link/\u2026</b></string>
 
     <string name="permissions_allow_location_access">Please allow Location permissions</string>

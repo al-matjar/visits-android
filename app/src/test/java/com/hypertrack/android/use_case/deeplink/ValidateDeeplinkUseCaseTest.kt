@@ -3,9 +3,9 @@ package com.hypertrack.android.use_case.deeplink
 import com.hypertrack.android.TestInjector
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.validDeeplinkParams
+import com.hypertrack.android.interactors.app.EmailAndPhoneAuthData
 import com.hypertrack.android.interactors.app.EmailAuthData
 import com.hypertrack.android.interactors.app.PhoneAuthData
-import junit.framework.TestCase
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
@@ -96,21 +96,23 @@ class ValidateDeeplinkUseCaseTest {
     }
 
     @Test
-    fun `it should fail on invalid deeplink with phone and email`() {
+    fun `it should fail handle deeplink with phone and email`() {
         runBlocking {
-            val publishableKey = "abcd"
+            val phone = "phone"
+            val email = "email@com.ua"
+            val params = deeplinkParams(
+                phone = phone,
+                email = email
+            )
 
-            validateDeeplinkUseCase().execute(
-                DeeplinkParams(
-                    mapOf(
-                        "publishable_key" to publishableKey,
-                        "email" to "email_11",
-                        "phone_number" to "phone_11"
-                    )
-                )
-            ).collect {
-                (it as DeeplinkValidationError).let {
-                    assertEquals(MultipleLogins, it.failure)
+            validateDeeplinkUseCase().execute(params).collect { result ->
+                (result as DeeplinkValid).let { deeplinkValid ->
+                    validate(params, deeplinkValid) {
+                        (deeplinkValid.userAuthData as EmailAndPhoneAuthData).let {
+                            assertEquals(phone, it.phone.value)
+                            assertEquals(email, it.email.value)
+                        }
+                    }
                 }
             }
         }
@@ -172,7 +174,7 @@ class ValidateDeeplinkUseCaseTest {
             runBlocking {
                 validateDeeplinkUseCase().execute(it).collect { result ->
                     (result as DeeplinkValidationError).let {
-                        assertEquals(MultipleLogins, it.failure)
+                        assertEquals(MirroredFieldsInMetadata, it.failure)
                     }
                 }
             }
@@ -190,7 +192,7 @@ class ValidateDeeplinkUseCaseTest {
             runBlocking {
                 validateDeeplinkUseCase().execute(it).collect { result ->
                     (result as DeeplinkValidationError).let {
-                        assertEquals(MultipleLogins, it.failure)
+                        assertEquals(MirroredFieldsInMetadata, it.failure)
                     }
                 }
             }

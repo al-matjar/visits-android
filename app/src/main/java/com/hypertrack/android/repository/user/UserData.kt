@@ -1,6 +1,7 @@
 package com.hypertrack.android.repository.user
 
 import com.hypertrack.android.interactors.app.Email
+import com.hypertrack.android.interactors.app.EmailAndPhoneAuthData
 import com.hypertrack.android.interactors.app.EmailAuthData
 import com.hypertrack.android.interactors.app.Phone
 import com.hypertrack.android.interactors.app.PhoneAuthData
@@ -27,6 +28,13 @@ data class UserData constructor(
                 is PhoneAuthData -> {
                     UserData(
                         email = null,
+                        phone = userAuthData.phone,
+                        metadata = userAuthData.metadata
+                    )
+                }
+                is EmailAndPhoneAuthData -> {
+                    UserData(
+                        email = userAuthData.email,
                         phone = userAuthData.phone,
                         metadata = userAuthData.metadata
                     )

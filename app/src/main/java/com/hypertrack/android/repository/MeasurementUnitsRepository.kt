@@ -9,7 +9,6 @@ import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.toNullable
 import com.hypertrack.android.utils.toNullableWithErrorReporting
 
-//todo destroy with user scope
 class MeasurementUnitsRepository(
     private val preferencesRepository: PreferencesRepository,
     private val crashReportsProvider: CrashReportsProvider
