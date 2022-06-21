@@ -12,20 +12,16 @@ import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.FeedbackInteractor
 import com.hypertrack.android.interactors.GeotagsInteractor
 import com.hypertrack.android.interactors.GooglePlacesInteractorImpl
-import com.hypertrack.android.interactors.history.HistoryInteractorImpl
 import com.hypertrack.android.interactors.PermissionsInteractorImpl
 import com.hypertrack.android.interactors.PhotoUploadQueueInteractorImpl
 import com.hypertrack.android.interactors.PlacesInteractorImpl
 import com.hypertrack.android.interactors.PlacesVisitsInteractor
 import com.hypertrack.android.interactors.PlacesVisitsRepository
-import com.hypertrack.android.interactors.history.SummaryInteractor
 import com.hypertrack.android.interactors.trip.TripsInteractorImpl
 import com.hypertrack.android.interactors.trip.TripsUpdateTimerInteractor
 import com.hypertrack.android.interactors.app.AppInteractor
-import com.hypertrack.android.interactors.history.GraphQlHistoryInteractor
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.PublishableKey
-import com.hypertrack.android.repository.HistoryRepositoryImpl
 import com.hypertrack.android.repository.IntegrationsRepositoryImpl
 import com.hypertrack.android.repository.access_token.AccessTokenRepository
 import com.hypertrack.android.repository.MeasurementUnitsRepository
@@ -52,6 +48,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.concurrent.TimeUnit
 
+@Suppress("OPT_IN_USAGE")
 class CreateUserScopeUseCase(
     private val appScope: AppScope,
     private val appInteractor: AppInteractor,
@@ -82,6 +79,7 @@ class CreateUserScopeUseCase(
         val moshi = appScope.moshi
         val deviceId = DeviceId(hyperTrackSdk.deviceID)
         val deviceLocationProvider = FusedDeviceLocationProvider(
+            appInteractor,
             appScope.appContext,
             crashReportsProvider
         )
@@ -100,11 +98,6 @@ class CreateUserScopeUseCase(
             crashReportsProvider
         )
 
-        val historyRepository = HistoryRepositoryImpl(
-            apiClient,
-            crashReportsProvider,
-            osUtilsProvider
-        )
         val hyperTrackService = HyperTrackService(
             hyperTrackSdk,
             appScope.crashReportsProvider
@@ -193,21 +186,6 @@ class CreateUserScopeUseCase(
             placesVisitsRepository
         )
 
-        val historyInteractorLegacy = HistoryInteractorImpl(
-            historyRepository,
-            appScope.appCoroutineScope
-        )
-
-        val historyInteractor = GraphQlHistoryInteractor(
-            deviceId,
-            graphQlApiClient,
-            crashReportsProvider,
-            appScope.graphQlGeofenceVisitAddressDelegate,
-            moshi,
-            appScope.appCoroutineScope,
-            appScope.stateMachineContext
-        )
-
         val googlePlacesInteractor = GooglePlacesInteractorImpl(
             appScope.placesClient
         )
@@ -220,8 +198,6 @@ class CreateUserScopeUseCase(
             appScope.appContext,
             hyperTrackService
         )
-
-        val summaryInteractor = SummaryInteractor(historyInteractorLegacy)
 
         val measurementUnitsRepository = MeasurementUnitsRepository(
             appScope.preferencesRepository,
@@ -237,16 +213,15 @@ class CreateUserScopeUseCase(
             placesVisitsInteractor,
             googlePlacesInteractor,
             geotagsInteractor,
-            historyInteractor,
-            historyInteractorLegacy,
-            summaryInteractor,
             feedbackInteractor,
             photoUploadQueueInteractor,
             permissionsInteractor,
             integrationsRepository,
             measurementUnitsRepository,
             hyperTrackService,
+            deviceId,
             apiClient,
+            graphQlApiClient,
             deviceLocationProvider,
             HandlePushUseCase(
                 appScope.appContext,

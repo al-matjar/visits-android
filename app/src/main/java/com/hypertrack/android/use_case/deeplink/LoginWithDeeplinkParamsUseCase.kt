@@ -2,7 +2,7 @@ package com.hypertrack.android.use_case.deeplink
 
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.repository.user.UserData
-import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.login.LoggedIn
 import com.hypertrack.android.use_case.login.LoginWithPublishableKeyUseCase
 import com.hypertrack.android.use_case.sdk.GetConfiguredHypertrackSdkInstanceUseCase
@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class LoginWithDeeplinkParamsUseCase(

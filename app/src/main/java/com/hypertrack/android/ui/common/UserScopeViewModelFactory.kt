@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.optics.AppStateOptics
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.screens.add_integration.AddIntegrationViewModel
 import com.hypertrack.android.ui.screens.add_place.AddPlaceViewModel
@@ -25,6 +26,9 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersLis
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesVisitsViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryViewModel
+import com.hypertrack.android.utils.Loading
+import com.hypertrack.android.utils.mapState
+import java.time.LocalDate
 
 @Suppress("UNCHECKED_CAST")
 class UserScopeViewModelFactory(
@@ -83,7 +87,10 @@ class UserScopeViewModelFactory(
             ) as T
             SummaryViewModel::class.java -> SummaryViewModel(
                 baseDependencies,
-                userScope.summaryInteractor,
+                appInteractor,
+                appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+                    AppStateOptics.getHistoryState(it)?.days?.get(LocalDate.now()) ?: Loading()
+                },
                 appScope.distanceFormatter,
                 appScope.timeFormatter
             ) as T

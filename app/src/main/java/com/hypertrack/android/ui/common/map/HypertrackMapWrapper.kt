@@ -7,7 +7,6 @@ import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
-import com.hypertrack.android.models.History
 import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
@@ -288,7 +287,7 @@ class HypertrackMapWrapper(
     }
 
     fun moveCamera(cameraUpdate: CameraUpdate) {
-        googleMap.animateCamera(cameraUpdate)
+        googleMap.moveCamera(cameraUpdate)
     }
 
     fun setOnMapClickListener(listener: () -> Unit) {
@@ -342,13 +341,6 @@ class HypertrackMapWrapper(
             crashReportsProvider.logException(e)
         }
     }
-
-    private fun History.asPolylineOptions(): PolylineOptions = this
-        .locationTimePoints
-        .map { it.first }
-        .fold(PolylineOptions()) { options, point ->
-            options.add(LatLng(point.latitude, point.longitude))
-        }
 
     fun addUserLocation(latLng: LatLng?): Marker? {
         return latLng?.let {

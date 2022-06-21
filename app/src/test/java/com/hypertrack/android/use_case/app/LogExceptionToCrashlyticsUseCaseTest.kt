@@ -1,12 +1,10 @@
 package com.hypertrack.android.use_case.app
 
-import android.os.AsyncTask.execute
+import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.utils.FirebaseCrashReportsProviderTest.Companion.crashReportsProvider
 import io.mockk.every
 import io.mockk.mockk
-import junit.framework.TestCase
 import kotlinx.coroutines.flow.flowOf
-import org.junit.Test
 
 class LogExceptionToCrashlyticsUseCaseTest {
 

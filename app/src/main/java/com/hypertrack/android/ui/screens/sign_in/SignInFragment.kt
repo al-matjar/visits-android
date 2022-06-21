@@ -8,6 +8,8 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.SignInScreen
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.*
@@ -27,6 +29,7 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Injector.provideAppInteractor().handleAction(RegisterScreenAction(SignInScreen))
 
         vm.viewState.observeWithErrorHandling(viewLifecycleOwner, this::onError) {
             it.isLoginButtonEnabled.let { isClickable ->

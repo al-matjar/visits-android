@@ -10,7 +10,8 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.models.Location
+import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.UserLocationChangedAction
 import com.hypertrack.android.ui.common.util.toLatLng
 import com.hypertrack.sdk.permissions.hasLocationPermission
 import kotlin.Exception
@@ -21,6 +22,7 @@ interface DeviceLocationProvider {
 }
 
 class FusedDeviceLocationProvider(
+    private val appInteractor: AppInteractor,
     private val context: Context,
     private val crashReportsProvider: CrashReportsProvider
 ) : DeviceLocationProvider, LocationCallback() {
@@ -66,6 +68,9 @@ class FusedDeviceLocationProvider(
     }
 
     override fun onLocationResult(result: LocationResult) {
-        deviceLocation.postValue(result.lastLocation.toLatLng())
+        result.lastLocation.toLatLng().let {
+            appInteractor.handleAction(UserLocationChangedAction(it))
+            deviceLocation.postValue(it)
+        }
     }
 }

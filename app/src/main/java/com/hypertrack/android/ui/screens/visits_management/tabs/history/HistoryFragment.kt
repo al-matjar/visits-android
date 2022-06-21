@@ -68,35 +68,82 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
     }
 
     private lateinit var bottomSheetBehavior: BottomSheetBehavior<View>
+    private lateinit var timelineAdapter: TimelineTileItemAdapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         try {
+            timelineAdapter = vm.createTimelineAdapter()
+
             (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment).getMapAsync {
                 vm.onMapReady(it)
             }
 
-            vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-                displayLoadingState(it)
-            }
-
-            vm.setBottomSheetExpandedEvent.observeWithErrorHandling(
-                viewLifecycleOwner,
-                vm::onError
-            ) {
-                bottomSheetBehavior.state = if (it) {
-                    BottomSheetBehavior.STATE_EXPANDED
-                } else {
-                    BottomSheetBehavior.STATE_COLLAPSED
+            vm.viewState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { viewState ->
+                displayLoadingState(viewState.showProgressbar)
+                viewState.errorText.let {
+                    lError.setGoneState(it == null)
+                    lError.tvErrorMessage.text = it?.text
                 }
-                rvTimeline.scrollToPosition(0)
+                tvSummaryTitle.text = viewState.daySummaryTitle
+                tvSummaryDistance.text = viewState.totalDriveDistanceText
+                tvSummaryDuration.text = viewState.totalDriveDurationText
+                tvSummaryDistance.setGoneState(viewState.totalDriveDistanceText == null)
+                tvSummaryDuration.setGoneState(viewState.totalDriveDurationText == null)
+                viewState.dateText.let {
+                    bSelectDate.text = it
+                    bSelectDate.setGoneState(it == null)
+                }
+                viewState.showUpArrow.let { show ->
+                    if (!show) {
+                        ivTimelineArrowUp.clearAnimation()
+                    }
+                    ivTimelineArrowUp.setGoneState(!show)
+                }
+                viewState.showAddGeotagButton.let { show ->
+                    bAddGeotag.animation?.cancel()
+                    bAddGeotag.apply {
+                        if (show) {
+                            show()
+                        } else {
+                            hide()
+                        }
+                    }
+                }
+                timelineAdapter.updateItems(viewState.tiles)
             }
 
-            vm.openDatePickerDialogEvent.observeWithErrorHandling(
-                viewLifecycleOwner,
-                vm::onError
-            ) { event ->
-                event.consume { showDatePickerDialog(it) }
+            vm.viewEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { consumable ->
+                consumable.consume { event ->
+                    when (event) {
+                        is SetBottomSheetStateEvent -> {
+                            bottomSheetBehavior.state = if (event.expanded) {
+                                BottomSheetBehavior.STATE_EXPANDED
+                            } else {
+                                BottomSheetBehavior.STATE_COLLAPSED
+                            }
+                            rvTimeline.scrollToPosition(0)
+
+                            ivTimelineArrowUp.clearAnimation()
+                            ivTimelineArrowUp.animate().apply {
+                                if (event.arrowDown) {
+                                    rotation(180f)
+                                } else {
+                                    rotation(0f)
+                                }
+                            }.setDuration(ANIMATION_DURATION).start()
+                        }
+                        is ShowDatePickerDialogEvent -> {
+                            showDatePickerDialog(event.date)
+                        }
+                        is ShowGeofenceVisitDialogEvent -> {
+                            createGeofenceVisitDialog(event.visitDialog).show()
+                        }
+                        is ShowGeotagDialogEvent -> {
+                            createGeotagDialog(event.geotagDialog).show()
+                        }
+                    }
+                }
             }
 
             vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
@@ -109,66 +156,6 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
                 }
             }
 
-            vm.errorTextState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-                lError.setGoneState(it == null)
-                lError.tvErrorMessage.text = it?.text
-            }
-
-            vm.daySummaryTexts.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-                tvSummaryTitle.text = it.title
-                tvSummaryDistance.text = it.totalDriveDistance
-                tvSummaryDuration.text = it.totalDriveDuration
-                tvSummaryDistance.setGoneState(it.totalDriveDistance == null)
-                tvSummaryDuration.setGoneState(it.totalDriveDuration == null)
-            }
-
-            vm.currentDateText.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-                bSelectDate.text = it
-                bSelectDate.setGoneState(it == null)
-            }
-
-            vm.showTimelineArrow.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-                ivTimelineArrowUp.clearAnimation()
-                ivTimelineArrowUp.setGoneState(!it)
-            }
-
-            vm.timelineArrowDirectionDown.observeWithErrorHandling(
-                viewLifecycleOwner,
-                vm::onError
-            ) { down ->
-                ivTimelineArrowUp.clearAnimation()
-                ivTimelineArrowUp.animate().apply {
-                    if (down) {
-                        rotation(180f)
-                    } else {
-                        rotation(0f)
-                    }
-                }.setDuration(ANIMATION_DURATION).start()
-            }
-
-            vm.showAddGeotagButton.observeWithErrorHandling(
-                viewLifecycleOwner,
-                vm::onError
-            ) { show ->
-                bAddGeotag.animation?.cancel()
-                bAddGeotag.apply {
-                    if (show) {
-                        show()
-                    } else {
-                        hide()
-                    }
-                }
-            }
-
-            vm.openDialogEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { event ->
-                event.consume {
-                    when (it) {
-                        is GeofenceVisitDialog -> createGeofenceVisitDialog(it).show()
-                        is GeotagDialog -> createGeotagDialog(it).show()
-                    } as Any?
-                }
-            }
-
             setupTimeline()
 
             bAddGeotag.setOnClickListener {
@@ -176,11 +163,11 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
             }
 
             bSelectDate.setOnClickListener {
-                vm.onSelectDateClick()
+                vm.handleAction(SelectDateClickedAction)
             }
 
             lError.bReload.setOnClickListener {
-                vm.onReloadClicked()
+                vm.handleAction(OnReloadPressedAction)
             }
         } catch (e: Exception) {
             vm.onError(e)
@@ -189,22 +176,22 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
 
     override fun onResume() {
         super.onResume()
-        vm.onResume()
+        vm.handleAction(OnResumeAction)
     }
 
     private fun setupTimeline() {
         bottomSheetBehavior = BottomSheetBehavior.from(lTimeline)
         bottomSheetBehavior.peekHeight = vm.style.summaryPeekHeight
 
-        rvTimeline.adapter = vm.timelineAdapter
+        rvTimeline.adapter = timelineAdapter
         rvTimeline.layoutManager = LinearLayoutManager(MyApplication.context)
 
         scrim.setOnClickListener {
-            vm.onScrimClick()
+            vm.handleAction(OnScrimClickAction)
         }
 
         lTimelineHeader.setOnClickListener {
-            vm.onTimelineHeaderClick()
+            vm.handleAction(OnTimelineHeaderClickAction)
         }
 
         bottomSheetBehavior.addBottomSheetCallback(object :
@@ -225,12 +212,12 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
         })
     }
 
-    private fun showDatePickerDialog(date: LocalDate) {
+    private fun showDatePickerDialog(oldDate: LocalDate) {
         createDatePickerDialog(
             requireContext(),
-            date
-        ) {
-            vm.onDateSelected(it)
+            oldDate
+        ) { newDate ->
+            vm.handleAction(OnDateSelectedAction(newDate))
         }.show()
     }
 
@@ -271,7 +258,7 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
 
         val listener = { _: View ->
             dialog.dismiss()
-            vm.onGeofenceClick(dialogData.visitId)
+            vm.handleAction(OnGeofenceClickAction(dialogData.visitId))
         }
         containerView.apply {
             listOf(

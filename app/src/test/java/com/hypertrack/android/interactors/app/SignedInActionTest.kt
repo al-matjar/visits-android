@@ -4,6 +4,10 @@ import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appReducer
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.initializedState
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.AppViewStateTest.Companion.tabsView
+import com.hypertrack.android.interactors.app.state.CurrentTripTab
+import com.hypertrack.android.interactors.app.state.SplashScreenView
 import com.hypertrack.android.models.local.DeviceId
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
@@ -23,7 +27,7 @@ class SignedInActionTest {
                 userScope = oldUserScope,
                 deviceId = deviceId
             ),
-            viewState = SplashScreenState
+            viewState = SplashScreenView
         )
         val newUserState = userLoggedIn(
             userScope = newUserScope,
@@ -31,7 +35,7 @@ class SignedInActionTest {
         )
         val action = SignedInAction(newUserState)
         appReducer().reduce(state, action).let { result ->
-            (result.newState as Initialized).let { newState ->
+            (result.newState as AppInitialized).let { newState ->
                 println(result.effects)
                 assertEquals(newUserState, newState.userState)
                 assertTrue(result.effects.size == 2)
@@ -60,7 +64,7 @@ class SignedInActionTest {
                 userScope = oldUserScope,
                 deviceId = deviceId
             ),
-            viewState = UserScopeScreensState
+            viewState = tabsView()
         )
         val newUserState = userLoggedIn(
             userScope = newUserScope,
@@ -68,7 +72,7 @@ class SignedInActionTest {
         )
         val action = SignedInAction(newUserState)
         appReducer().reduce(state, action).let { result ->
-            (result.newState as Initialized).let { newState ->
+            (result.newState as AppInitialized).let { newState ->
                 println(result.effects)
                 assertEquals(newUserState, newState.userState)
                 assertTrue(result.effects.size == 2)

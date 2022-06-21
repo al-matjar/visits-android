@@ -1,15 +1,18 @@
 package com.hypertrack.android.ui.screens.visits_management
 
 import androidx.lifecycle.*
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.di.UserScope
-import com.hypertrack.android.interactors.app.AppState
-import com.hypertrack.android.interactors.app.NotInitialized
-import com.hypertrack.android.interactors.app.Initialized
-import com.hypertrack.android.interactors.app.UserLoggedIn
-import com.hypertrack.android.interactors.app.UserNotLoggedIn
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.AppState
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.repository.preferences.PreferencesRepository
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
+import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.use_case.sdk.DeviceDeleted
 import com.hypertrack.android.use_case.sdk.LocationServicesDisabled
@@ -48,10 +51,10 @@ class VisitsManagementViewModel(
 
     fun handleAction(action: Action) {
         when (val state = appState.requireValue()) {
-            is NotInitialized -> {
+            is AppNotInitialized -> {
                 flowOf(Failure(IllegalActionException(action, state)))
             }
-            is Initialized -> when (state.userState) {
+            is AppInitialized -> when (state.userState) {
                 UserNotLoggedIn -> {
                     flowOf(Failure(IllegalActionException(action, state)))
                 }
@@ -67,11 +70,6 @@ class VisitsManagementViewModel(
                                 trackingIndicatorState,
                                 userScope.hyperTrackService
                             )
-                        }
-                        RefreshHistoryAction -> {
-                            tryAsResult {
-                                userScope.historyInteractorLegacy.refreshTodayHistory()
-                            }.toFlow()
                         }
                     }
                 }
@@ -99,13 +97,6 @@ class VisitsManagementViewModel(
 
     private fun init(userScope: UserScope): Flow<Result<Unit>> {
         return tryAsResult {
-            userScope.historyInteractorLegacy.errorFlow.asLiveData()
-                .observeManaged { consumable ->
-                    consumable.consume {
-                        showExceptionMessageAndReport(it)
-                    }
-                }
-
             userScope.tripsInteractor.errorFlow.asLiveData()
                 .observeManaged { consumable ->
                     consumable.consume {
@@ -148,7 +139,7 @@ class VisitsManagementViewModel(
 
     private fun handleAppStateChangedAction(appState: AppState) {
         when (appState) {
-            is Initialized -> {
+            is AppInitialized -> {
                 when (appState.userState) {
                     is UserLoggedIn -> {
                         appState.userState.trackingState.let { trackingState ->
@@ -164,7 +155,7 @@ class VisitsManagementViewModel(
                     }
                 }
             }
-            is NotInitialized -> {
+            is AppNotInitialized -> {
                 showExceptionMessageAndReport(
                     IllegalArgumentException(appState.toString())
                 )
@@ -239,6 +230,19 @@ class VisitsManagementViewModel(
         } else {
             R.string.clock_hint_tracking_off
         }
+    }
+
+    fun onTabSelected(tab: Tab) {
+//        when (tab) {
+//            Tab.CURRENT_TRIP ->
+//            Tab.HISTORY ->
+//            Tab.ORDERS ->
+//            Tab.PLACES ->
+//            Tab.SUMMARY ->
+//            Tab.PROFILE ->
+//        }.let {
+//            Injector.provideAppInteractor().handleAction(RegisterScreenAction(it))
+//        }
     }
 
 }

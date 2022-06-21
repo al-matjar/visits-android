@@ -1,5 +1,6 @@
-package com.hypertrack.android.interactors.app
+package com.hypertrack.android.interactors.app.state
 
+import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.di.TripCreationScope
 import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.models.local.DeviceId
@@ -16,5 +17,7 @@ data class UserLoggedIn(
     val userData: UserData,
     val userScope: UserScope,
     val trackingState: NewTrackingState,
+    val userLocation: LatLng?,
+    val history: HistoryState,
     val tripCreationScope: TripCreationScope? = null
 ) : UserState()

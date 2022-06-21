@@ -10,6 +10,8 @@ import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.BackgroundPermissionsScreen
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
@@ -30,6 +32,8 @@ class BackgroundPermissionsFragment :
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Injector.provideAppInteractor()
+            .handleAction(RegisterScreenAction(BackgroundPermissionsScreen))
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val hint = getString(R.string.background_location_permission_option_hint)

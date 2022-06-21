@@ -40,11 +40,12 @@ interface GraphQlApi {
     class GraphQlError(
         val message: String,
         val errorType: String?,
-        val path: List<String>,
+        val path: List<String>?,
     ) {
         override fun toString(): String {
-            val path = path.joinToString(",")
-            return "$path: $errorType - $message"
+            val path = path?.joinToString(",") ?: "<no path>"
+            val errorTypeText = errorType ?: "<no error type>"
+            return "$path: $errorTypeText - $message"
         }
     }
 

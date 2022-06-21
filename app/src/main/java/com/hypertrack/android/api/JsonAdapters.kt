@@ -37,7 +37,7 @@ internal class GeometryJsonAdapter {
     @FromJson
     fun jsonToGeometry(json: Map<String, Any>): Geometry {
         return when (json["type"]) {
-            //todo check format
+            //todo validate format (list size and shape)
             "Point" -> Point(json["coordinates"] as List<Double>)
             "Polygon" -> {
                 val coords: List<List<List<Double>>> =

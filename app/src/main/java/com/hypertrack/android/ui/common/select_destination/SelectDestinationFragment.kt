@@ -8,6 +8,8 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.SelectDestinationScreen
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.*
@@ -31,6 +33,7 @@ open class SelectDestinationFragment :
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Injector.provideAppInteractor().handleAction(RegisterScreenAction(SelectDestinationScreen))
 
         (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment).getMapAsync {
             vm.onMapReady(requireContext(), it)

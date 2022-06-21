@@ -5,6 +5,8 @@ import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.AddIntegrationScreen
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseAdapter
@@ -46,6 +48,7 @@ class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Injector.provideAppInteractor().handleAction(RegisterScreenAction(AddIntegrationScreen))
 
         toolbar.title = ""
         mainActivity().setSupportActionBar(toolbar)

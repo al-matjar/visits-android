@@ -1,20 +1,26 @@
 package com.hypertrack.android.utils
 
-sealed class LoadingState<T> {
+sealed class LoadingState<S, F> {
     override fun toString(): String = javaClass.simpleName
 
-    fun <E> map(mapFunction: (T) -> E): LoadingState<E> {
+    fun <NS> mapSuccess(mapFunction: (S) -> NS): LoadingState<NS, F> {
         return when (this) {
             is LoadingSuccess -> LoadingSuccess(mapFunction(this.data))
             is Loading -> Loading()
-            is LoadingFailure -> LoadingFailure(this.exception)
+            is LoadingFailure -> LoadingFailure(this.failure)
         }
     }
 }
 
-data class LoadingSuccess<T>(val data: T) : LoadingState<T>()
-class Loading<T>() : LoadingState<T>() {
+data class LoadingSuccess<S, F>(val data: S) : LoadingState<S, F>()
+
+@Suppress("EqualsOrHashCode")
+class Loading<S, F> : LoadingState<S, F>() {
     override fun toString(): String = javaClass.simpleName
+
+    override fun equals(other: Any?): Boolean {
+        return other is Loading<*, *>
+    }
 }
 
-data class LoadingFailure<T>(val exception: Exception) : LoadingState<T>()
+data class LoadingFailure<S, F>(val failure: F) : LoadingState<S, F>()

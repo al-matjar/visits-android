@@ -4,11 +4,11 @@ import androidx.lifecycle.LiveData
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.di.TripCreationScope
 import com.hypertrack.android.di.UserScope
-import com.hypertrack.android.interactors.app.AppState
-import com.hypertrack.android.interactors.app.Initialized
-import com.hypertrack.android.interactors.app.NotInitialized
-import com.hypertrack.android.interactors.app.UserLoggedIn
-import com.hypertrack.android.interactors.app.UserNotLoggedIn
+import com.hypertrack.android.interactors.app.state.AppState
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
@@ -24,7 +24,7 @@ class CurrentTripReducer(
     fun reduce(state: State, action: Action): ReducerResult<State, Effect> {
         return appState.requireValue().let { appState ->
             when (appState) {
-                is Initialized -> {
+                is AppInitialized -> {
                     when (appState.userState) {
                         is UserLoggedIn -> {
                             val userScope = appState.userState.userScope
@@ -43,7 +43,7 @@ class CurrentTripReducer(
                         }
                     }
                 }
-                is NotInitialized -> {
+                is AppNotInitialized -> {
                     state.withEffects(ErrorEffect(IllegalActionException(action, appState)))
                 }
             }
@@ -53,7 +53,7 @@ class CurrentTripReducer(
     private fun reduceIfLoggedIn(
         state: State,
         action: Action,
-        appState: Initialized,
+        appState: AppInitialized,
         userScope: UserScope,
         trip: LocalTrip?,
         userLocation: LatLng?,
@@ -443,7 +443,7 @@ class CurrentTripReducer(
     private fun reduce(
         action: OnViewCreatedAction,
         state: InitializedState,
-        appState: Initialized,
+        appState: AppInitialized,
         isLoading: Boolean,
         userScope: UserScope
     ): ReducerResult<State, Effect> {

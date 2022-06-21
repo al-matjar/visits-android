@@ -42,6 +42,12 @@ class KeyValueItem(
         get() = _key.formatUnderscore()
 }
 
-fun String.formatUnderscore(): String {
-    return split("_").map { it.capitalize(Locale.getDefault()) }.joinToString(" ")
+fun String.formatUnderscore(capitalizeOnlyFirst: Boolean = false): String {
+    return split("_").mapIndexed { index, part ->
+        if (index != 0 && capitalizeOnlyFirst) {
+            part
+        } else {
+            part.capitalize(Locale.getDefault())
+        }
+    }.joinToString(" ")
 }

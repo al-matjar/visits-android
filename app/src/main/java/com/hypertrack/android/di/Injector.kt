@@ -4,11 +4,11 @@ import android.app.Application
 import android.util.Log
 import com.hypertrack.android.interactors.app.InitAppAction
 import com.hypertrack.android.interactors.app.AppInteractor
-import com.hypertrack.android.interactors.app.NotInitialized
-import com.hypertrack.android.interactors.app.Initialized
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.TrackingStateChangedAction
-import com.hypertrack.android.interactors.app.UserLoggedIn
-import com.hypertrack.android.interactors.app.UserNotLoggedIn
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.ui.activity.ActivityViewModelFactory
 import com.hypertrack.android.ui.common.ParamViewModelFactory
 import com.hypertrack.android.ui.common.Tab
@@ -29,14 +29,6 @@ object Injector {
     //should be static to enable reliable exception reporting in all places in the code
     lateinit var crashReportsProvider: CrashReportsProvider
     private lateinit var resourceProvider: ResourceProvider
-
-    // todo remove and refactor
-    // legacy tracking state events callback, needed for HyperTrackService
-    // (some classes are dependent on it)
-    // lazy init because crashReportsProvider not available before app creation
-    private val trackingState by lazy {
-        TrackingState(crashReportsProvider)
-    }
 
     private val trackingStateListener = { trackingState: NewTrackingState ->
         crashReportsProvider.log(trackingState.toString())
@@ -61,14 +53,14 @@ object Injector {
 
     fun provideActivityViewModelFactory(): ActivityViewModelFactory {
         return when (val state = appInteractor.appState.requireValue()) {
-            is NotInitialized -> {
+            is AppNotInitialized -> {
                 ActivityViewModelFactory(
                     appInteractor,
                     state.appScope,
                     state.useCases
                 )
             }
-            is Initialized -> {
+            is AppInitialized -> {
                 ActivityViewModelFactory(
                     appInteractor,
                     state.appScope,
@@ -80,10 +72,10 @@ object Injector {
 
     fun provideViewModelFactory(): ViewModelFactory {
         return when (val state = appInteractor.appState.requireValue()) {
-            is NotInitialized -> {
+            is AppNotInitialized -> {
                 ViewModelFactory(appInteractor, state.appScope, state.useCases)
             }
-            is Initialized -> {
+            is AppInitialized -> {
                 ViewModelFactory(appInteractor, state.appScope, state.useCases)
             }
         }
@@ -92,10 +84,10 @@ object Injector {
     // todo remove (separate factory for each vm)
     fun <T> provideUserScopeParamViewModelFactory(param: T): ParamViewModelFactory<T> {
         return when (val state = appInteractor.appState.requireValue()) {
-            is NotInitialized -> {
+            is AppNotInitialized -> {
                 throw IllegalStateException("App is not initialized")
             }
-            is Initialized -> {
+            is AppInitialized -> {
                 when (state.userState) {
                     is UserLoggedIn -> {
                         ParamViewModelFactory(
@@ -116,10 +108,10 @@ object Injector {
 
     fun provideUserScopeViewModelFactory(): UserScopeViewModelFactory {
         return when (val state = appInteractor.appState.requireValue()) {
-            is NotInitialized -> {
+            is AppNotInitialized -> {
                 throw IllegalStateException("App is not initialized")
             }
-            is Initialized -> {
+            is AppInitialized -> {
                 when (state.userState) {
                     is UserLoggedIn -> {
                         state.userState.userScope.userScopeViewModelFactory

@@ -7,10 +7,10 @@ import com.google.android.gms.maps.model.*
 import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.DestroyTripCreationScopeAction
-import com.hypertrack.android.interactors.app.Initialized
-import com.hypertrack.android.interactors.app.NotInitialized
-import com.hypertrack.android.interactors.app.UserLoggedIn
-import com.hypertrack.android.interactors.app.UserNotLoggedIn
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.repository.TripCreationError
 import com.hypertrack.android.repository.TripCreationSuccess
@@ -87,7 +87,7 @@ class CurrentTripViewModel(
     init {
         appInteractor.appState.observeManaged { appState ->
             when (appState) {
-                is Initialized -> {
+                is AppInitialized -> {
                     when (appState.userState) {
                         is UserLoggedIn -> {
                             handleAction(TrackingStateChangedAction(appState.isSdkTracking()))
@@ -96,7 +96,7 @@ class CurrentTripViewModel(
                         }
                     }
                 }
-                is NotInitialized -> {
+                is AppNotInitialized -> {
                 }
             }
         }

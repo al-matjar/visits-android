@@ -10,6 +10,8 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.TabsScreen
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.SimplePageChangedListener
@@ -23,6 +25,7 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesFra
 import com.hypertrack.android.ui.screens.visits_management.tabs.profile.ProfileFragment
 import com.hypertrack.android.ui.screens.visits_management.tabs.summary.SummaryFragment
 import com.hypertrack.logistics.android.github.R
+import kotlinx.android.synthetic.main.adapter_place_item.name
 import kotlinx.android.synthetic.main.fragment_visits_management.*
 
 class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits_management) {
@@ -47,6 +50,7 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Injector.provideAppInteractor().handleAction(RegisterScreenAction(TabsScreen))
 
         initViewPager()
 
@@ -83,7 +87,6 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
         }
 
         vm.handleAction(OnViewCreatedAction)
-        vm.handleAction(RefreshHistoryAction)
 
         args.tab?.let { tab ->
             viewpager.currentItem = tabs.indexOf(args.tab)
@@ -125,9 +128,12 @@ class VisitsManagementFragment : ProgressDialogFragment(R.layout.fragment_visits
 
         viewpager.addOnPageChangeListener(object : SimplePageChangedListener() {
             override fun onPageSelected(position: Int) {
-                Injector.crashReportsProvider.log(
-                    "Tab selected ${tabs[position].name}"
-                )
+                tabs[position].let {
+                    Injector.crashReportsProvider.log(
+                        "Tab selected ${it.name}"
+                    )
+                    vm.onTabSelected(it)
+                }
             }
         })
 

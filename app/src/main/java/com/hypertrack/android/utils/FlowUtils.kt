@@ -3,11 +3,17 @@
 package com.hypertrack.android.utils
 
 import android.util.Log
+import androidx.lifecycle.Transformations.map
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 fun <T> T.toFlow(): Flow<T> {
     return flowOf(this)
@@ -81,4 +87,12 @@ fun <T> Flow<T>.log(tag: String): Flow<T> {
         Log.v(tag, it.toString())
         it
     }
+}
+
+fun <T, K> StateFlow<T>.mapState(scope: CoroutineScope, block: (T) -> K): StateFlow<K> {
+    return map(block).stateIn(scope, SharingStarted.Lazily, block.invoke(value))
+}
+
+fun <T> tryAsFlow(block: () -> T): Flow<Result<T>> {
+    return { tryAsResult { block.invoke() } }.asFlow()
 }

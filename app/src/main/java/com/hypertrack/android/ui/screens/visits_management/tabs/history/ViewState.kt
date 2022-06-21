@@ -4,7 +4,7 @@ import com.hypertrack.android.utils.ErrorMessage
 import java.time.LocalDate
 
 data class ViewState(
-    val date: LocalDate?,
+    val dateText: String?,
     val showProgressbar: Boolean,
     val errorText: ErrorMessage?,
     val showTimelineRecyclerView: Boolean,
@@ -13,5 +13,5 @@ data class ViewState(
     val tiles: List<TimelineTile>,
     val totalDriveDistanceText: String?,
     val totalDriveDurationText: String?,
-    val daySummaryTitle: String?
+    val daySummaryTitle: String?,
 )

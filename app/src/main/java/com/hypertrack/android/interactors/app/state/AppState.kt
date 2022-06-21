@@ -1,9 +1,10 @@
-package com.hypertrack.android.interactors.app
+package com.hypertrack.android.interactors.app.state
 
 import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.TripCreationScope
+import com.hypertrack.android.interactors.app.AppEffect
 import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.use_case.sdk.TrackingStarted
 import com.hypertrack.android.utils.ReducerResult
@@ -11,8 +12,8 @@ import com.hypertrack.android.utils.ReducerResult
 sealed class AppState {
     fun isSdkTracking(): Boolean {
         return when (this) {
-            is NotInitialized -> false
-            is Initialized -> when (userState) {
+            is AppNotInitialized -> false
+            is AppInitialized -> when (userState) {
                 UserNotLoggedIn -> false
                 is UserLoggedIn -> userState.trackingState is TrackingStarted
             }
@@ -21,26 +22,25 @@ sealed class AppState {
 
     fun isProgressbarVisible(): Boolean {
         return when (this) {
-            is Initialized -> this.showProgressbar
-            is NotInitialized -> false
+            is AppInitialized -> this.showProgressbar
+            is AppNotInitialized -> false
         }
     }
 
 }
 
-//todo rename to AppNotInitialized
-data class NotInitialized(
+data class AppNotInitialized(
     val appScope: AppScope,
     val useCases: UseCases,
-    val viewState: AppViewState,
+    // non-null if splash screen is opened before app init
+    val splashScreenViewState: SplashScreenView?,
     // if deeplink result is received before the init, it is saved here
     val pendingDeeplinkResult: DeeplinkResult?,
     // if push notification is received before the init, it is saved here
     val pendingPushNotification: RemoteMessage?
 ) : AppState()
 
-//todo rename to AppInitialized
-data class Initialized(
+data class AppInitialized(
     val appScope: AppScope,
     val useCases: UseCases,
     val userState: UserState,
@@ -49,17 +49,3 @@ data class Initialized(
     // todo move to view state
     val showProgressbar: Boolean = false,
 ) : AppState()
-
-fun AppState.withEffects(effects: Set<Effect>): ReducerResult<AppState, Effect> {
-    return ReducerResult(
-        this,
-        effects
-    )
-}
-
-fun AppState.withEffects(vararg effect: Effect): ReducerResult<AppState, Effect> {
-    return ReducerResult(
-        this,
-        effect.toMutableSet()
-    )
-}

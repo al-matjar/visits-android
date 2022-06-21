@@ -43,11 +43,14 @@ class HistoryQuery(
                     locations {
                         ${RemoteLocation.FIELDS_QUERY}
                     }
-                    drive_distance
-                    drive_duration
                     device_status_markers {
                         ${GraphQlDeviceStatusMarker.FIELDS_QUERY}
                     }
+                    steps,
+                    walk_duration,
+                    stop_duration,
+                    drive_distance,
+                    drive_duration,
                 }
             }
         """.trimIndent()

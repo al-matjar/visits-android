@@ -12,16 +12,23 @@ import com.hypertrack.android.api.graphql.models.GraphQlHistory
 import com.hypertrack.android.api.graphql.models.GraphQlPlaceVisits
 import com.hypertrack.android.api.graphql.models.GraphQlPointGeometry
 import com.hypertrack.android.api.models.Coordinate
-import com.hypertrack.android.api.models.RemoteGeofence
 import com.hypertrack.android.api.models.RemoteEstimate
+import com.hypertrack.android.api.models.RemoteGeofence
 import com.hypertrack.android.api.models.RemoteLocation
 import com.hypertrack.android.api.models.RemoteOrder
+import com.hypertrack.android.di.Injector
+import com.hypertrack.android.models.*
 import com.hypertrack.android.models.local.DeviceId
+import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
+import com.hypertrack.android.utils.Constants
+import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.ui.common.util.copy
-
+import com.hypertrack.android.utils.createAnyMapAdapter
+import com.hypertrack.android.utils.createStringMapAdapter
 import com.hypertrack.android.utils.datetime.toIso
+import com.hypertrack.logistics.android.github.R
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -61,7 +68,8 @@ object TestMockData {
                 "coordinates": [${lon ?: 37.794763}, ${lat ?: 122.395223}]
             }
             """.let {
-                TestInjector.getMoshi().adapter(Geometry::class.java).fromJson(it)!!
+                TestInjector.getMoshi().adapter(Geometry::class.java)
+                    .fromJson(it)!!
             }
         } else {
             val coords: MutableList<List<Double>> = mutableListOf()
@@ -134,7 +142,15 @@ object TestMockData {
             GraphQlGeofence(
                 "1",
                 "1",
-                "{}",
+
+                TestInjector.getMoshi().createAnyMapAdapter().toJson(
+                    mapOf(
+//                        "integration" to Integration(
+//                            "id",
+//                            "integration name"
+//                        )
+                    )
+                ),
                 GraphQlPointGeometry(
                     center = listOf(
                         position.longitude, position.latitude
@@ -221,8 +237,13 @@ object TestMockData {
                     PALO_ALTO_LAT_LNG.copy(latitude = PALO_ALTO_LAT_LNG.latitude - 0.02)
                 )
             ),
-            0,
-            0
+            12354,
+            22354,
+            32345,
+            4235,
+            5345234,
+//            64523,
+//            72354
         )
     }
 

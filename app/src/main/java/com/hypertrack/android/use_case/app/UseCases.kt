@@ -14,6 +14,9 @@ import com.hypertrack.android.use_case.login.RefreshUserAccessTokenUseCase
 import com.hypertrack.android.use_case.login.ResendEmailConfirmationUseCase
 import com.hypertrack.android.use_case.login.SignInUseCase
 import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkUseCase
+import com.hypertrack.android.use_case.error.LogExceptionIfFailureUseCase
+import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.use_case.login.DeleteUserScopeDataUseCase
 import com.hypertrack.android.use_case.login.LoadUserDataUseCase
 import com.hypertrack.android.use_case.login.VerifyByOtpCodeUseCase
@@ -50,7 +53,7 @@ class UseCases(
         appScope.appContext,
         createUserScopeUseCase,
         setCrashReportingIdUseCase,
-        loadUserDataUseCase,
+        loadUserDataUseCase
     )
 
     val loadUserStateAfterSignInUseCase = LoadUserStateAfterSignInUseCase(
@@ -59,6 +62,10 @@ class UseCases(
 
     val logExceptionToCrashlyticsUseCase = LogExceptionToCrashlyticsUseCase(
         appScope.crashReportsProvider
+    )
+
+    val logExceptionIfFailureUseCase = LogExceptionIfFailureUseCase(
+        logExceptionToCrashlyticsUseCase
     )
 
     val logMessageToCrashlyticsUseCase = LogMessageToCrashlyticsUseCase(

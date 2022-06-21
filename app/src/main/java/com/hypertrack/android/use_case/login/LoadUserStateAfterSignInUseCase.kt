@@ -1,11 +1,10 @@
 package com.hypertrack.android.use_case.login
 
-import com.hypertrack.android.interactors.app.UserNotLoggedIn
-import com.hypertrack.android.interactors.app.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.utils.Result
 import com.hypertrack.android.utils.asFailure
 import com.hypertrack.android.utils.asSuccess
-import com.hypertrack.android.utils.mapSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf

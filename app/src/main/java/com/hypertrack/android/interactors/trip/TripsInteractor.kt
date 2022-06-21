@@ -13,7 +13,7 @@ import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.interactors.PhotoForUpload
 import com.hypertrack.android.interactors.PhotoUploadQueueInteractor
 import com.hypertrack.android.interactors.PhotoUploadingState
-import com.hypertrack.android.interactors.app.AppState
+import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.Order

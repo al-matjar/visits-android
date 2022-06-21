@@ -7,31 +7,51 @@ import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.TripCreationScope
+import com.hypertrack.android.interactors.app.optics.AppStateOptics
+import com.hypertrack.android.interactors.app.reducer.HistoryReducer
+import com.hypertrack.android.interactors.app.reducer.HistorySubState
+import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
+import com.hypertrack.android.interactors.app.reducer.ScreensReducer
+import com.hypertrack.android.interactors.app.state.AppState
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.state.HistoryTab
+import com.hypertrack.android.interactors.app.state.NoneScreenView
+import com.hypertrack.android.interactors.app.state.SplashScreenView
+import com.hypertrack.android.interactors.app.state.TabsView
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
+import com.hypertrack.android.interactors.app.state.UserState
 import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.ReducerResult
+import com.hypertrack.android.utils.withEffects
+import com.hypertrack.logistics.android.github.NavGraphDirections
 
 class AppReducer(
     private val useCases: UseCases,
     private val appScope: AppScope,
+    private val historyReducer: HistoryReducer,
+    private val historyViewReducer: HistoryViewReducer,
+    private val screensReducer: ScreensReducer
 ) {
 
-    fun reduce(state: AppState, action: AppAction): ReducerResult<AppState, Effect> {
+    fun reduce(state: AppState, action: AppAction): ReducerResult<out AppState, out AppEffect> {
         return when (state) {
-            is NotInitialized -> {
+            is AppNotInitialized -> {
                 when (action) {
                     is InitAppAction -> {
                         state.withEffects(InitAppEffect(state.appScope))
                     }
                     is AppInitializedAction -> {
                         // app is initialized
-                        val initialized = Initialized(
+                        val initialized = AppInitialized(
                             state.appScope,
                             useCases,
                             action.userState,
                             tripCreationScope = null,
-                            viewState = state.viewState
+                            viewState = state.splashScreenViewState ?: NoneScreenView
                         )
                         val pushEffect = getHandlePendingPushEffect(
                             action.userState,
@@ -46,32 +66,29 @@ class AppReducer(
                                     .withEffects(
                                         // still on splash screen
                                         // emits SignedInAction
-                                        LoginWithDeeplinkEffect(deeplinkResult)
-                                    )
-                                    .withEffects(pushEffect)
+                                        LoginWithDeeplinkEffect(deeplinkResult) as AppEffect
+                                    ).let {
+                                        it
+                                    }
+                                    .withAdditionalEffects(pushEffect)
                             }
                             is DeeplinkError -> {
                                 val errorEffect = getDeeplinkErrorEffect(deeplinkResult)
-                                initialized.copy(viewState = SignInState)
-                                    .withEffects(
-                                        NavigateToSignInEffect,
-                                        errorEffect
-                                    )
-                                    .withEffects(pushEffect)
+                                initialized.withEffects(
+                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()) as AppEffect,
+                                    errorEffect
+                                ).withAdditionalEffects(pushEffect)
                             }
                             NoDeeplink -> {
-                                initialized.copy(viewState = SignInState)
-                                    .withEffects(
-                                        NavigateToSignInEffect
-                                    )
-                                    .withEffects(pushEffect)
+                                initialized.withEffects(
+                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()) as AppEffect
+                                ).withAdditionalEffects(pushEffect)
                             }
                             null -> {
                                 // activity is not started yet
                                 // the navigation will be performed on
                                 // DeeplinkCheckedAction > Initialized
-                                initialized
-                                    .withEffects(pushEffect)
+                                initialized.withEffects(pushEffect)
                             }
                         }
                     }
@@ -82,31 +99,36 @@ class AppReducer(
                         // if there is DeeplinkCheckedAction, this means that activity is started
                         state.copy(
                             pendingDeeplinkResult = action.deeplinkResult,
-                            viewState = SplashScreenState
                         ).withEffects()
                     }
                     is PushReceivedAction -> {
                         state.copy(pendingPushNotification = action.remoteMessage).withEffects()
                     }
+                    is RegisterScreenAction -> {
+                        screensReducer.reduce(action, state)
+                    }
                     is TrackingStateChangedAction,
                     is ActivityOnNewIntent,
-                    SplashScreenOpenedAction -> {
+                    is UserLocationChangedAction -> {
+                        // do nothing
                         state.withEffects()
                     }
                     is CreateTripCreationScopeAction,
                     DestroyTripCreationScopeAction,
                     is DeeplinkLoginErrorAction,
+                    is HistoryAppAction,
+                    is HistoryViewAppAction,
                     is SignedInAction -> {
                         illegalAction(action, state)
                     }
                 }
             }
-            is Initialized -> {
+            is AppInitialized -> {
                 when (action) {
                     is DeeplinkCheckedAction -> {
                         // activity started
                         when (state.viewState) {
-                            SplashScreenState -> {
+                            SplashScreenView -> {
                                 // initial deeplink check (on activity launch)
                                 // app is hanging on splash screen and waiting for deeplink check
                                 // finished
@@ -116,7 +138,7 @@ class AppReducer(
                                         // initial navigation will be performed after logging in
                                         // or getting error
                                         state.withEffects(
-                                            LoginWithDeeplinkEffect(action.deeplinkResult)
+                                            LoginWithDeeplinkEffect(action.deeplinkResult) as AppEffect
                                         )
                                     }
                                     is DeeplinkError -> {
@@ -125,16 +147,15 @@ class AppReducer(
                                         val newState = state.copy(showProgressbar = false)
                                         when (state.userState) {
                                             is UserLoggedIn -> {
-                                                newState.copy(viewState = UserScopeScreensState)
-                                                    .withEffects(
-                                                        errorEffect,
-                                                        NavigateToUserScopeScreensEffect(state.userState)
-                                                    )
+                                                newState.withEffects(
+                                                    errorEffect,
+                                                    NavigateToUserScopeScreensEffect(state.userState)
+                                                )
                                             }
                                             UserNotLoggedIn -> {
-                                                newState.copy(viewState = SignInState).withEffects(
+                                                newState.withEffects(
                                                     errorEffect,
-                                                    NavigateToSignInEffect
+                                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment())
                                                 )
                                             }
                                         }
@@ -143,21 +164,20 @@ class AppReducer(
                                         val newState = state.copy(showProgressbar = false)
                                         when (state.userState) {
                                             is UserLoggedIn -> {
-                                                newState.copy(viewState = UserScopeScreensState)
-                                                    .withEffects(
-                                                        NavigateToUserScopeScreensEffect(state.userState)
-                                                    )
+                                                newState.withEffects(
+                                                    NavigateToUserScopeScreensEffect(state.userState)
+                                                )
                                             }
                                             UserNotLoggedIn -> {
-                                                newState.copy(viewState = SignInState).withEffects(
-                                                    NavigateToSignInEffect
+                                                newState.withEffects(
+                                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment())
                                                 )
                                             }
                                         }
                                     }
                                 }
                             }
-                            SignInState, UserScopeScreensState -> {
+                            else -> {
                                 when (action.deeplinkResult) {
                                     is DeeplinkParams -> {
                                         state.copy(showProgressbar = true).withEffects(
@@ -202,25 +222,25 @@ class AppReducer(
                         // if the app is waiting on splash screen, we need tto perform
                         // initial navigation
                         val navigationEffect = when (state.viewState) {
-                            SplashScreenState -> {
+                            SplashScreenView -> {
                                 when (state.userState) {
                                     is UserLoggedIn -> {
                                         setOf(NavigateToUserScopeScreensEffect(state.userState))
                                     }
                                     UserNotLoggedIn -> {
-                                        setOf(NavigateToSignInEffect)
+                                        setOf(NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()))
                                     }
                                 }
 
                             }
-                            SignInState, UserScopeScreensState -> setOf()
+                            else -> setOf()
                         }
 
                         state.copy(showProgressbar = false)
                             .withEffects(
-                                ShowAndReportAppErrorEffect(action.exception)
+                                ShowAndReportAppErrorEffect(action.exception) as AppEffect
                             )
-                            .withEffects(navigationEffect)
+                            .withAdditionalEffects(navigationEffect)
                     }
                     is PushReceivedAction -> {
                         handleAction(action, state, state.appScope, state.userState)
@@ -253,16 +273,87 @@ class AppReducer(
                     is AppErrorAction -> {
                         handleAction(action, state)
                     }
-                    SplashScreenOpenedAction -> {
-                        // activity was killed and now started again
-                        // need to reset view state
-                        state.copy(viewState = SplashScreenState).withEffects()
-                    }
                     is ActivityOnNewIntent -> {
                         if (action.intent != null && action.intent.data != null) {
                             state.copy(showProgressbar = true).withEffects()
                         } else {
                             state.withEffects()
+                        }
+                    }
+                    is HistoryAppAction -> {
+                        when (state.userState) {
+                            is UserLoggedIn -> {
+                                historyReducer.reduce(
+                                    action,
+                                    state.userState,
+                                    AppStateOptics.getHistorySubState(
+                                        state.userState,
+                                        state.viewState
+                                    )
+                                ).withState { newHistoryState ->
+                                    AppStateOptics.putHistorySubState(
+                                        state,
+                                        state.userState,
+                                        newHistoryState
+                                    )
+                                }
+                            }
+                            UserNotLoggedIn -> {
+                                illegalAction(action, state)
+                            }
+                        }
+                    }
+                    is UserLocationChangedAction -> {
+                        when (state.userState) {
+                            is UserLoggedIn -> {
+                                val historyViewEffects =
+                                    AppStateOptics.getHistoryViewState(state)?.let {
+                                        historyViewReducer.getEffects(
+                                            action,
+                                            state.userState.history,
+                                            it
+                                        )
+                                    } ?: setOf()
+
+                                state.copy(
+                                    userState = state.userState.copy(
+                                        userLocation = action.userLocation,
+                                    )
+                                ).withEffects(
+                                    setOf(
+                                        AppEventEffect(UpdateUserLocationEvent(action.userLocation))
+                                    ) + historyViewEffects
+                                )
+                            }
+                            UserNotLoggedIn -> {
+                                state.withEffects()
+                            }
+                        }
+                    }
+                    is RegisterScreenAction -> {
+                        screensReducer.reduce(action, state)
+                    }
+                    is HistoryViewAppAction -> {
+                        when (state.userState) {
+                            is UserLoggedIn -> {
+                                historyReducer.reduce(
+                                    action,
+                                    state.userState,
+                                    AppStateOptics.getHistorySubState(
+                                        state.userState,
+                                        state.viewState
+                                    )
+                                ).withState { newHistoryState ->
+                                    AppStateOptics.putHistorySubState(
+                                        state,
+                                        state.userState,
+                                        newHistoryState
+                                    )
+                                }
+                            }
+                            UserNotLoggedIn -> {
+                                illegalAction(action, state)
+                            }
                         }
                     }
                 }
@@ -271,7 +362,7 @@ class AppReducer(
     }
 
     private fun handleAction(action: AppErrorAction, state: AppState)
-            : ReducerResult<AppState, Effect> {
+            : ReducerResult<AppState, AppEffect> {
         return state.withEffects(
             ShowAndReportAppErrorEffect(action.exception)
         )
@@ -282,7 +373,7 @@ class AppReducer(
         state: AppState,
         appScope: AppScope,
         userState: UserState
-    ): ReducerResult<AppState, Effect> {
+    ): ReducerResult<AppState, AppEffect> {
         val effects = when (userState) {
             is UserLoggedIn -> {
                 setOf(
@@ -300,7 +391,10 @@ class AppReducer(
         return state.withEffects(effects)
     }
 
-    private fun illegalAction(action: AppAction, state: AppState): ReducerResult<AppState, Effect> {
+    private fun illegalAction(
+        action: AppAction,
+        state: AppState
+    ): ReducerResult<AppState, AppEffect> {
         return IllegalActionException(action, state).let {
             if (MyApplication.DEBUG_MODE) {
                 throw it
@@ -315,7 +409,7 @@ class AppReducer(
     private fun getHandlePendingPushEffect(
         userState: UserState,
         pendingPushNotification: RemoteMessage?
-    ): Set<Effect> {
+    ): Set<AppEffect> {
         return when (userState) {
             is UserLoggedIn -> {
                 if (pendingPushNotification != null) {
@@ -336,7 +430,7 @@ class AppReducer(
         }
     }
 
-    private fun getDeeplinkErrorEffect(deeplinkResult: DeeplinkError): Effect {
+    private fun getDeeplinkErrorEffect(deeplinkResult: DeeplinkError): AppEffect {
         val exception = deeplinkResult.exception
         val shouldNotShowErrorMessage =
             (exception is BranchErrorException

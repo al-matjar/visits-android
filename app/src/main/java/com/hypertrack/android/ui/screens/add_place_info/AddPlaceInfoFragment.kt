@@ -10,6 +10,8 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.gms.maps.SupportMapFragment
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.AddPlaceInfoScreen
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
@@ -43,6 +45,7 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Injector.provideAppInteractor().handleAction(RegisterScreenAction(AddPlaceInfoScreen))
 
         findNavController().currentBackStackEntry?.savedStateHandle
             ?.getLiveData<Integration>(KEY_INTEGRATION)

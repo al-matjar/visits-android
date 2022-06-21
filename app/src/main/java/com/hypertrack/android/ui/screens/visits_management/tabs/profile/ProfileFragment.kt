@@ -6,6 +6,7 @@ import android.widget.AdapterView
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.base.navigate
@@ -27,7 +28,6 @@ class ProfileFragment : BaseFragment<MainActivity>(R.layout.fragment_profile) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         spMeasurementUnits.adapter = vm.createMeasurementUnitsAdapter(requireActivity())
         spMeasurementUnits.setSelection(vm.getInitialMeasurementUnitItemIndex())
         spMeasurementUnits.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {

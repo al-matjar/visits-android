@@ -3,7 +3,7 @@ package com.hypertrack.android.use_case.handle_push
 import android.content.Context
 import android.content.Intent
 import com.google.firebase.messaging.RemoteMessage
-import com.hypertrack.android.interactors.app.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.models.LiveAppBackendNotification
 import com.hypertrack.android.models.OutageType
 import com.hypertrack.android.models.webhook.GeofenceWebhook

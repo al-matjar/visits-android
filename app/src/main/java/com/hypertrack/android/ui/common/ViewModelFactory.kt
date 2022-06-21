@@ -2,8 +2,10 @@ package com.hypertrack.android.ui.common
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.map
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.optics.AppStateOptics
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.screens.background_permissions.BackgroundPermissionsViewModel
 import com.hypertrack.android.ui.screens.confirm_email.ConfirmEmailViewModel
@@ -14,6 +16,8 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.Cur
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.BaseHistoryStyle
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryViewModel
 import com.hypertrack.android.use_case.app.UseCases
+import com.hypertrack.android.utils.mapState
+import kotlinx.coroutines.flow.map
 
 // todo set separate factories for all vms
 @Suppress("UNCHECKED_CAST")
@@ -61,14 +65,12 @@ class ViewModelFactory(
             HistoryViewModel::class.java -> HistoryViewModel(
                 baseViewModelDependencies,
                 appInteractor,
-                appScope.geocodingInteractor,
-                appScope.geofenceVisitAddressDelegate,
-                appScope.geofenceVisitDisplayDelegate,
-                appScope.deviceStatusMarkerDisplayDelegate,
-                appScope.geotagDisplayDelegate,
+                appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+                    AppStateOptics.getHistoryViewState(it)
+                },
+                appScope.dateTimeFormatter,
                 appScope.timeFormatter,
                 appScope.distanceFormatter,
-                appScope.mapItemsFactory,
                 BaseHistoryStyle(appScope.appContext)
             ) as T
             BackgroundPermissionsViewModel::class.java -> BackgroundPermissionsViewModel(

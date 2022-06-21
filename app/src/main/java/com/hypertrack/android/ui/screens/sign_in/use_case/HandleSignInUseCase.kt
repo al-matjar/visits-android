@@ -5,7 +5,7 @@ import androidx.navigation.NavDirections
 import com.hypertrack.android.interactors.PermissionDestination
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.SignedInAction
-import com.hypertrack.android.interactors.app.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.sign_in.SignInFragmentDirections

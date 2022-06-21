@@ -12,12 +12,15 @@ import com.hypertrack.android.utils.datetime.toSeconds
 import com.squareup.moshi.Moshi
 import java.time.LocalDate
 
-class LocalHistory(
+class History(
     val date: LocalDate,
     val visits: List<LocalGeofenceVisit>,
     val geotags: List<Geotag>,
     val locations: List<LatLng>,
     val deviceStatusMarkers: List<DeviceStatusMarker>,
-    val totalDriveDistance: DistanceValue,
-    val totalDriveDuration: TimeValue,
-)
+    val summary: Summary,
+) {
+    override fun toString(): String {
+        return "${javaClass.simpleName}(date=$date)"
+    }
+}

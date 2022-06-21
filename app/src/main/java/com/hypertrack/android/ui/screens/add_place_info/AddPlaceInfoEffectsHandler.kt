@@ -11,20 +11,15 @@ import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.use_case.ShowErrorUseCase
-import com.hypertrack.android.ui.common.use_case.get_error_message.DisplayableError
-import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionError
 import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
 import com.hypertrack.android.ui.screens.add_place.AddPlaceFragmentDirections
-import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
-import com.hypertrack.android.utils.ErrorMessage
+import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
-import java.lang.Exception
 
 @Suppress("OPT_IN_USAGE")
 class AddPlaceInfoEffectsHandler(

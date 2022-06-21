@@ -1,4 +1,4 @@
-package com.hypertrack.android.use_case.app
+package com.hypertrack.android.use_case.error
 
 import com.hypertrack.android.utils.CrashReportsProvider
 import kotlinx.coroutines.flow.Flow

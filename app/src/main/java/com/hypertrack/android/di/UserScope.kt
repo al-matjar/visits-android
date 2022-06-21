@@ -1,19 +1,18 @@
 package com.hypertrack.android.di
 
 import com.hypertrack.android.api.ApiClient
+import com.hypertrack.android.api.graphql.GraphQlApiClient
 import com.hypertrack.android.interactors.FeedbackInteractor
 import com.hypertrack.android.interactors.GeotagsInteractor
 import com.hypertrack.android.interactors.GooglePlacesInteractor
-import com.hypertrack.android.interactors.history.HistoryInteractorImpl
 import com.hypertrack.android.interactors.PermissionsInteractor
 import com.hypertrack.android.interactors.PhotoUploadQueueInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
 import com.hypertrack.android.interactors.PlacesVisitsInteractor
-import com.hypertrack.android.interactors.history.SummaryInteractor
 import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.interactors.trip.TripsUpdateTimerInteractor
 import com.hypertrack.android.interactors.app.AppInteractor
-import com.hypertrack.android.interactors.history.HistoryInteractor
+import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.repository.IntegrationsRepository
 import com.hypertrack.android.repository.MeasurementUnitsRepository
 import com.hypertrack.android.ui.common.UserScopeViewModelFactory
@@ -31,9 +30,6 @@ class UserScope(
     val placesVisitsInteractor: PlacesVisitsInteractor,
     val googlePlacesInteractor: GooglePlacesInteractor,
     val geotagsInteractor: GeotagsInteractor,
-    val historyInteractor: HistoryInteractor,
-    val historyInteractorLegacy: HistoryInteractorImpl,
-    val summaryInteractor: SummaryInteractor,
     val feedbackInteractor: FeedbackInteractor,
     val photoUploadQueueInteractor: PhotoUploadQueueInteractor,
     val permissionsInteractor: PermissionsInteractor,
@@ -42,7 +38,9 @@ class UserScope(
     val measurementUnitsRepository: MeasurementUnitsRepository,
     // other
     val hyperTrackService: HyperTrackService,
+    val deviceId: DeviceId,
     val apiClient: ApiClient,
+    val graphQlApiClient: GraphQlApiClient,
     val deviceLocationProvider: DeviceLocationProvider,
     val handlePushUseCase: HandlePushUseCase
 ) {

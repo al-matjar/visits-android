@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.common.config.GservicesValue.value
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.Circle
@@ -25,9 +24,8 @@ import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
-import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionError
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
-import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.formatters.MetersDistanceFormatter
 import kotlinx.coroutines.Dispatchers

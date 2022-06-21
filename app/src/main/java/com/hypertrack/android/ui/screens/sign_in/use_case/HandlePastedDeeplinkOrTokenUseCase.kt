@@ -1,15 +1,13 @@
 package com.hypertrack.android.ui.screens.sign_in.use_case
 
-import android.app.Activity
 import android.net.Uri
 import com.hypertrack.android.deeplink.BranchWrapper
-import com.hypertrack.android.deeplink.BranchWrapper.Companion.BRANCH_TIMEOUT
 import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.deeplink.NoDeeplink
-import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
-import com.hypertrack.android.use_case.app.LogMessageToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.use_case.deeplink.DeeplinkException
 import com.hypertrack.android.use_case.deeplink.DeeplinkValidationError
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
@@ -20,7 +18,6 @@ import com.hypertrack.android.utils.AbstractResult
 import com.hypertrack.android.utils.AbstractSuccess
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.OsUtilsProvider
-import com.hypertrack.android.utils.ResourceProvider
 import com.hypertrack.android.utils.Result
 import com.hypertrack.android.utils.exception.SimpleException
 import com.hypertrack.android.utils.Success
@@ -35,11 +32,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withTimeout
-import java.lang.RuntimeException
 import java.util.regex.Pattern
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class HandlePastedDeeplinkOrTokenUseCase(

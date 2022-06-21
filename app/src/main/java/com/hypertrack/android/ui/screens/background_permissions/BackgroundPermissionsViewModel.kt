@@ -4,10 +4,10 @@ import android.app.Activity
 import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.PermissionDestination
 import com.hypertrack.android.interactors.app.AppInteractor
-import com.hypertrack.android.interactors.app.Initialized
-import com.hypertrack.android.interactors.app.NotInitialized
-import com.hypertrack.android.interactors.app.UserLoggedIn
-import com.hypertrack.android.interactors.app.UserNotLoggedIn
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.common.util.postValue
@@ -22,7 +22,7 @@ class BackgroundPermissionsViewModel(
     fun handleAction(action: Action) {
         appInteractor.appState.requireValue().let { state ->
             when (state) {
-                is Initialized -> {
+                is AppInitialized -> {
                     when (state.userState) {
                         is UserLoggedIn -> {
                             handleActionOnLoggedIn(action, state.userState.userScope)
@@ -32,7 +32,7 @@ class BackgroundPermissionsViewModel(
                         }
                     }
                 }
-                is NotInitialized -> {
+                is AppNotInitialized -> {
                     crashReportsProvider.logException(IllegalActionException(action, state))
                 }
             }

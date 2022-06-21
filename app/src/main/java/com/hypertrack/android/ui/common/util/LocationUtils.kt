@@ -1,34 +1,11 @@
 package com.hypertrack.android.ui.common.util
 
+import android.location.Location
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.models.Location
 import kotlin.math.pow
 import kotlin.math.round
 
 object LocationUtils {
-    fun distanceMeters(location: Location?, location1: Location?): Int? {
-        try {
-            if (location != null && location1 != null
-                && !(location.latitude == 0.0 && location.longitude == 0.0)
-                && !(location1.latitude == 0.0 && location1.longitude == 0.0)
-            ) {
-                val res = FloatArray(3)
-                android.location.Location.distanceBetween(
-                    location.latitude,
-                    location.longitude,
-                    location1.latitude,
-                    location1.longitude,
-                    res
-                );
-                return res[0].toInt()
-            } else {
-                return null
-            }
-        } catch (_: Exception) {
-            return null
-        }
-    }
-
     fun distanceMeters(latLng: LatLng?, latLng1: LatLng?): Int? {
         try {
             if (latLng != null && latLng1 != null
@@ -53,7 +30,7 @@ object LocationUtils {
     }
 }
 
-fun android.location.Location.toLatLng(): LatLng {
+fun Location.toLatLng(): LatLng {
     return LatLng(latitude, longitude)
 }
 

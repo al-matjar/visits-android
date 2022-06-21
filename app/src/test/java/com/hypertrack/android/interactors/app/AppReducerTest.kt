@@ -4,6 +4,13 @@ import com.hypertrack.android.TestInjector
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.di.UserScope
+import com.hypertrack.android.interactors.app.reducer.ScreensReducer
+import com.hypertrack.android.interactors.app.state.AppViewState
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.state.SplashScreenView
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserState
 import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.use_case.sdk.TrackingStateUnknown
@@ -16,27 +23,30 @@ class AppReducerTest {
         fun appReducer(): AppReducer {
             return AppReducer(
                 appScope = mockk(),
-                useCases = mockk()
+                useCases = mockk(),
+                historyReducer = mockk(),
+                screensReducer = mockk(),
+                historyViewReducer = mockk()
             )
         }
 
-        fun createdState(pendingDeeplinkResult: DeeplinkResult? = null): NotInitialized {
-            return NotInitialized(
+        fun createdState(pendingDeeplinkResult: DeeplinkResult? = null): AppNotInitialized {
+            return AppNotInitialized(
                 appScope = mockk(),
                 useCases = mockk(),
                 pendingDeeplinkResult = pendingDeeplinkResult,
                 pendingPushNotification = null,
-                viewState = SplashScreenState
+                splashScreenViewState = null
             )
         }
 
         fun initializedState(
             tripsInteractorParam: TripsInteractor = mockk(),
             userState: UserState? = null,
-            viewState: AppViewState = SplashScreenState,
+            viewState: AppViewState = SplashScreenView,
             showProgressbar: Boolean = false
-        ): Initialized {
-            return Initialized(
+        ): AppInitialized {
+            return AppInitialized(
                 appScope = mockk(),
                 useCases = mockk(),
                 tripCreationScope = null,
@@ -46,7 +56,9 @@ class AppReducerTest {
                     userScope = mockk {
                         every { tripsInteractor } returns tripsInteractorParam
                     },
-                    userData = mockk()
+                    userData = mockk(),
+                    history = mockk(),
+                    userLocation = mockk()
                 ),
                 viewState = viewState,
                 showProgressbar = showProgressbar
@@ -61,7 +73,9 @@ class AppReducerTest {
                 deviceId = deviceId,
                 trackingState = TrackingStateUnknown,
                 userScope = userScope,
-                userData = mockk()
+                userData = mockk(),
+                history = mockk(),
+                userLocation = mockk()
             )
         }
 

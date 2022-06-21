@@ -2,13 +2,9 @@ package com.hypertrack.android.ui.screens.sign_in.use_case
 
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
-import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.sign_in.SignInFragmentDirections
-import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
-import com.hypertrack.android.utils.AbstractResult
-import com.hypertrack.android.utils.LoadingState
 import com.hypertrack.android.utils.SimpleResult
 import com.hypertrack.android.utils.tryAsSimpleResult
 import kotlinx.coroutines.flow.Flow

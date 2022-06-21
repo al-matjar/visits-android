@@ -1,7 +1,5 @@
 package com.hypertrack.android.ui.screens.sign_in
 
-import android.app.Activity
-import android.util.Log
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
@@ -20,8 +18,8 @@ import com.hypertrack.android.ui.screens.sign_in.use_case.SignInInvalidLoginOrPa
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInNoSuchUser
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInSuccess
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInWithCognitoUseCase
-import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
-import com.hypertrack.android.use_case.app.LogMessageToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.use_case.deeplink.DeeplinkException
 import com.hypertrack.android.use_case.deeplink.DeeplinkValidationError
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
@@ -40,8 +38,6 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import java.lang.RuntimeException
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class SignInViewModel(

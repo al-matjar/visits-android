@@ -5,5 +5,4 @@ sealed class Action {
 }
 
 data class TrackingSwitchClickedAction(val isChecked: Boolean) : Action()
-object RefreshHistoryAction : Action()
 object OnViewCreatedAction : Action()

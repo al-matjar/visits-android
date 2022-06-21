@@ -10,7 +10,6 @@ interface TimeValueFormatter {
     fun formatTimeValue(timeValue: TimeValue): String
 
     //todo remove legacy
-    fun formatSeconds(seconds: Long): String
     fun formatSeconds(seconds: Int): String
 }
 
@@ -36,7 +35,4 @@ class TimeValueFormatterImpl(val osUtilsProvider: OsUtilsProvider) : TimeValueFo
         return formatTimeValue(seconds.toSeconds())
     }
 
-    override fun formatSeconds(seconds: Long): String {
-        return formatTimeValue(seconds.toSeconds())
-    }
 }

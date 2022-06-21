@@ -13,16 +13,19 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDirections
 import com.hypertrack.android.deeplink.BranchWrapper
 import com.hypertrack.android.di.AppScope
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.AppAction
 import com.hypertrack.android.interactors.app.AppErrorAction
 import com.hypertrack.android.interactors.app.AppInteractor
-import com.hypertrack.android.interactors.app.AppState
 import com.hypertrack.android.interactors.app.ActivityOnNewIntent
-import com.hypertrack.android.interactors.app.NotInitialized
-import com.hypertrack.android.interactors.app.Initialized
-import com.hypertrack.android.interactors.app.UserLoggedIn
-import com.hypertrack.android.interactors.app.UserNotLoggedIn
 import com.hypertrack.android.ui.activity.use_case.HandleDeeplinkResultUseCase
+import com.hypertrack.android.interactors.app.state.AppState
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.DeeplinkCheckedAction
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.ui.activity.use_case.HandleNotificationClickUseCase
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.withErrorHandling
@@ -156,7 +159,7 @@ class ActivityViewModel(
 
     private fun showPermissionPrompt() {
         when (val state = appState.requireValue()) {
-            is Initialized -> {
+            is AppInitialized -> {
                 when (state.userState) {
                     is UserLoggedIn -> {
                         state.userState.userScope.hyperTrackService.showPermissionsPrompt()
@@ -165,7 +168,7 @@ class ActivityViewModel(
                     }
                 }
             }
-            is NotInitialized -> {
+            is AppNotInitialized -> {
             }
         }
     }
@@ -173,7 +176,7 @@ class ActivityViewModel(
     private fun ifLoggedIn(block: (UserLoggedIn) -> Unit) {
         appState.requireValue().let {
             when (it) {
-                is Initialized -> {
+                is AppInitialized -> {
                     when (it.userState) {
                         is UserLoggedIn -> {
                             block.invoke(it.userState)
@@ -182,7 +185,7 @@ class ActivityViewModel(
                         }
                     }
                 }
-                is NotInitialized -> {
+                is AppNotInitialized -> {
                 }
             }
         }

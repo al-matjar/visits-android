@@ -7,6 +7,7 @@ import androidx.core.graphics.drawable.toBitmap
 import com.hypertrack.android.models.Status
 import com.hypertrack.logistics.android.github.R
 
+//todo use
 interface HistoryStyle {
     val activeColor: Int
     val driveSelectionColor: Int

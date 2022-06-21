@@ -11,6 +11,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.*
@@ -34,7 +35,6 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         vm.handleAction(OnViewCreatedAction)
 
         (childFragmentManager.findFragmentById(R.id.googleMap) as SupportMapFragment).getMapAsync {

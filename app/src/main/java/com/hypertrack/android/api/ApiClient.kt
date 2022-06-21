@@ -5,19 +5,20 @@ import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.models.RemoteGeofence
 import com.hypertrack.android.api.models.RemoteOrder
-import com.hypertrack.android.models.*
+import com.hypertrack.android.models.GeofenceMetadata
+import com.hypertrack.android.models.Integration
+import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.OrderStatus
-import com.hypertrack.android.utils.*
-import com.hypertrack.android.utils.exception.SimpleException
+import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.JustFailure
+import com.hypertrack.android.utils.JustSuccess
+import com.hypertrack.android.utils.SimpleResult
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import retrofit2.Response
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 class ApiClient(
@@ -138,27 +139,6 @@ class ApiClient(
         } catch (e: Throwable) {
             Log.w(TAG, "Got exception $e uploading image")
             throw e
-        }
-    }
-
-    suspend fun getHistory(day: LocalDate, timezone: ZoneId): HistoryResult {
-        try {
-            with(
-                api.getHistory(
-                    deviceId = deviceId.value,
-                    day = day.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                    timezone = timezone.id
-                )
-            ) {
-                if (isSuccessful) {
-                    return body()!!.asHistory()
-                } else {
-                    return HistoryError(HttpException(this))
-                }
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Got exception $e fetching device history")
-            return HistoryError(e)
         }
     }
 
@@ -335,99 +315,3 @@ class ApiClient(
     }
 
 }
-
-private fun HistoryResponse.asHistory(): HistoryResult {
-    return History(
-        Summary(
-            distance,
-            duration,
-            distance,
-            driveDuration ?: 0,
-            stepsCount ?: 0,
-            walkDuration,
-            stopDuration,
-        ),
-        locations.coordinates.map {
-            Location(
-                latitude = it.latitude,
-                longitude = it.longitude
-            ) to it.timestamp
-        },
-        markers.map { it.asMarker() }
-    )
-}
-
-fun HistoryMarker.asMarker(): Marker {
-    return when (this) {
-        is HistoryStatusMarker -> asStatusMarker()
-        is HistoryTripMarker ->
-            GeoTagMarker(
-                MarkerType.GEOTAG,
-                data.recordedAt,
-                data.location?.asLocation(),
-                data.metadata ?: emptyMap()
-            )
-        is HistoryGeofenceMarker -> asGeofenceMarker()
-        else -> throw SimpleException("Unknown marker type $type")
-    }
-}
-
-private fun HistoryGeofenceMarker.asGeofenceMarker(): Marker {
-    return GeofenceMarker(
-        MarkerType.GEOFENCE_ENTRY,
-        data.arrival.location.recordedAt,
-        data.arrival.location.geometry?.asLocation(),
-        data.geofence.metadata ?: emptyMap(),
-        data.arrival.location.geometry?.asLocation(),
-        data.exit?.location?.geometry?.asLocation(),
-        data.arrival.location.recordedAt,
-        data.exit?.location?.recordedAt
-    )
-}
-
-
-private fun HistoryTripMarkerLocation.asLocation() = Location(
-    latitude = coordinates[1],
-    longitude = coordinates[0]
-)
-
-fun Geometry.asLocation() =
-    Location(
-        latitude = latitude,
-        longitude = longitude
-    )
-
-private fun HistoryStatusMarker.asStatusMarker() = StatusMarker(
-    MarkerType.STATUS,
-    data.start.recordedAt,
-    data.start.location?.geometry?.asLocation(),
-    data.start.location?.geometry?.asLocation(),
-    data.end.location?.geometry?.asLocation(),
-    data.start.recordedAt,
-    data.end.recordedAt,
-    data.start.location?.recordedAt,
-    data.end.location?.recordedAt,
-    when (data.value) {
-        "inactive" -> Status.INACTIVE
-        "active" -> when (data.activity) {
-            "stop" -> Status.STOP
-            "drive" -> Status.DRIVE
-            "walk" -> Status.WALK
-            else -> Status.UNKNOWN
-        }
-        else -> Status.UNKNOWN
-
-    },
-    data.duration,
-    data.distance,
-    data.steps,
-    data.address,
-    data.reason
-)
-
-sealed class OrderCompletionResponse
-object OrderCompletionSuccess : OrderCompletionResponse()
-object OrderCompletionCanceled : OrderCompletionResponse()
-object OrderCompletionCompleted : OrderCompletionResponse()
-class OrderCompletionFailure(val exception: Exception) : OrderCompletionResponse()
-

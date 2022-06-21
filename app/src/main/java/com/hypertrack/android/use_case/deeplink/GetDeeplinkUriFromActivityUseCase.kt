@@ -2,13 +2,11 @@ package com.hypertrack.android.use_case.deeplink
 
 import android.app.Activity
 import android.net.Uri
-import com.hypertrack.android.deeplink.NoDeeplink
-import com.hypertrack.android.use_case.app.LogMessageToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.utils.Result
 import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.asSuccess
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map

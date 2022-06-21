@@ -4,20 +4,41 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
 import com.hypertrack.android.di.AppScope
+import com.hypertrack.android.interactors.app.effect.HistoryEffectHandler
+import com.hypertrack.android.interactors.app.effect.MapEffectsHandler
+import com.hypertrack.android.interactors.app.reducer.HistoryReducer
+import com.hypertrack.android.interactors.app.reducer.HistorySubState
+import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
+import com.hypertrack.android.interactors.app.reducer.ScreensReducer
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.AppState
+import com.hypertrack.android.interactors.app.state.AppNotInitialized
+import com.hypertrack.android.interactors.app.state.TabView
+import com.hypertrack.android.interactors.app.state.TabsView
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.toConsumable
+import com.hypertrack.android.ui.common.util.updateConsumableAsFlow
 import com.hypertrack.android.use_case.app.InitAppUseCase
 import com.hypertrack.android.use_case.app.UseCases
+import com.hypertrack.android.use_case.error.LogExceptionIfFailureUseCase
+import com.hypertrack.android.use_case.map.ClearMapUseCase
+import com.hypertrack.android.use_case.map.UpdateMapDataUseCase
 import com.hypertrack.android.utils.AbstractFailure
 import com.hypertrack.android.utils.AbstractSuccess
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.Result
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
@@ -34,15 +55,21 @@ class AppInteractor(
 
     private val effectsDispatcher = Dispatchers.Default
     private val useCases = UseCases(appScope, this, MyApplication.SERVICES_API_KEY)
-    private val initialState = NotInitialized(
+    private val initialState = AppNotInitialized(
         appScope,
         useCases,
-        viewState = SplashScreenState,
+        splashScreenViewState = null,
         pendingDeeplinkResult = null,
         pendingPushNotification = null
     )
-    private val appReducer = AppReducer(useCases, appScope)
-    private val appStateMachine = StateMachine<AppAction, AppState, Effect>(
+    private val appReducer = AppReducer(
+        useCases,
+        appScope,
+        HistoryReducer(appScope, HistoryViewReducer(appScope)),
+        HistoryViewReducer(appScope),
+        ScreensReducer(HistoryViewReducer(appScope))
+    )
+    private val appStateMachine = object : StateMachine<AppAction, AppState, AppEffect>(
         "AppState",
         appScope.crashReportsProvider,
         initialState,
@@ -51,14 +78,28 @@ class AppInteractor(
         appReducer::reduce,
         this::applyEffects,
         this::stateChangeEffects
+    ) {}
+    private val historyEffectHandler = HistoryEffectHandler(appScope, useCases)
+    private val mapEffectsHandler = MapEffectsHandler(
+        useCases.logExceptionIfFailureUseCase,
+        this::getEffectFlow
     )
 
     private val _appState = MutableLiveData<AppState>(initialState)
     val appState: LiveData<AppState> = _appState
 
+    // todo migrate to flow from livedata
+    private val _appStateFlow = MutableStateFlow<AppState>(initialState)
+    val appStateFlow: StateFlow<AppState> = _appStateFlow
+
+    private val _appEvent = MutableSharedFlow<AppEvent>(replay = 0)
+    val appEvent: Flow<AppEvent> = _appEvent
+
+    // todo register activity event handle via action
     private val _appErrorEvent = MutableLiveData<Consumable<Exception>>()
     val appErrorEvent: LiveData<Consumable<Exception>> = _appErrorEvent
 
+    // todo register activity event handle via action
     private val _navigationEvent = MutableLiveData<Consumable<NavDirections>>()
     val navigationEvent: LiveData<Consumable<NavDirections>> = _navigationEvent
 
@@ -66,7 +107,7 @@ class AppInteractor(
         appStateMachine.handleAction(action)
     }
 
-    private fun applyEffects(effects: Set<Effect>) {
+    private fun applyEffects(effects: Set<AppEffect>) {
         effects.forEach { effect ->
             appScope.appCoroutineScope.launch {
                 getEffectFlow(effect)
@@ -84,7 +125,7 @@ class AppInteractor(
         }
     }
 
-    private fun getEffectFlow(effect: Effect): Flow<AppAction?> {
+    private fun getEffectFlow(effect: AppEffect): Flow<AppAction?> {
         return when (effect) {
             is InitAppEffect -> {
                 InitAppUseCase(useCases.getConfiguredHypertrackSdkInstanceUseCase)
@@ -95,7 +136,7 @@ class AppInteractor(
                             .flatMapConcat { result ->
                                 when (result) {
                                     is Success -> {
-                                        flowOf(AppInitializedAction(result.data))
+                                        AppInitializedAction(result.data).toFlow()
                                     }
                                     is Failure -> {
                                         getEffectFlow(
@@ -134,27 +175,28 @@ class AppInteractor(
                     }
             }
             is CleanupUserScopeEffect -> {
-                { effect.oldUserScope.onDestroy() }
-                    .asFlow()
-                    .map { null }
+                { effect.oldUserScope.onDestroy() }.asFlow().noAction()
             }
             is HandlePushEffect -> {
                 effect.userState.userScope
-                    .handlePushUseCase.execute(effect.userState, effect.remoteMessage).map { null }
+                    .handlePushUseCase.execute(effect.userState, effect.remoteMessage).noAction()
             }
             is NotifyAppStateUpdateEffect -> {
-                { _appState.postValue(effect.newState) }.asFlow().map { null }
+                suspend {
+                    _appState.postValue(effect.newState)
+                    _appStateFlow.emit(effect.newState)
+                }.asFlow().noAction()
             }
             is ShowAndReportAppErrorEffect -> {
                 {
                     appScope.crashReportsProvider.logException(effect.exception)
                     _appErrorEvent.postValue(effect.exception.toConsumable())
-                }.asFlow().map { null }
+                }.asFlow().noAction()
             }
             is ReportAppErrorEffect -> {
                 {
                     appScope.crashReportsProvider.logException(effect.exception)
-                }.asFlow().map { null }
+                }.asFlow().noAction()
             }
             is NavigateToUserScopeScreensEffect -> {
                 useCases.navigateToUserScopeScreensUseCase.execute(
@@ -171,22 +213,37 @@ class AppInteractor(
                     }
                 }
             }
-            NavigateToSignInEffect -> {
-                {
-                    _navigationEvent.postValue(
-                        NavGraphDirections.actionGlobalSignInFragment().toConsumable()
-                    )
-                }.asFlow().map { null }
+            is LoadHistoryEffect -> {
+                historyEffectHandler.applyEffect(effect)
+            }
+            is AppEventEffect -> {
+                getEffectFlow(effect)
+            }
+            is HistoryViewEffect -> {
+                historyEffectHandler.applyEffect(effect)
+            }
+            is AppMapEffect -> {
+                mapEffectsHandler.applyEffect(effect)
+            }
+            is AppActionEffect -> {
+                { effect.action }.asFlow()
+            }
+            is NavigateEffect -> {
+                _navigationEvent.updateConsumableAsFlow(effect.destination).noAction()
             }
         }
     }
 
-    // todo
-    // notifying app state changed can be delayed
+    // todo notifying app state change can be delayed
     // consider to change this logic if any client needs to receive app state
     // in "get" mode (but not "event" mode)
-    private fun stateChangeEffects(newState: AppState): Set<Effect> {
+    private fun stateChangeEffects(newState: AppState): Set<AppEffect> {
         return setOf(NotifyAppStateUpdateEffect(newState))
+    }
+
+
+    private fun getEffectFlow(effect: AppEventEffect): Flow<AppAction?> {
+        return suspend { _appEvent.emit(effect.event) }.asFlow().noAction()
     }
 
     companion object {
@@ -197,10 +254,11 @@ class AppInteractor(
     override fun toString(): String = javaClass.simpleName
 }
 
-fun tryWithAppError(appInteractor: AppInteractor, block: () -> Unit) {
-    try {
-        block.invoke()
-    } catch (e: Exception) {
-        appInteractor.handleAction(AppErrorAction(e))
-    }
+// don't use .map { null } on arbitrary typed Flow to avoid bugs
+// e.g. missing error handling
+// set flow to Unit, and then map to no action
+fun Flow<Unit>.noAction(): Flow<AppAction?> {
+    return map { null }
 }
+
+

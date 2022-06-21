@@ -22,7 +22,8 @@ sealed class OutageReason(@StringRes val stringRes: Int) {
                 "motion_activity_services_unavailable" -> {
                     MotionActivityServicesUnavailable
                 }
-                "tracking_stopped" -> {
+                "tracking_stopped", "stopped_programmatically" -> {
+                    // todo display resumptions
                     TrackingStopped
                 }
                 "tracking_service_terminated" -> {
@@ -31,7 +32,9 @@ sealed class OutageReason(@StringRes val stringRes: Int) {
                 "unexpected" -> {
                     Unexpected
                 }
-                else -> Unknown(reason)
+                else -> {
+                    Unknown(reason)
+                }
             }
         }
     }

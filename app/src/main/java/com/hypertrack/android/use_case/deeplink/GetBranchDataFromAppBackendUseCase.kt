@@ -6,7 +6,7 @@ import com.hypertrack.android.api.models.BranchLinkBody
 import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.DeeplinkResult
-import com.hypertrack.android.use_case.app.LogMessageToCrashlyticsUseCase
+import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.utils.createAnyMapAdapter
 import com.hypertrack.android.utils.exception.SimpleException
 import com.squareup.moshi.Moshi

@@ -78,7 +78,6 @@ class AppScope(
     val batteryLevelMonitor: BatteryLevelMonitor,
     val notificationUtil: NotificationUtil,
     val moshi: Moshi,
-    // todo remove
     val trackingStateListener: (NewTrackingState) -> Unit,
     val appCoroutineScope: CoroutineScope,
     val stateMachineContext: CoroutineContext,

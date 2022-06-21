@@ -5,7 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.SignedInAction
-import com.hypertrack.android.interactors.app.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.use_case.login.LoadUserStateAfterSignInUseCase

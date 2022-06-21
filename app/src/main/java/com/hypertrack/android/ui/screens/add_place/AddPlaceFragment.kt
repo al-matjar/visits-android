@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.viewModels
 import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.RegisterScreenAction
+import com.hypertrack.android.interactors.app.state.AddPlaceScreen
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationFragment
 import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.logistics.android.github.R
@@ -19,6 +21,7 @@ open class AddPlaceFragment : SelectDestinationFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Injector.provideAppInteractor().handleAction(RegisterScreenAction(AddPlaceScreen))
 
         toolbar.title = getString(R.string.add_place)
 
