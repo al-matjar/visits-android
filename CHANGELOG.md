@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.17.7] - 2022-06-22
+
+### Added
+
+- Better error reporting
+
 ## [0.17.6] - 2022-06-20
 
 ### Added
