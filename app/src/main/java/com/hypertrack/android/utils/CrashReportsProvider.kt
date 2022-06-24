@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.hypertrack.android.deeplink.BranchErrorException
 import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 import java.net.ConnectException

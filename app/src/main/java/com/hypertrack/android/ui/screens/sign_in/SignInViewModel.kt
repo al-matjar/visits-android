@@ -1,6 +1,7 @@
 package com.hypertrack.android.ui.screens.sign_in
 
 import android.app.Activity
+import android.util.Log
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
@@ -23,6 +24,7 @@ import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.app.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.use_case.deeplink.DeeplinkException
 import com.hypertrack.android.use_case.deeplink.DeeplinkValidationError
+import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.use_case.login.LoadUserStateAfterSignInUseCase
 import com.hypertrack.android.use_case.login.LoggedIn
 import com.hypertrack.android.use_case.deeplink.LoginWithDeeplinkParamsUseCase
@@ -38,12 +40,15 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import java.lang.RuntimeException
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class SignInViewModel(
     baseDependencies: BaseViewModelDependencies,
     private val appInteractor: AppInteractor,
     private val signInUseCase: SignInUseCase,
+    private val getBranchDataFromAppBackendUseCase: GetBranchDataFromAppBackendUseCase,
     private val loginWithDeeplinkParamsUseCase: LoginWithDeeplinkParamsUseCase,
     private val loadUserStateAfterSignInUseCase: LoadUserStateAfterSignInUseCase,
     private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
@@ -57,6 +62,7 @@ class SignInViewModel(
     )
     private val confirmationRequiredUseCase = ConfirmationRequiredUseCase(destination)
     private val handlePastedDeeplinkOrTokenUseCase = HandlePastedDeeplinkOrTokenUseCase(
+        getBranchDataFromAppBackendUseCase,
         loginWithDeeplinkParamsUseCase,
         logMessageToCrashlyticsUseCase,
         logExceptionToCrashlyticsUseCase,
@@ -88,6 +94,7 @@ class SignInViewModel(
     val clearDeeplinkTextEvent = MutableLiveData<Consumable<Unit>>()
 
     val showProgressbar = MediatorLiveData<Boolean>().apply {
+        postValue(false)
         addSource(appInteractor.appState) {
             postValue(it.isProgressbarVisible())
         }
@@ -183,7 +190,7 @@ class SignInViewModel(
                 { viewState.postValue(effect.viewState) }.asFlow().map { null }
             }
             is HandleDeeplinkOrTokenEffect -> {
-                pasteDeeplinkOrTokenFlow(effect.text, effect.activity).map { null }
+                pasteDeeplinkOrTokenFlow(effect.text).map { null }
             }
             is ErrorEffect -> {
                 { showExceptionMessageAndReport(effect.exception) }.asFlow().map { null }
@@ -237,7 +244,7 @@ class SignInViewModel(
         return startLoading()
             .flatMapConcat {
                 signInWithCognitoUseCase.execute(
-                    login = effect.login,
+                    login = effect.login.trim(),
                     password = effect.password
                 )
             }.flatMapConcat { result ->
@@ -265,17 +272,18 @@ class SignInViewModel(
                             }
                         }
                     }
-                    is Failure -> TODO()
+                    is Failure -> {
+                        showErrorAndReportFlow(result.exception)
+                    }
                 }
-                    .map { JustSuccess }.showErrorAndReportIfFailure()
-            }.map { }
+            }
             .stopLoading()
     }
 
-    private fun pasteDeeplinkOrTokenFlow(text: String, activity: Activity): Flow<Unit> {
+    private fun pasteDeeplinkOrTokenFlow(text: String): Flow<Unit> {
         return startLoading()
             .flatMapConcat {
-                handlePastedDeeplinkOrTokenUseCase.execute(text, activity)
+                handlePastedDeeplinkOrTokenUseCase.execute(text)
             }
             .flatMapAbstractSuccess { it: LoggedIn ->
                 loadUserStateAfterSignInUseCase
@@ -325,11 +333,13 @@ class SignInViewModel(
     }
 
     private fun Flow<Unit>.stopLoading(): Flow<Unit> {
-        return { loadingState.postValue(false) }.asFlow()
+        return flatMapConcat {
+            { loadingState.postValue(false) }.asFlow()
+        }
     }
 
     private fun startLoading(): Flow<Unit> {
-        return { loadingState.postValue(false) }.asFlow()
+        return { loadingState.postValue(true) }.asFlow()
     }
 
 }

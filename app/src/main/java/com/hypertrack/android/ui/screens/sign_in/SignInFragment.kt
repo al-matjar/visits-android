@@ -11,6 +11,7 @@ import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.common.util.*
+import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_signin.*
 import kotlinx.android.synthetic.main.inflate_paste_deeplink.*
@@ -59,6 +60,10 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
             findNavController().navigate(it)
         }
 
+        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
+            SnackBarUtil.showErrorSnackBar(view, it)
+        }
+
         setUpSignIn()
         setUpDeeplink(view)
     }
@@ -100,10 +105,6 @@ class SignInFragment : ProgressDialogFragment(R.layout.fragment_signin) {
     private fun setUpDeeplink(view: View) {
         vm.clearDeeplinkTextEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
             etDeeplink.setText("")
-        }
-
-        vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-            SnackBarUtil.showErrorSnackBar(view, it)
         }
 
         bDeeplinkIssues.setOnClickListener {

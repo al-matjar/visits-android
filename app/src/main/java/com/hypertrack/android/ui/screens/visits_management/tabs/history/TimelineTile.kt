@@ -1,7 +1,6 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.history
 
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.api.GeofenceVisit
 import com.hypertrack.android.models.local.Geotag
 import com.hypertrack.android.models.local.LocalGeofenceVisit
 import com.hypertrack.android.models.local.OutageReason

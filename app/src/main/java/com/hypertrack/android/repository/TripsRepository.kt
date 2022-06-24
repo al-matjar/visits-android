@@ -23,7 +23,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
 
 interface TripsRepository {
     val trips: LiveData<List<LocalTrip>>

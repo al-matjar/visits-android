@@ -1,3 +1,11 @@
 package com.hypertrack.android.use_case.deeplink
 
-class InvalidDeeplinkException(val deeplinkFailure: DeeplinkFailure) : Exception()
+class InvalidDeeplinkException(val deeplinkFailure: DeeplinkFailure) :
+    Exception(
+        deeplinkFailure.toString(),
+        if (deeplinkFailure is DeeplinkException) {
+            deeplinkFailure.exception
+        } else {
+            null
+        }
+    )

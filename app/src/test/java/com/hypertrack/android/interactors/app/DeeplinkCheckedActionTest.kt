@@ -1,5 +1,6 @@
 package com.hypertrack.android.interactors.app
 
+import com.hypertrack.android.deeplink.BranchErrorException
 import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appReducer
@@ -7,11 +8,12 @@ import com.hypertrack.android.interactors.app.AppReducerTest.Companion.createdSt
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.initializedState
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.validDeeplinkParams
+import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.junit.Test
-import java.lang.Exception
+import kotlin.Exception
 
 class DeeplinkCheckedActionTest {
 
@@ -47,7 +49,9 @@ class DeeplinkCheckedActionTest {
     fun `Initialized (SplashScreenState, UserNotLoggedIn) - DeeplinkCheckedAction (valid deeplink)`() {
         val state = initializedState(
             userState = UserNotLoggedIn,
-            viewState = SplashScreenState
+            viewState = SplashScreenState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
         val deeplinkParams = validDeeplinkParams()
         val action = DeeplinkCheckedAction(deeplinkParams)
@@ -61,12 +65,14 @@ class DeeplinkCheckedActionTest {
     }
 
     @Test
-    fun `Initialized (SplashScreenState, UserNotLoggedIn) - DeeplinkCheckedAction (deeplink error)`() {
+    fun `Initialized (SplashScreenState, UserNotLoggedIn) - DeeplinkCheckedAction (error)`() {
         val state = initializedState(
             userState = UserNotLoggedIn,
-            viewState = SplashScreenState
+            viewState = SplashScreenState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
-        val action = DeeplinkCheckedAction(DeeplinkError(Exception()))
+        val action = deeplinkCheckedErrorAction()
         appReducer().reduce(state, action).let { result ->
             (result.newState as Initialized).let {
                 println(result.effects)
@@ -78,7 +84,7 @@ class DeeplinkCheckedActionTest {
                 )
                 assertTrue(
                     result.effects
-                        .filterIsInstance<HandleAppErrorMessageEffect>()
+                        .filterIsInstance<ShowAndReportAppErrorEffect>()
                         .isNotEmpty()
                 )
             }
@@ -89,7 +95,9 @@ class DeeplinkCheckedActionTest {
     fun `Initialized (SplashScreenState, UserNotLoggedIn) - DeeplinkCheckedAction (no deeplink)`() {
         val state = initializedState(
             userState = UserNotLoggedIn,
-            viewState = SplashScreenState
+            viewState = SplashScreenState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
         val action = DeeplinkCheckedAction(NoDeeplink)
         appReducer().reduce(state, action).let { result ->
@@ -102,12 +110,14 @@ class DeeplinkCheckedActionTest {
     }
 
     @Test
-    fun `Initialized (SplashScreenState, UserLoggedIn) - DeeplinkCheckedAction (deeplink error)`() {
+    fun `Initialized (SplashScreenState, UserLoggedIn) - DeeplinkCheckedAction (error)`() {
         val state = initializedState(
             userState = userLoggedIn(),
-            viewState = SplashScreenState
+            viewState = SplashScreenState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
-        val action = DeeplinkCheckedAction(DeeplinkError(Exception()))
+        val action = deeplinkCheckedErrorAction()
         appReducer().reduce(state, action).let { result ->
             (result.newState as Initialized).let {
                 println(result.effects)
@@ -119,7 +129,7 @@ class DeeplinkCheckedActionTest {
                 )
                 assertTrue(
                     result.effects
-                        .filterIsInstance<HandleAppErrorMessageEffect>()
+                        .filterIsInstance<ShowAndReportAppErrorEffect>()
                         .isNotEmpty()
                 )
             }
@@ -130,7 +140,9 @@ class DeeplinkCheckedActionTest {
     fun `Initialized (SplashScreenState, UserLoggedIn) - DeeplinkCheckedAction (no deeplink)`() {
         val state = initializedState(
             userState = userLoggedIn(),
-            viewState = SplashScreenState
+            viewState = SplashScreenState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
         val action = DeeplinkCheckedAction(NoDeeplink)
         appReducer().reduce(state, action).let { result ->
@@ -143,12 +155,14 @@ class DeeplinkCheckedActionTest {
     }
 
     @Test
-    fun `Initialized (SignInState, UserNotLoggedIn) - DeeplinkCheckedAction (deeplink error)`() {
+    fun `Initialized (SignInState, UserNotLoggedIn) - DeeplinkCheckedAction (error)`() {
         val state = initializedState(
             userState = UserNotLoggedIn,
-            viewState = UserScopeScreensState
+            viewState = UserScopeScreensState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
-        val action = DeeplinkCheckedAction(DeeplinkError(Exception()))
+        val action = deeplinkCheckedErrorAction()
         appReducer().reduce(state, action).let { result ->
             (result.newState as Initialized).let {
                 println(result.effects)
@@ -156,7 +170,7 @@ class DeeplinkCheckedActionTest {
                 assertTrue(result.effects.size == 1)
                 assertTrue(
                     result.effects
-                        .filterIsInstance<HandleAppErrorMessageEffect>()
+                        .filterIsInstance<ShowAndReportAppErrorEffect>()
                         .isNotEmpty()
                 )
             }
@@ -167,7 +181,9 @@ class DeeplinkCheckedActionTest {
     fun `Initialized (SignInState, UserNotLoggedIn) - DeeplinkCheckedAction (no deeplink)`() {
         val state = initializedState(
             userState = UserNotLoggedIn,
-            viewState = UserScopeScreensState
+            viewState = UserScopeScreensState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
         val action = DeeplinkCheckedAction(NoDeeplink)
         appReducer().reduce(state, action).let { result ->
@@ -183,7 +199,9 @@ class DeeplinkCheckedActionTest {
     fun `Initialized (UserScopeScreensState, UserLoggedIn) - DeeplinkCheckedAction (valid deeplink)`() {
         val state = initializedState(
             userState = userLoggedIn(),
-            viewState = UserScopeScreensState
+            viewState = UserScopeScreensState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
         val deeplinkParams = validDeeplinkParams()
         val action = DeeplinkCheckedAction(deeplinkParams)
@@ -197,12 +215,14 @@ class DeeplinkCheckedActionTest {
     }
 
     @Test
-    fun `Initialized (UserScopeScreensState, UserLoggedIn) - DeeplinkCheckedAction (deeplink error)`() {
+    fun `Initialized (UserScopeScreensState, UserLoggedIn) - DeeplinkCheckedAction (error)`() {
         val state = initializedState(
             userState = userLoggedIn(),
-            viewState = UserScopeScreensState
+            viewState = UserScopeScreensState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
-        val action = DeeplinkCheckedAction(DeeplinkError(Exception()))
+        val action = deeplinkCheckedErrorAction()
         appReducer().reduce(state, action).let { result ->
             (result.newState as Initialized).let {
                 println(result.effects)
@@ -210,7 +230,109 @@ class DeeplinkCheckedActionTest {
                 assertTrue(result.effects.size == 1)
                 assertTrue(
                     result.effects
-                        .filterIsInstance<HandleAppErrorMessageEffect>()
+                        .filterIsInstance<ShowAndReportAppErrorEffect>()
+                        .isNotEmpty()
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `Initialized (SplashScreenState, UserLoggedIn) - DeeplinkCheckedAction (branch connection error)`() {
+        val state = initializedState(
+            userState = userLoggedIn(),
+            viewState = SplashScreenState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
+        )
+        val action = deeplinkCheckedErrorAction(BranchErrorException(-113, ""))
+        appReducer().reduce(state, action).let { result ->
+            (result.newState as Initialized).let {
+                println(result.effects)
+                assertFalse(it.showProgressbar)
+                assertTrue(result.effects.size == 2)
+                assertTrue(
+                    result.effects
+                        .filterIsInstance<ReportAppErrorEffect>()
+                        .isNotEmpty()
+                )
+                assertTrue(
+                    result.effects
+                        .filterIsInstance<NavigateToUserScopeScreensEffect>()
+                        .isNotEmpty()
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `Initialized (UserLoggedIn, UserScopeScreensState) - DeeplinkCheckedAction (branch connection error)`() {
+        val state = initializedState(
+            userState = userLoggedIn(),
+            viewState = UserScopeScreensState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
+        )
+        val action = deeplinkCheckedErrorAction(BranchErrorException(-113, ""))
+        appReducer().reduce(state, action).let { result ->
+            (result.newState as Initialized).let {
+                println(result.effects)
+                assertFalse(it.showProgressbar)
+                assertTrue(result.effects.size == 1)
+                assertTrue(
+                    result.effects
+                        .filterIsInstance<ShowAndReportAppErrorEffect>()
+                        .isNotEmpty()
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `Initialized (SplashScreenState, UserNotLoggedIn) - DeeplinkCheckedAction (branch connection error)`() {
+        val state = initializedState(
+            userState = UserNotLoggedIn,
+            viewState = SplashScreenState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
+        )
+        val action = deeplinkCheckedErrorAction(BranchErrorException(-113, ""))
+        appReducer().reduce(state, action).let { result ->
+            (result.newState as Initialized).let {
+                println(result.effects)
+                assertFalse(it.showProgressbar)
+                assertTrue(result.effects.size == 2)
+                assertTrue(
+                    result.effects
+                        .filterIsInstance<ReportAppErrorEffect>()
+                        .isNotEmpty()
+                )
+                assertTrue(
+                    result.effects
+                        .filterIsInstance<NavigateToSignInEffect>()
+                        .isNotEmpty()
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `Initialized (UserNotLoggedIn, SignInState) - DeeplinkCheckedAction (branch connection error)`() {
+        val state = initializedState(
+            userState = UserNotLoggedIn,
+            viewState = SignInState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
+        )
+        val action = deeplinkCheckedErrorAction(BranchErrorException(-113, ""))
+        appReducer().reduce(state, action).let { result ->
+            (result.newState as Initialized).let {
+                println(result.effects)
+                assertFalse(it.showProgressbar)
+                assertTrue(result.effects.size == 1)
+                assertTrue(
+                    result.effects
+                        .filterIsInstance<ShowAndReportAppErrorEffect>()
                         .isNotEmpty()
                 )
             }
@@ -221,7 +343,9 @@ class DeeplinkCheckedActionTest {
     fun `Initialized (UserScopeScreensState, UserLoggedIn) - DeeplinkCheckedAction (no deeplink)`() {
         val state = initializedState(
             userState = userLoggedIn(),
-            viewState = UserScopeScreensState
+            viewState = UserScopeScreensState,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
         )
         val action = DeeplinkCheckedAction(NoDeeplink)
         appReducer().reduce(state, action).let { result ->
@@ -230,6 +354,14 @@ class DeeplinkCheckedActionTest {
                 println(result.effects)
                 assertTrue(result.effects.isEmpty())
             }
+        }
+    }
+
+    companion object {
+        fun deeplinkCheckedErrorAction(
+            exception: Exception = Exception()
+        ): DeeplinkCheckedAction {
+            return DeeplinkCheckedAction(DeeplinkError(exception, mockk()))
         }
     }
 

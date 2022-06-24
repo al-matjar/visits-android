@@ -3,6 +3,7 @@ package com.hypertrack.android.use_case.app
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
+import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.use_case.login.GetPublishableKeyWithCognitoUseCase
 import com.hypertrack.android.use_case.login.LoadUserStateAfterSignInUseCase
 import com.hypertrack.android.use_case.login.LoadUserStateUseCase
@@ -88,7 +89,7 @@ class UseCases(
     val signInUseCase = SignInUseCase(
         GetPublishableKeyWithCognitoUseCase(
             appScope.cognitoAccountLoginProvider,
-            appScope.tokenService,
+            appScope.tokenApi,
         ),
         loginWithPublishableKeyUseCase,
         getConfiguredHypertrackSdkInstanceUseCase,
@@ -109,6 +110,12 @@ class UseCases(
     val navigateToUserScopeScreensUseCase = NavigateToUserScopeScreensUseCase()
 
     val getErrorMessageUseCase = GetErrorMessageUseCase(appScope.resourceProvider)
+
+    val getBranchDataFromAppBackendUseCase = GetBranchDataFromAppBackendUseCase(
+        appInteractor.appScope.appBackendApi,
+        logMessageToCrashlyticsUseCase,
+        appScope.moshi
+    )
 
     override fun toString(): String = javaClass.simpleName
 }

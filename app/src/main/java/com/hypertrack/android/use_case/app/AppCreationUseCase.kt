@@ -17,6 +17,8 @@ import com.hypertrack.android.api.HistoryStatusMarker
 import com.hypertrack.android.api.HistoryTripMarker
 import com.hypertrack.android.api.LiveAccountApi
 import com.hypertrack.android.api.UserAgentInterceptor
+import com.hypertrack.android.api.api_interface.AppBackendApi
+import com.hypertrack.android.api.api_interface.AppBackendApi.Companion.APP_BACKEND_URL
 import com.hypertrack.android.api.graphql.models.GraphQlDeviceStatusMarkerActiveData
 import com.hypertrack.android.api.graphql.models.GraphQlDeviceStatusMarkerData
 import com.hypertrack.android.api.graphql.models.GraphQlDeviceStatusMarkerInactiveData
@@ -42,23 +44,18 @@ import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDe
 import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.use_case.sdk.NewTrackingState
-import com.hypertrack.android.use_case.sdk.stringOrNull
 import com.hypertrack.android.utils.BatteryLevelMonitor
 import com.hypertrack.android.utils.CognitoAccountLoginProviderImpl
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.DeviceInfoUtils
-import com.hypertrack.android.utils.HardwareId
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.NotificationUtil
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.SimpleImageDecoder
-import com.hypertrack.android.utils.TokenForPublishableKeyExchangeService
-import com.hypertrack.android.utils.TrackingState
+import com.hypertrack.android.utils.CognitoExchangeTokenApi
 import com.hypertrack.android.utils.exception.SimpleException
 import com.hypertrack.android.utils.formatters.DateTimeFormatterImpl
 import com.hypertrack.android.utils.formatters.LocalizedDistanceFormatter
 import com.hypertrack.android.utils.formatters.TimeValueFormatterImpl
-import com.hypertrack.android.utils.toNullable
 import com.hypertrack.logistics.android.github.R
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.recipes.RuntimeJsonAdapterFactory
@@ -69,6 +66,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.*
 import java.util.concurrent.Executors
 
@@ -139,11 +137,17 @@ class AppCreationUseCase {
             osUtilsProvider,
             datetimeFormatter
         )
-        val tokenService = Retrofit.Builder()
+        val cognitoTokenExchangeApi = Retrofit.Builder()
             .baseUrl(LIVE_API_URL_BASE)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
-            .create(TokenForPublishableKeyExchangeService::class.java)
+            .create(CognitoExchangeTokenApi::class.java)
+        val appBackendApi = Retrofit.Builder()
+            .baseUrl(APP_BACKEND_URL)
+            .addConverterFactory(ScalarsConverterFactory.create())
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+            .create(AppBackendApi::class.java)
         val liveAccountService = Retrofit.Builder()
             .baseUrl(LIVE_ACCOUNT_URL_BASE)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
@@ -202,7 +206,8 @@ class AppCreationUseCase {
             ),
             BranchWrapper(crashReportsProvider),
             CognitoAccountLoginProviderImpl(appContext),
-            tokenService,
+            appBackendApi,
+            cognitoTokenExchangeApi,
             liveAccountService,
             myPreferences,
             crashReportsProvider,

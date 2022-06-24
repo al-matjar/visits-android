@@ -1,6 +1,7 @@
 package com.hypertrack.android.interactors.app
 
 import android.app.Application
+import android.content.Intent
 import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.ui.common.select_destination.DestinationData
@@ -38,9 +39,4 @@ data class PushReceivedAction(
 data class CreateTripCreationScopeAction(val destinationData: DestinationData) : AppAction()
 object DestroyTripCreationScopeAction : AppAction()
 data class AppErrorAction(val exception: Exception) : AppAction()
-
-//class UserTokenRetrievedAction(
-//    val token: UserToken,
-//    val authData: UserAuthData,
-//    val deviceId: DeviceId
-//) : Action()
+data class ActivityOnNewIntent(val intent: Intent?) : AppAction()

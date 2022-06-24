@@ -12,6 +12,7 @@ import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.app.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.use_case.deeplink.DeeplinkException
 import com.hypertrack.android.use_case.deeplink.DeeplinkValidationError
+import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.use_case.deeplink.LoginWithDeeplinkParamsUseCase
 import com.hypertrack.android.use_case.login.LoggedIn
 import com.hypertrack.android.utils.AbstractFailure
@@ -35,12 +36,14 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeout
+import java.lang.RuntimeException
 import java.util.regex.Pattern
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class HandlePastedDeeplinkOrTokenUseCase(
+    private val getBranchDataFromAppBackendUseCase: GetBranchDataFromAppBackendUseCase,
     private val loginWithDeeplinkParamsUseCase: LoginWithDeeplinkParamsUseCase,
     private val logMessageToCrashlyticsUseCase: LogMessageToCrashlyticsUseCase,
     private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
@@ -51,7 +54,6 @@ class HandlePastedDeeplinkOrTokenUseCase(
 
     fun execute(
         text: String,
-        activity: Activity
     ): Flow<AbstractResult<LoggedIn, DeeplinkValidationError>> {
         return {
             tryAsResult {
@@ -67,7 +69,7 @@ class HandlePastedDeeplinkOrTokenUseCase(
                     ).flatMapConcat {
                         getUriFromLink(text)
                     }.flatMapSuccess { uri ->
-                        getDeeplinkResult(activity, uri)
+                        getDeeplinkResult(uri).map { it.asSuccess() }
                     }
                 } else {
                     parseTokenFlow(text)
@@ -179,20 +181,8 @@ class HandlePastedDeeplinkOrTokenUseCase(
         }.asFlow()
     }
 
-    private fun getDeeplinkResult(activity: Activity, uri: Uri): Flow<Result<DeeplinkResult>> {
-        return suspend {
-            withTimeout(BRANCH_TIMEOUT.toLong()) {
-                suspendCoroutine<Result<DeeplinkResult>> { continuation ->
-                    branchWrapper.handleGenericDeeplink(
-                        activity,
-                        activity.intent,
-                        uri
-                    ) {
-                        continuation.resume(it.asSuccess())
-                    }
-                }
-            }
-        }.asFlow()
+    private fun getDeeplinkResult(uri: Uri): Flow<DeeplinkResult> {
+        return getBranchDataFromAppBackendUseCase.execute(uri)
     }
 
 

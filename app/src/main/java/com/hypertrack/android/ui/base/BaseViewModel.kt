@@ -71,6 +71,10 @@ open class BaseViewModel(
         showExceptionMessageAndReport(exception)
     }
 
+    protected fun showErrorAndReportFlow(exception: Exception): Flow<Unit> {
+        return { showExceptionMessageAndReport(exception) }.asFlow()
+    }
+
     protected fun showExceptionMessageAndReport(consumable: Consumable<Exception>) {
         consumable.consume {
             showExceptionMessageAndReport(it)
@@ -102,6 +106,12 @@ open class BaseViewModel(
     }
 
     fun Flow<DisplayableError>.showErrorMessage(): Flow<Unit> {
+        return flatMapConcat {
+            showErrorUseCase.execute(it)
+        }
+    }
+
+    fun Flow<DisplayableError>.showErrorAndReport(): Flow<Unit> {
         return flatMapConcat {
             showErrorUseCase.execute(it)
         }

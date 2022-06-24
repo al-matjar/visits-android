@@ -47,59 +47,47 @@ class GetErrorMessageUseCase(
     }
 
     private fun getMessageForException(exception: Exception): String {
-        return when {
-            exception is HttpException -> {
-                getErrorString(exception)
-            }
-            exception is SimpleException -> {
-                exception.message ?: getTextErrorString(UnknownError)
-            }
-            exception is InvalidDeeplinkFormat -> {
-                exception.toTextError().let {
-                    getTextErrorString(it)
-                }
-            }
-            exception is InvalidDeeplinkException -> {
-                exception.deeplinkFailure.toTextError().let {
-                    getTextErrorString(it)
-                }
-            }
-            exception is BackendException -> {
-                getTextErrorString(ServerError)
-            }
-            exception is NotClockedInException -> {
-                getTextErrorString(TextError(R.string.order_not_clocked_in))
-            }
-            exception.isNetworkError() -> {
-                getTextErrorString(NetworkError)
-            }
-            (
-                    exception is BranchErrorException ||
-                            exception is ManuallyTriggeredException ||
-                            exception is IllegalActionException ||
-                            exception is UnknownPushNotificationException
-                    ) -> {
-                getUnknownErrorString(exception)
-            }
-            else -> {
-                getUnknownErrorString(exception)
-            }
-        }
-    }
-
-    private fun getUnknownErrorString(exception: Exception): String {
         return if (showFullErrorMessages) {
             exception.format()
         } else {
-            getTextErrorString(UnknownError)
-        }
-    }
-
-    private fun getErrorString(exception: HttpException): String {
-        return if (showFullErrorMessages) {
-            exception.format()
-        } else {
-            getTextErrorString(ServerError)
+            when {
+                exception is HttpException -> {
+                    getTextErrorString(ServerError)
+                }
+                exception is SimpleException -> {
+                    exception.message ?: getTextErrorString(UnknownError)
+                }
+                exception is InvalidDeeplinkFormat -> {
+                    exception.toTextError().let {
+                        getTextErrorString(it)
+                    }
+                }
+                exception is InvalidDeeplinkException -> {
+                    exception.deeplinkFailure.toTextError().let {
+                        getTextErrorString(it)
+                    }
+                }
+                exception is BackendException -> {
+                    getTextErrorString(ServerError)
+                }
+                exception is NotClockedInException -> {
+                    getTextErrorString(TextError(R.string.order_not_clocked_in))
+                }
+                exception.isNetworkError() -> {
+                    getTextErrorString(NetworkError)
+                }
+                (
+                        exception is BranchErrorException ||
+                                exception is ManuallyTriggeredException ||
+                                exception is IllegalActionException ||
+                                exception is UnknownPushNotificationException
+                        ) -> {
+                    getTextErrorString(UnknownError)
+                }
+                else -> {
+                    getTextErrorString(UnknownError)
+                }
+            }
         }
     }
 

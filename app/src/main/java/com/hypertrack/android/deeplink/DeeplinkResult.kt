@@ -1,5 +1,7 @@
 package com.hypertrack.android.deeplink
 
+import android.net.Uri
+
 sealed class DeeplinkResult
 
 object NoDeeplink : DeeplinkResult() {
@@ -7,4 +9,4 @@ object NoDeeplink : DeeplinkResult() {
 }
 
 data class DeeplinkParams(val parameters: Map<String, Any>) : DeeplinkResult()
-data class DeeplinkError(val exception: Exception) : DeeplinkResult()
+data class DeeplinkError(val exception: Exception, val deeplinkUri: Uri?) : DeeplinkResult()

@@ -23,18 +23,18 @@ class AwsLoginProviderTest {
             accountLoginProvider.awsInitCallWrapper()
             val res = accountLoginProvider.awsLoginCallWrapper(login, pwd) as AwsSignInSuccess
             val tokenRes = accountLoginProvider.awsTokenCallWrapper() as CognitoToken
-            val pk = tokenForPublishableKeyExchangeService.getPublishableKey(tokenRes.token)
+            val pk = cognitoExchangeTokenApi.getPublishableKey(tokenRes.token)
                 .body()!!.publishableKey!!
             assertEquals(expected, pk)
         }
     }
 
-    private val tokenForPublishableKeyExchangeService by lazy {
+    private val cognitoExchangeTokenApi by lazy {
         val retrofit = Retrofit.Builder()
             .baseUrl(LIVE_API_URL_BASE)
             .addConverterFactory(MoshiConverterFactory.create(Injector.getMoshi()))
             .build()
-        return@lazy retrofit.create(TokenForPublishableKeyExchangeService::class.java)
+        return@lazy retrofit.create(CognitoExchangeTokenApi::class.java)
     }
 
     companion object {

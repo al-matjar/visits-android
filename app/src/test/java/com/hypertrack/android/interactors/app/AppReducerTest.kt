@@ -33,7 +33,8 @@ class AppReducerTest {
         fun initializedState(
             tripsInteractorParam: TripsInteractor = mockk(),
             userState: UserState? = null,
-            viewState: AppViewState = SplashScreenState
+            viewState: AppViewState = SplashScreenState,
+            showProgressbar: Boolean = false
         ): Initialized {
             return Initialized(
                 appScope = mockk(),
@@ -47,7 +48,8 @@ class AppReducerTest {
                     },
                     userData = mockk()
                 ),
-                viewState = viewState
+                viewState = viewState,
+                showProgressbar = showProgressbar
             )
         }
 

@@ -51,7 +51,6 @@ class HandlePastedDeeplinkOrTokenUseCaseTest {
                 sdk = sdk,
                 logExceptionToCrashlyticsUseCase = logExceptionToCrashlyticsUseCase
             ).execute(
-                activity = mockActivity(),
                 text = pseudoToBase64(map)
             ).collect {
                 assertEquals(
@@ -78,7 +77,6 @@ class HandlePastedDeeplinkOrTokenUseCaseTest {
                 sdk = sdk,
                 logExceptionToCrashlyticsUseCase = logExceptionToCrashlyticsUseCase
             ).execute(
-                activity = mockActivity(),
                 text = TEST_DEEPLINK
             ).collect {
                 assertEquals(
@@ -144,12 +142,11 @@ class HandlePastedDeeplinkOrTokenUseCaseTest {
                         pseudoFromBase64(firstArg())
                     }
                 },
-                branchWrapper = mockk {
-                    every { handleGenericDeeplink(any(), any(), any(), any()) } answers {
-                        arg<(DeeplinkResult) -> Unit>(3).invoke(validDeeplinkParams())
-                    }
-                },
+                branchWrapper = mockk(),
                 moshi = TestInjector.getMoshi(),
+                getBranchDataFromAppBackendUseCase = mockk {
+                    every { execute(any()) } returns validDeeplinkParams().toFlow()
+                }
             )
         }
 

@@ -99,7 +99,7 @@ class AppInteractor(
                                     }
                                     is Failure -> {
                                         getEffectFlow(
-                                            HandleAppErrorMessageEffect(result.exception)
+                                            ShowAndReportAppErrorEffect(result.exception)
                                         ).map { AppInitializedAction(UserNotLoggedIn) }
                                     }
                                 }
@@ -145,10 +145,15 @@ class AppInteractor(
             is NotifyAppStateUpdateEffect -> {
                 { _appState.postValue(effect.newState) }.asFlow().map { null }
             }
-            is HandleAppErrorMessageEffect -> {
+            is ShowAndReportAppErrorEffect -> {
                 {
                     appScope.crashReportsProvider.logException(effect.exception)
                     _appErrorEvent.postValue(effect.exception.toConsumable())
+                }.asFlow().map { null }
+            }
+            is ReportAppErrorEffect -> {
+                {
+                    appScope.crashReportsProvider.logException(effect.exception)
                 }.asFlow().map { null }
             }
             is NavigateToUserScopeScreensEffect -> {

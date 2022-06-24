@@ -34,14 +34,6 @@ interface ApiInterface {
         @Path("image_id") imageId: String,
     ): Response<EncodedImage>
 
-//    @GET("client/geofences?include_markers=true")
-//    suspend fun getGeofences(
-//        @Query("pagination_token") paginationToken: String?,
-//        @Query("device_id") deviceId: String,
-//        @Query("include_archived") includeArchived: Boolean = false,
-//        @Query("sort_nearest") sortNearest: Boolean = true,
-//    ): Response<GeofenceResponse>
-
     @GET("client/devices/{device_id}/geofences")
     suspend fun getDeviceGeofences(
         @Path("device_id") deviceId: String,

@@ -1,6 +1,7 @@
 package com.hypertrack.android.interactors.app
 
 import com.google.firebase.messaging.RemoteMessage
+import com.hypertrack.android.deeplink.BranchErrorException
 import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.NoDeeplink
@@ -50,10 +51,11 @@ class AppReducer(
                                     .withEffects(pushEffect)
                             }
                             is DeeplinkError -> {
+                                val errorEffect = getDeeplinkErrorEffect(deeplinkResult)
                                 initialized.copy(viewState = SignInState)
                                     .withEffects(
                                         NavigateToSignInEffect,
-                                        HandleAppErrorMessageEffect(deeplinkResult.exception)
+                                        errorEffect
                                     )
                                     .withEffects(pushEffect)
                             }
@@ -86,9 +88,8 @@ class AppReducer(
                     is PushReceivedAction -> {
                         state.copy(pendingPushNotification = action.remoteMessage).withEffects()
                     }
-                    is TrackingStateChangedAction -> {
-                        state.withEffects()
-                    }
+                    is TrackingStateChangedAction,
+                    is ActivityOnNewIntent,
                     SplashScreenOpenedAction -> {
                         state.withEffects()
                     }
@@ -119,36 +120,36 @@ class AppReducer(
                                         )
                                     }
                                     is DeeplinkError -> {
+                                        val errorEffect =
+                                            getDeeplinkErrorEffect(action.deeplinkResult)
+                                        val newState = state.copy(showProgressbar = false)
                                         when (state.userState) {
                                             is UserLoggedIn -> {
-                                                state.copy(viewState = UserScopeScreensState)
+                                                newState.copy(viewState = UserScopeScreensState)
                                                     .withEffects(
-                                                        HandleAppErrorMessageEffect(
-                                                            action.deeplinkResult.exception
-                                                        ),
+                                                        errorEffect,
                                                         NavigateToUserScopeScreensEffect(state.userState)
                                                     )
                                             }
                                             UserNotLoggedIn -> {
-                                                state.copy(viewState = SignInState).withEffects(
-                                                    HandleAppErrorMessageEffect(
-                                                        action.deeplinkResult.exception
-                                                    ),
+                                                newState.copy(viewState = SignInState).withEffects(
+                                                    errorEffect,
                                                     NavigateToSignInEffect
                                                 )
                                             }
                                         }
                                     }
                                     NoDeeplink -> {
+                                        val newState = state.copy(showProgressbar = false)
                                         when (state.userState) {
                                             is UserLoggedIn -> {
-                                                state.copy(viewState = UserScopeScreensState)
+                                                newState.copy(viewState = UserScopeScreensState)
                                                     .withEffects(
                                                         NavigateToUserScopeScreensEffect(state.userState)
                                                     )
                                             }
                                             UserNotLoggedIn -> {
-                                                state.copy(viewState = SignInState).withEffects(
+                                                newState.copy(viewState = SignInState).withEffects(
                                                     NavigateToSignInEffect
                                                 )
                                             }
@@ -164,14 +165,14 @@ class AppReducer(
                                         )
                                     }
                                     is DeeplinkError -> {
-                                        state.withEffects(
-                                            HandleAppErrorMessageEffect(
+                                        state.copy(showProgressbar = false).withEffects(
+                                            ShowAndReportAppErrorEffect(
                                                 action.deeplinkResult.exception
                                             )
                                         )
                                     }
                                     NoDeeplink -> {
-                                        state.withEffects()
+                                        state.copy(showProgressbar = false).withEffects()
                                     }
                                 }
                             }
@@ -217,7 +218,7 @@ class AppReducer(
 
                         state.copy(showProgressbar = false)
                             .withEffects(
-                                HandleAppErrorMessageEffect(action.exception)
+                                ShowAndReportAppErrorEffect(action.exception)
                             )
                             .withEffects(navigationEffect)
                     }
@@ -257,6 +258,13 @@ class AppReducer(
                         // need to reset view state
                         state.copy(viewState = SplashScreenState).withEffects()
                     }
+                    is ActivityOnNewIntent -> {
+                        if (action.intent != null && action.intent.data != null) {
+                            state.copy(showProgressbar = true).withEffects()
+                        } else {
+                            state.withEffects()
+                        }
+                    }
                 }
             }
         }
@@ -265,7 +273,7 @@ class AppReducer(
     private fun handleAction(action: AppErrorAction, state: AppState)
             : ReducerResult<AppState, Effect> {
         return state.withEffects(
-            HandleAppErrorMessageEffect(action.exception)
+            ShowAndReportAppErrorEffect(action.exception)
         )
     }
 
@@ -298,7 +306,7 @@ class AppReducer(
                 throw it
             } else {
                 state.withEffects(
-                    HandleAppErrorMessageEffect(it)
+                    ShowAndReportAppErrorEffect(it)
                 )
             }
         }
@@ -325,6 +333,18 @@ class AppReducer(
             UserNotLoggedIn -> {
                 setOf()
             }
+        }
+    }
+
+    private fun getDeeplinkErrorEffect(deeplinkResult: DeeplinkError): Effect {
+        val exception = deeplinkResult.exception
+        val shouldNotShowErrorMessage =
+            (exception is BranchErrorException
+                    && exception.isBranchConnectionError)
+        return if (shouldNotShowErrorMessage) {
+            ReportAppErrorEffect(exception)
+        } else {
+            ShowAndReportAppErrorEffect(exception)
         }
     }
 

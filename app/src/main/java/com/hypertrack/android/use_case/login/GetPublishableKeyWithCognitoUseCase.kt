@@ -1,8 +1,8 @@
 package com.hypertrack.android.use_case.login
 
+import android.util.Log
 import com.amazonaws.services.cognitoidentityprovider.model.NotAuthorizedException
 import com.amazonaws.services.cognitoidentityprovider.model.UserNotFoundException
-import com.hypertrack.android.models.local.PublishableKey
 import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.utils.AbstractFailure
 import com.hypertrack.android.utils.AbstractResult
@@ -14,7 +14,7 @@ import com.hypertrack.android.utils.AwsSignInSuccess
 import com.hypertrack.android.utils.CognitoAccountLoginProvider
 import com.hypertrack.android.utils.CognitoToken
 import com.hypertrack.android.utils.CognitoTokenError
-import com.hypertrack.android.utils.TokenForPublishableKeyExchangeService
+import com.hypertrack.android.utils.CognitoExchangeTokenApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.asFlow
 @FlowPreview
 class GetPublishableKeyWithCognitoUseCase(
     private val cognito: CognitoAccountLoginProvider,
-    private val tokenService: TokenForPublishableKeyExchangeService
+    private val tokenService: CognitoExchangeTokenApi
 ) {
 
     fun execute(
@@ -41,8 +41,6 @@ class GetPublishableKeyWithCognitoUseCase(
         if (res is AwsError) {
             return AbstractFailure(CognitoException(res.exception))
         }
-
-        // Log.v(TAG, "Initialized with user State $userStateDetails")
         when (val signInResult = cognito.awsLoginCallWrapper(login, password)) {
             is AwsSignInSuccess -> {
                 return when (val tokenRes = cognito.awsTokenCallWrapper()) {
@@ -51,7 +49,6 @@ class GetPublishableKeyWithCognitoUseCase(
                     }
                     is CognitoToken -> {
                         val pk = getPublishableKeyFromToken(tokenRes.token)
-                        // Log.d(TAG, "Got pk $pk")
                         AbstractSuccess(RealPublishableKey(pk))
                     }
                 }

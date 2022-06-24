@@ -36,7 +36,11 @@ data class NotifyAppStateUpdateEffect(
     val newState: AppState
 ) : Effect()
 
-data class HandleAppErrorMessageEffect(
+data class ShowAndReportAppErrorEffect(
+    val exception: Exception
+) : Effect()
+
+data class ReportAppErrorEffect(
     val exception: Exception
 ) : Effect()
 

@@ -4,7 +4,6 @@ import com.hypertrack.android.TestInjector
 import com.hypertrack.android.api.models.RemoteGeofence
 import org.junit.Assert.*
 import org.junit.Test
-import org.robolectric.util.inject.Injector
 
 class GeometryTest {
 

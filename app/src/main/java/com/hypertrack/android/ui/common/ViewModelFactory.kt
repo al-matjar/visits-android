@@ -41,6 +41,7 @@ class ViewModelFactory(
                 baseViewModelDependencies,
                 appInteractor,
                 useCases.signInUseCase,
+                useCases.getBranchDataFromAppBackendUseCase,
                 useCases.loginWithDeeplinkParamsUseCase,
                 useCases.loadUserStateAfterSignInUseCase,
                 useCases.logExceptionToCrashlyticsUseCase,

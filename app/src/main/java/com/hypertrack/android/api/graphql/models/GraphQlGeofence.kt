@@ -1,7 +1,6 @@
 package com.hypertrack.android.api.graphql.models
 
 import com.google.android.gms.maps.model.LatLng
-import com.hypertrack.android.api.Geometry
 import com.hypertrack.android.api.Point
 import com.hypertrack.android.api.Polygon
 import com.squareup.moshi.Json

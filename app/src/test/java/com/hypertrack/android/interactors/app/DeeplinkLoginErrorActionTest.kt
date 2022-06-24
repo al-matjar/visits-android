@@ -25,7 +25,7 @@ class DeeplinkLoginErrorActionTest {
                 assertFalse(it.showProgressbar)
                 assertTrue(result.effects.size == 2)
                 result.effects.filterIsInstance<NavigateToUserScopeScreensEffect>().first()
-                result.effects.filterIsInstance<HandleAppErrorMessageEffect>().first()
+                result.effects.filterIsInstance<ShowAndReportAppErrorEffect>().first()
             }
         }
     }
@@ -44,7 +44,7 @@ class DeeplinkLoginErrorActionTest {
                 assertFalse(it.showProgressbar)
                 assertTrue(result.effects.size == 2)
                 result.effects.filterIsInstance<NavigateToSignInEffect>().first()
-                result.effects.filterIsInstance<HandleAppErrorMessageEffect>().first()
+                result.effects.filterIsInstance<ShowAndReportAppErrorEffect>().first()
             }
         }
     }

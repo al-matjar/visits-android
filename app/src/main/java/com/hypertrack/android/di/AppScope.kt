@@ -3,6 +3,7 @@ package com.hypertrack.android.di
 import android.content.Context
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.hypertrack.android.api.LiveAccountApi
+import com.hypertrack.android.api.api_interface.AppBackendApi
 import com.hypertrack.android.deeplink.BranchWrapper
 import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.repository.access_token.AccessTokenRepository
@@ -25,13 +26,11 @@ import com.hypertrack.android.use_case.sdk.NewTrackingState
 import com.hypertrack.android.utils.BatteryLevelMonitor
 import com.hypertrack.android.utils.CognitoAccountLoginProvider
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.HardwareId
 import com.hypertrack.android.utils.ImageDecoder
 import com.hypertrack.android.utils.NotificationUtil
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.ResourceProvider
-import com.hypertrack.android.utils.TokenForPublishableKeyExchangeService
-import com.hypertrack.android.utils.TrackingState
+import com.hypertrack.android.utils.CognitoExchangeTokenApi
 import com.hypertrack.android.utils.formatters.DateTimeFormatter
 import com.hypertrack.android.utils.formatters.DistanceFormatter
 import com.hypertrack.android.utils.formatters.TimeValueFormatter
@@ -63,7 +62,8 @@ class AppScope(
     // misc
     val branchWrapper: BranchWrapper,
     val cognitoAccountLoginProvider: CognitoAccountLoginProvider,
-    val tokenService: TokenForPublishableKeyExchangeService,
+    val appBackendApi: AppBackendApi,
+    val tokenApi: CognitoExchangeTokenApi,
     val liveAccountApi: LiveAccountApi,
     val myPreferences: MyPreferences,
     val crashReportsProvider: CrashReportsProvider,

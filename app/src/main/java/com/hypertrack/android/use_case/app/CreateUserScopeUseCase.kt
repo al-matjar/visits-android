@@ -289,8 +289,8 @@ class CreateUserScopeUseCase(
                     .addInterceptor(AccessTokenInterceptor(accessTokenRepository))
                     .addInterceptor(UserAgentInterceptor())
                     //todo constants
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .connectTimeout(30, TimeUnit.SECONDS).apply {
+                    .readTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                    .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS).apply {
                         if (MyApplication.DEBUG_MODE) {
                             addInterceptor(HttpLoggingInterceptor().apply {
                                 level = HttpLoggingInterceptor.Level.BODY
@@ -323,6 +323,8 @@ class CreateUserScopeUseCase(
         const val AUTH_URL = LIVE_API_URL_BASE + "authenticate"
         const val GRAPHQL_API_URL =
             "https://s6a3q7vbqzfalfhqi2vr32ugee.appsync-api.us-west-2.amazonaws.com/"
+
+        const val CONNECTION_TIMEOUT = 30000L
     }
 
 }

@@ -84,6 +84,13 @@ class MainActivity : NavActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        withErrorHandling(activityViewModel::onError) {
+            crashReportsProvider.log("activity stop")
+        }
+    }
+
     override fun onDestinationChanged(destination: NavDestination) {
         activityViewModel.onNavDestinationChanged(destination)
     }

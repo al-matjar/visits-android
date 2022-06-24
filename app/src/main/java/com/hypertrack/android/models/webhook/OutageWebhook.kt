@@ -1,7 +1,5 @@
 package com.hypertrack.android.models.webhook
 
-import com.hypertrack.android.api.Arrival
-import com.hypertrack.android.models.GeofenceMetadata
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 

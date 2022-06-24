@@ -126,7 +126,8 @@ class CognitoAccountLoginProviderImpl(private val ctx: Context) :
     companion object { const val TAG = "CognitoAccountProvider" }
 }
 
-interface TokenForPublishableKeyExchangeService {
+interface CognitoExchangeTokenApi {
+    // to exchange Cognito token of user signed in by login/pass for publishable_key
     @GET("api-key")
     suspend fun getPublishableKey(@Header("Authorization") token: String): Response<PublishableKeyContainer>
 }

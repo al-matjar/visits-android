@@ -435,9 +435,11 @@ class HistoryViewModel(
                 }.asFlow().flowOn(Dispatchers.Main)
             }
             is UpdateViewStateEffect -> {
-                getViewStateFlow(effect).map {
-                    displayViewState(it)
-                }
+                getViewStateFlow(effect)
+                    .flowOn(appInteractor.appScope.stateMachineContext)
+                    .map {
+                        displayViewState(it)
+                    }.flowOn(Dispatchers.Main)
             }
             is ShowDatePickerDialogEffect -> {
                 { openDatePickerDialogEvent.postValue(effect.date) }.asFlow()

@@ -4,8 +4,8 @@ import android.app.Activity
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import com.hypertrack.android.deeplink.BranchErrorException.Companion.CODE_SESSION_REINIT_WARNING
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.MyApplication
 import io.branch.referral.Branch
 import io.branch.referral.BranchError
 import org.json.JSONObject
@@ -43,38 +43,22 @@ class BranchWrapper(
         }
     }
 
-    fun handleGenericDeeplink(
-        activity: Activity,
-        intent: Intent,
-        uri: Uri,
-        callback: (DeeplinkResult) -> Unit
-    ) {
-        // branch requires this extra to reInit session
-        intent.putExtra(KEY_BRANCH_FORCE_NEW_SESSION, true)
-        handleDeeplink(
-            activity,
-            uri,
-            reInitBranchSession = true,
-            callback
-        )
-    }
-
     private fun handleDeeplink(
         activity: Activity,
-        uri: Uri?,
+        deeplinkUri: Uri?,
         reInitBranchSession: Boolean,
         callback: (DeeplinkResult) -> Unit
     ) {
         try {
             crashReportsProvider.log("Checking for deeplink")
-            uri?.let {
-                crashReportsProvider.log("got deeplink $uri")
+            deeplinkUri?.let {
+                crashReportsProvider.log("got deeplink $deeplinkUri")
             }
             Branch.sessionBuilder(activity)
                 .withCallback { branchObject, error ->
-                    handleBranchCallback(branchObject, error, callback)
+                    handleBranchCallback(deeplinkUri, branchObject, error, callback)
                 }
-                .withData(uri)
+                .withData(deeplinkUri)
                 .apply {
                     if (reInitBranchSession) {
                         reInit()
@@ -83,11 +67,12 @@ class BranchWrapper(
                     }
                 }
         } catch (e: Exception) {
-            callback.invoke(DeeplinkError(e))
+            callback.invoke(DeeplinkError(e, deeplinkUri))
         }
     }
 
     private fun handleBranchCallback(
+        deeplinkUri: Uri?,
         branchObject: JSONObject?,
         error: BranchError?,
         callback: (DeeplinkResult) -> Unit
@@ -95,6 +80,7 @@ class BranchWrapper(
         try {
             crashReportsProvider.log(
                 mapOf(
+                    "deeplinkUri" to deeplinkUri.toString(),
                     "branchObject" to branchObject,
                     "error" to error
                 ).toString()
@@ -102,7 +88,7 @@ class BranchWrapper(
             callback.invoke(
                 if (error != null) {
                     when (error.errorCode) {
-                        -118 -> {
+                        CODE_SESSION_REINIT_WARNING -> {
                             // ignoring
                             // "-118: Warning. Session initialization already happened. To force a new session, set intent extra, "branch_force_new_session", to true."
                             // https://github.com/BranchMetrics/android-branch-deep-linking-attribution/issues/839
@@ -113,7 +99,8 @@ class BranchWrapper(
                                 BranchErrorException(
                                     error.errorCode,
                                     error.message
-                                )
+                                ),
+                                deeplinkUri
                             )
                         }
                     }
@@ -129,7 +116,7 @@ class BranchWrapper(
                 }
             )
         } catch (e: Exception) {
-            callback.invoke(DeeplinkError(e))
+            callback.invoke(DeeplinkError(e, deeplinkUri))
         }
     }
 
@@ -137,8 +124,8 @@ class BranchWrapper(
         const val KEY_BRANCH_FORCE_NEW_SESSION = "branch_force_new_session"
         private const val KEY_CLICKED_BRANCH_LINK = "+clicked_branch_link"
         const val BRANCH_TIMEOUT = 60000
-        private const val BRANCH_CONNECTION_TIMEOUT = 30000
-        private const val BRANCH_INTERVAL_BETWEEN_RETRIES = 1000
+        private const val BRANCH_CONNECTION_TIMEOUT = 15000
+        private const val BRANCH_INTERVAL_BETWEEN_RETRIES = 5000
         private const val BRANCH_RETRY_COUNT = 3
 
         fun init(application: Application) {
