@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0] - 2022-06-29
+
+### Added
+
+- Better error reporting
+- Getting deeplink data from app backend on Branch.io connection error
+
+### Fixed
+
+- Critical bug (white screen on app start)
+- Critical bug (sign in with login/password and pasting deeplink not working)
+
 ## [0.17.7] - 2022-06-22
 
 ### Added
