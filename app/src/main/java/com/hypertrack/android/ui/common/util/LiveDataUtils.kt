@@ -1,3 +1,5 @@
+@file:Suppress("OPT_IN_USAGE")
+
 package com.hypertrack.android.ui.common.util
 
 import androidx.lifecycle.LifecycleOwner
@@ -5,6 +7,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.hypertrack.android.ui.base.Consumable
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 
 fun <T> LiveData<T>.toHotTransformation(): HotLiveDataTransformation<T> {
     return HotLiveDataTransformation(this)
@@ -41,4 +45,12 @@ fun <T> LiveData<T>.observeWithErrorHandling(
             errorHandler.invoke(e)
         }
     }
+}
+
+fun <T> MutableLiveData<T>.updateAsFlow(value: T): Flow<Unit> {
+    return { postValue(value) }.asFlow()
+}
+
+fun <T> MutableLiveData<Consumable<T>>.updateConsumableAsFlow(value: T): Flow<Unit> {
+    return { postValue(value) }.asFlow()
 }

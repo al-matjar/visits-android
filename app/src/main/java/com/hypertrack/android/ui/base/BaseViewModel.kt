@@ -105,6 +105,10 @@ open class BaseViewModel(
         return viewModelScope.launch(Dispatchers.Default, block = block)
     }
 
+    fun showErrorFlow(displayableError: DisplayableError): Flow<Unit> {
+        return showErrorUseCase.execute(displayableError)
+    }
+
     fun Flow<DisplayableError>.showErrorMessage(): Flow<Unit> {
         return flatMapConcat {
             showErrorUseCase.execute(it)

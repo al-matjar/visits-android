@@ -18,18 +18,23 @@ import com.hypertrack.android.ui.common.use_case.get_error_message.ComplexTextEr
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.ui.common.util.postValue
+import com.hypertrack.android.ui.common.util.updateAsFlow
+import com.hypertrack.android.ui.common.util.updateConsumableAsFlow
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.ReducerResult
 import com.hypertrack.android.utils.exception.SimpleException
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.Success
+import com.hypertrack.android.utils.catchException
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.logistics.android.github.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.util.*
 
@@ -192,7 +197,9 @@ class AddGeotagViewModel(
         try {
             for (effect in effects) {
                 runInVmEffectsScope {
-                    applyEffect(effect)
+                    getEffectFlow(effect).catchException {
+                        onError(it)
+                    }.collect()
                 }
             }
         } catch (e: Exception) {
@@ -200,40 +207,42 @@ class AddGeotagViewModel(
         }
     }
 
-    private suspend fun applyEffect(effect: Effect) {
-        when (effect) {
+    private fun getEffectFlow(effect: Effect): Flow<Unit> {
+        return when (effect) {
             is UpdateViewStateEffect -> {
-                getViewStateFlow(effect.state).collect {
-                    viewState.postValue(it)
-                }
+                viewState.updateAsFlow(getViewState(effect.state))
             }
             is ShowOnMapEffect -> {
-                effect.map.let {
-                    it.addGeotagMarker(effect.latestLocation)
-                    it.moveCamera(effect.latestLocation)
-                }
+                {
+                    effect.map.addGeotagMarker(effect.latestLocation)
+                    effect.map.moveCamera(effect.latestLocation)
+                }.asFlow().flowOn(Dispatchers.Main)
             }
             GoBackEffect -> {
-                popBackStack.postValue(true.toConsumable())
+                popBackStack.updateConsumableAsFlow(true)
             }
             is CreateGeotag -> {
-                geotagsInteractor.createGeotag(effect.metadata).let {
-                    when (it) {
-                        is Success -> stateMachine.handleAction(GeotagResultAction(it.data))
-                        is Failure -> showExceptionMessageAndReport(it.exception)
+                suspend {
+                    geotagsInteractor.createGeotag(effect.metadata).let {
+                        when (it) {
+                            is Success -> stateMachine.handleAction(GeotagResultAction(it.data))
+                            is Failure -> showExceptionMessageAndReport(it.exception)
+                        }
                     }
-                }
+                }.asFlow()
             }
             is ShowToastEffect -> {
-                osUtilsProvider.makeToast(effect.stringResource)
+                {
+                    osUtilsProvider.makeToast(effect.stringResource)
+                }.asFlow().flowOn(Dispatchers.Main)
             }
             ShowMapNotReadyErrorEffect -> {
-                showError(R.string.map_is_not_ready_yet)
+                showErrorFlow(R.string.map_is_not_ready_yet.asError())
             }
             is ShowMetadataErrorEffect -> {
-                showMetadataErrorFlow(effect).collect()
+                showMetadataErrorFlow(effect)
             }
-        } as Any?
+        }
     }
 
     fun onCreateClick(items: MutableList<EditableKeyValueItem>) {
@@ -308,19 +317,19 @@ class AddGeotagViewModel(
         }.showErrorMessage()
     }
 
-    private fun getViewStateFlow(state: State): Flow<ViewState> {
+    private fun getViewState(state: State): ViewState {
         return when (state) {
             InitialState -> {
-                InitialViewState.toFlow()
+                InitialViewState
             }
             is ReadyForCreation -> {
-                GeotagCreationViewState().toFlow()
+                GeotagCreationViewState()
             }
             is HasLatestLocation -> {
-                GeotagCreationViewState().toFlow()
+                GeotagCreationViewState()
             }
             is OutageState -> {
-                ErrorViewState(state.outageText).toFlow()
+                ErrorViewState(state.outageText)
             }
         }
     }
