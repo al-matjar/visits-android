@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.18.1] - 2022-06-29
+
+### Fixed
+
+- Not showing geotag creation location on map
+
 ## [0.18.0] - 2022-06-29
 
 ### Added
