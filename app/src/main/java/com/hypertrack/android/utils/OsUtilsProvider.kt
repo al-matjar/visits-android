@@ -257,7 +257,6 @@ public class OsUtilsProvider(
     }
 
     companion object {
-        const val TAG = "OsUtilsProvider"
         const val SHARE_BROADCAST_ACTION = "com.hypertrack.logistics.SHARE_TRIP"
     }
 }

@@ -3,6 +3,7 @@ package com.hypertrack.android.api
 import com.hypertrack.android.repository.access_token.AccessTokenRepository
 import com.hypertrack.android.repository.access_token.AccessTokenRepository.Companion.AUTH_HEADER_KEY
 import com.hypertrack.android.repository.access_token.AccessTokenRepository.Companion.formatTokenHeader
+import com.hypertrack.android.utils.withOverwrittenHeader
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -14,14 +15,10 @@ class AccessTokenInterceptor(private val accessTokenRepository: AccessTokenRepos
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val token = accessTokenRepository.accessToken
-        val request = chain
-            .request()
-            .newBuilder().apply {
-                token?.let {
-                    addHeader(AUTH_HEADER_KEY, formatTokenHeader(token))
-                }
-            }
-            .build()
+        val request = chain.request().withOverwrittenHeader(
+            AUTH_HEADER_KEY,
+            token?.let { formatTokenHeader(it) }
+        )
         return chain.proceed(request)
     }
 

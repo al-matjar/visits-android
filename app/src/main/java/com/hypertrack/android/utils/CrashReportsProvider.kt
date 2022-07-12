@@ -44,6 +44,7 @@ class FirebaseCrashReportsProvider(appContext: Context) : CrashReportsProvider {
                 is HttpException -> {
                     // to make sure that the response data is logged to crashlytics
                     log(exception.format())
+                    log("Headers: ${exception.response()?.raw()?.request?.headers.toString()}")
                 }
                 else -> {}
             }

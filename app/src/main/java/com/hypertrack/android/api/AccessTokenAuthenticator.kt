@@ -9,6 +9,7 @@ import com.hypertrack.android.repository.access_token.UserAccessToken
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.Success
+import com.hypertrack.android.utils.withOverwrittenHeader
 import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
@@ -52,7 +53,10 @@ class AccessTokenAuthenticator(
                                 null
                             } else {
                                 accessTokenRepository.accessToken = accessTokenResult.data
-                                requestWithNewAccessToken(response, accessTokenResult.data)
+                                response.request.withOverwrittenHeader(
+                                    AUTH_HEADER_KEY,
+                                    formatTokenHeader(accessTokenResult.data)
+                                )
                             }
                         }
                         is Failure -> {
@@ -66,12 +70,6 @@ class AccessTokenAuthenticator(
             crashReportsProvider.logException(e)
             null
         }
-    }
-
-    private fun requestWithNewAccessToken(response: Response, token: UserAccessToken): Request {
-        return response.request.newBuilder()
-            .addHeader(AUTH_HEADER_KEY, formatTokenHeader(token))
-            .build()
     }
 
 }
