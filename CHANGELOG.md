@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.19.0] - 2022-07-12
+
+### Changed
+
+- Total tracked distance removed from summary
+
+### Fixed
+
+- Minor issues on history tab
+
 ## [0.18.2] - 2022-07-12
 
 ### Fixed
