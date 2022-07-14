@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Total tracked distance removed from summary
+- Total tracked distance removed from the Summary tab
 
 ### Fixed
 

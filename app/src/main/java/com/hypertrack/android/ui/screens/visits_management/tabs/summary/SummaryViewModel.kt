@@ -27,11 +27,23 @@ class SummaryViewModel(
     private val timeFormatter: TimeValueFormatter,
 ) : BaseViewModel(baseDependencies) {
 
+    val viewState = MutableLiveData<ViewState>()
+
     init {
         runInVmEffectsScope {
             state.collect {
                 it?.let { historyState ->
-                    viewState.postValue(getViewState(historyState))
+                    // viewState is null in some weird cases
+                    // caught in Firebase on device_id 6FD8E2EC-8952-3F75-8292-E0D9EB817757
+                    // remove this workaround if they won't repeat
+                    @Suppress(
+                        "SAFE_CALL_WILL_CHANGE_NULLABILITY",
+                        "UNNECESSARY_SAFE_CALL",
+                        "USELESS_ELVIS"
+                    )
+                    viewState?.postValue(getViewState(historyState)) ?: run {
+                        crashReportsProvider.logException(NullPointerException("viewState"))
+                    }
                 }
             }
         }
@@ -78,8 +90,6 @@ class SummaryViewModel(
             )
         }
     }
-
-    val viewState = MutableLiveData<ViewState>()
 
     fun refreshSummary() {
         appInteractor.handleAction(HistoryAppAction(RefreshSummaryAction))
