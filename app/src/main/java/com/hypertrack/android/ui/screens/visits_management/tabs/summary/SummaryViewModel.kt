@@ -33,9 +33,7 @@ class SummaryViewModel(
         runInVmEffectsScope {
             state.collect {
                 it?.let { historyState ->
-                    // viewState is null in some weird cases
-                    // caught in Firebase on device_id 6FD8E2EC-8952-3F75-8292-E0D9EB817757
-                    // remove this workaround if they won't repeat
+                    // viewState is null in some cases
                     @Suppress(
                         "SAFE_CALL_WILL_CHANGE_NULLABILITY",
                         "UNNECESSARY_SAFE_CALL",

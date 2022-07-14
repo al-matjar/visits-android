@@ -68,7 +68,7 @@ class FusedDeviceLocationProvider(
     }
 
     override fun onLocationResult(result: LocationResult) {
-        result.lastLocation.toLatLng().let {
+        result.lastLocation?.toLatLng().let {
             appInteractor.handleAction(UserLocationChangedAction(it))
             deviceLocation.postValue(it)
         }

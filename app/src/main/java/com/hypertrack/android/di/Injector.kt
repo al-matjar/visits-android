@@ -18,10 +18,11 @@ import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.use_case.app.AppCreationUseCase
 import com.hypertrack.android.use_case.sdk.NewTrackingState
 import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.FirebaseCrashReportsProvider
+import com.hypertrack.android.utils.crashlytics.FirebaseCrashReportsProvider
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.ResourceProvider
-import com.hypertrack.android.utils.TrackingState
+import com.hypertrack.android.utils.crashlytics.DoubleCrashReportsProvider
+import com.hypertrack.android.utils.crashlytics.SentryCrashReportsProvider
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 object Injector {
@@ -40,7 +41,10 @@ object Injector {
     private lateinit var appInteractor: AppInteractor
 
     fun appOnCreate(application: Application) {
-        crashReportsProvider = FirebaseCrashReportsProvider(application)
+        crashReportsProvider = DoubleCrashReportsProvider(
+            SentryCrashReportsProvider(),
+            FirebaseCrashReportsProvider(application)
+        )
         resourceProvider = OsUtilsProvider(application, crashReportsProvider)
         val appScope = AppCreationUseCase().execute(
             application,

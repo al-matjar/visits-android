@@ -113,6 +113,9 @@ dependencies {
     implementation "com.airbnb.android:lottie:${versions.lottie}"
     implementation "io.branch.sdk.android:library:${versions.branch}"
     implementation "com.amazonaws:aws-android-sdk-mobile-client:${versions.aws_android_sdk_mobile_client}"
+//    implementation "io.sentry:sentry-android:${versions.sentry}"
+    // we can't update to 3+ because the backend version is old (9.?)
+    implementation "io.sentry:sentry-android:2.3.2"
 
     // test
     testImplementation "junit:junit:${versions.junit}"
