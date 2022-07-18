@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.19.1] - 2022-07-12
+
+### Fixed
+
+- Crash on Summary tab
+
 ## [0.19.0] - 2022-07-12
 
 ### Changed
