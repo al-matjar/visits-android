@@ -13,7 +13,6 @@ import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.UserLocationChangedAction
 import com.hypertrack.android.ui.common.util.toLatLng
-import com.hypertrack.sdk.permissions.hasLocationPermission
 import kotlin.Exception
 
 interface DeviceLocationProvider {
