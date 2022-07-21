@@ -1,53 +1,10 @@
 package com.hypertrack.android.utils
 
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.state_machine.ReducerResultWithViewStateEffect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
-
-//todo separate file
-open class ReducerResult<S, E>(val newState: S, val effects: Set<E>) {
-    constructor(newState: S) : this(newState, setOf())
-
-    fun withAdditionalEffects(vararg effects: E): ReducerResult<S, E> {
-        return ReducerResult(newState, this.effects + effects.toSet())
-    }
-
-    fun withAdditionalEffects(effects: Set<E>): ReducerResult<S, E> {
-        return ReducerResult(newState, this.effects + effects)
-    }
-
-    fun withAdditionalEffects(effects: (S) -> Set<E>): ReducerResult<S, E> {
-        return ReducerResult(newState, this.effects + effects.invoke(this.newState))
-    }
-
-    fun <N> withState(state: (S) -> N): ReducerResult<N, out E> {
-        return ReducerResult(state.invoke(this.newState), this.effects)
-    }
-
-    fun <NE> withEffects(state: (Set<E>) -> Set<NE>): ReducerResult<S, NE> {
-        return ReducerResult(this.newState, state.invoke(effects))
-    }
-
-    fun toNullable(): ReducerResult<S?, out E> {
-        return this.withState { it as S? }
-    }
-
-    fun <OS, NS> mergeResult(
-        resultFunction: (S) -> ReducerResult<OS, out E>,
-        merge: (state1: S, state2: OS) -> NS
-    ): ReducerResult<NS, E> {
-        val result = resultFunction.invoke(newState)
-        return ReducerResult(
-            merge.invoke(newState, result.newState),
-            effects + result.effects
-        )
-    }
-
-    override fun toString(): String {
-        return "${javaClass.simpleName}(newState=$newState, effects=$effects)"
-    }
-}
 
 
 //todo dedicated package

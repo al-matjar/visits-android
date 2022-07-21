@@ -9,6 +9,9 @@ plugins {
 }
 
 android {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
     compileSdkVersion versions.compile_sdk
     defaultConfig {
         applicationId "com.hypertrack.logistics.android.github"
@@ -18,22 +21,20 @@ android {
         versionCode codeFromVersionString(versionName)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        resValue "string", "google_places_api_key", rootProject.properties.placesApiKey
-        resValue "string", "branch_io_api_key", rootProject.properties.logisticsBranchKey
-        resValue "string", "awsLoginTestUserName", rootProject.properties.awsLoginTestUserName
-        resValue "string", "awsLoginTestUserPwd", rootProject.properties.awsLoginTestUserPwd
-        resValue "string", "awsLoginTestExpectedPk", rootProject.properties.awsLoginTestExpectedPk
-        if (rootProject.properties.servicesApiKey == null) throw new Exception("SERVICES_API_KEY is null")
-        if (rootProject.properties.graphqlApiKey == null) throw new Exception("GRAPHQL_API_KEY is null")
-        buildConfigField("String", "SERVICES_API_KEY", "\"${rootProject.properties.servicesApiKey}\"")
-        buildConfigField("String", "GRAPHQL_API_KEY", "\"${rootProject.properties.graphqlApiKey}\"")
+        resValue "string", "google_places_api_key", getProperty(properties, 'googlePlacesApiKey')
+        resValue "string", "branch_io_api_key", getProperty(properties, 'visitsBranchKey')
+        resValue "string", "awsLoginTestUserName", getProperty(properties, 'awsLoginTestUserName', '')
+        resValue "string", "awsLoginTestUserPwd", getProperty(properties, 'awsLoginTestUserPwd', '')
+        resValue "string", "awsLoginTestExpectedPk", getProperty(properties, 'awsLoginTestExpectedPk', '')
+        buildConfigField("String", "SERVICES_API_KEY", "\"${getProperty(properties, 'servicesApiKey')}\"")
+        buildConfigField("String", "GRAPHQL_API_KEY", "\"${getProperty(properties, 'graphqlApiKey')}\"")
     }
     signingConfigs {
         release {
-            storeFile file(project.properties.logisticsKeystorePath)
-            storePassword project.properties.logisticsStorePassword
-            keyAlias project.properties.logisticsKeyAlias
-            keyPassword project.properties.logisticsKeyPassword
+            storeFile file(getProperty(properties, 'visitsKeystorePath'))
+            storePassword getProperty(properties, 'visitsKeystorePassword')
+            keyAlias getProperty(properties, 'visitsKeyAlias')
+            keyPassword getProperty(properties, 'visitsKeyPassword')
         }
     }
     buildTypes {
@@ -126,6 +127,9 @@ dependencies {
     testImplementation "com.squareup.okhttp3:mockwebserver:${versions.okhttp_mock_web_server}"
     testImplementation "io.mockk:mockk:${versions.mockk}"
 
+    implementation 'com.google.android.play:core:1.10.0'
+    implementation 'com.google.android.play:core-ktx:1.8.1'
+
     // androidTest
     androidTestImplementation "androidx.test.ext:junit:${versions.androidx_junit}"
     androidTestImplementation "androidx.test:rules:${versions.androidx_test_rules}"
@@ -133,8 +137,20 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:${versions.espresso_core}"
 }
 
-def codeFromVersionString(versionString) {
+static def getProperty(Properties properties, String key, String defaultValue = null) {
+    def property = properties.getProperty(key)
+    if(property != null) {
+        return property
+    } else  {
+        if(defaultValue == null) {
+            throw new NullPointerException("property \"" + key + "\" not found")
+        } else {
+            return defaultValue
+        }
+    }
+}
 
+def codeFromVersionString(versionString) {
     def match = (versionString =~ /(\d+)\.(\d+)\.(\d+)(?:(?<snapshot>-SNAPSHOT)|(?<alpha>-alpha(?<alphaVersion>\d?))|(?<beta>-beta(?<betaVersion>\d?))|(?<rc>-rc(?<rcVersion>\d?)))?/)
     if (match) {
         println(versionString)

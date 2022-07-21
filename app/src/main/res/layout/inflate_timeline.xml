@@ -7,6 +7,18 @@
     android:background="@color/colorWhite"
     android:orientation="vertical">
 
+    <View
+        android:id="@+id/notch"
+        android:layout_width="100dp"
+        android:layout_height="2dp"
+        android:layout_gravity="center"
+        android:background="@color/tertiary_2_xdark"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/lTimelineHeader"
         android:layout_width="match_parent"

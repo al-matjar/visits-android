@@ -25,6 +25,7 @@ import kotlinx.android.synthetic.main.fragment_add_place_info.toolbar
 import kotlinx.android.synthetic.main.inflate_error.bReload
 import kotlinx.android.synthetic.main.inflate_error.tvErrorMessage
 import kotlinx.android.synthetic.main.inflate_integration.*
+import kotlinx.android.synthetic.main.item_spinner.text
 
 class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_place_info) {
 
@@ -38,7 +39,7 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
     private var enableGeofenceNameTouchListener = false
     private val geofenceNameListener = object : SimpleTextWatcher() {
         override fun afterChanged(text: String) {
-            vm.onGeofenceNameChanged(text)
+            vm.handleAction(GeofenceNameChangedAction(text))
         }
     }
 
@@ -51,7 +52,7 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
             ?.getLiveData<Integration>(KEY_INTEGRATION)
             ?.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { result ->
                 result?.let {
-                    vm.onIntegrationAdded(it)
+                    vm.handleAction(IntegrationAddedAction(it))
                     findNavController().currentBackStackEntry?.savedStateHandle
                         ?.set(KEY_INTEGRATION, null)
                 }
@@ -65,19 +66,28 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
         }
 
         (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment).getMapAsync {
-            vm.onMapReady(requireContext(), it)
+            vm.onMapReady(it)
         }
 
         val addressListener = object : SimpleTextWatcher() {
             override fun afterChanged(text: String) {
-                vm.onAddressChanged(text)
+                vm.handleAction(AddressChangedAction(text))
             }
         }
         etAddress.addTextChangedListener(addressListener)
 
         val radiusListener = object : SimpleTextWatcher() {
-            override fun afterChanged(text: String) {
-                vm.onRadiusChanged(text)
+            override fun afterChanged(radiusString: String) {
+                try {
+                    val radius = if (radiusString.isNotBlank()) {
+                        radiusString.toInt()
+                    } else {
+                        null
+                    }
+                    vm.handleAction(RadiusChangedAction(radius))
+                } catch (e: Exception) {
+                    vm.onError(e)
+                }
             }
         }
         etRadius.addTextChangedListener(radiusListener)
@@ -122,7 +132,7 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
         etGeofenceName.setOnTouchListener { v, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
                 if (enableGeofenceNameTouchListener) {
-                    vm.onAddIntegration()
+                    vm.handleAction(GeofenceNameClickedAction)
                     true
                 } else {
                     false
@@ -133,21 +143,23 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
         }
 
         bAddIntegration.setOnClickListener {
-            vm.onAddIntegration()
+            vm.handleAction(GeofenceNameClickedAction)
         }
 
         confirm.setOnClickListener {
-            vm.onConfirmClicked(
-                GeofenceCreationParams(
-                    name = etGeofenceName.textString(),
-                    address = etAddress.textString(),
-                    description = etGeofenceDescription.textString()
+            vm.handleAction(
+                ConfirmClickedAction(
+                    GeofenceCreationParams(
+                        name = etGeofenceName.textString(),
+                        address = etAddress.textString(),
+                        description = etGeofenceDescription.textString()
+                    )
                 )
             )
         }
 
         bDeleteIntegration.setOnClickListener {
-            vm.onDeleteIntegrationClicked()
+            vm.handleAction(IntegrationDeletedAction)
         }
     }
 
@@ -199,7 +211,7 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
                 R.string.add_place_confirm_adjacent.stringFromResource()
             )
             .setPositiveButton(R.string.yes) { dialog, which ->
-                vm.onGeofenceDialogYes(params)
+                vm.handleAction(CreateGeofenceAction(params))
             }
             .setNegativeButton(R.string.no) { _, _ ->
             }

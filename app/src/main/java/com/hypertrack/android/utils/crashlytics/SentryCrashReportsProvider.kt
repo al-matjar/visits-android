@@ -27,6 +27,6 @@ class SentryCrashReportsProvider : CrashReportsProvider {
     }
 
     companion object {
-        const val USER_ID_KEY = "user_id"
+        const val USER_ID_KEY = "hypertrack_user_id"
     }
 }

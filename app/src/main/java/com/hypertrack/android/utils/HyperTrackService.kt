@@ -1,10 +1,13 @@
 package com.hypertrack.android.utils
 
 import android.location.Location
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Transformations
+import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.hypertrack_sdk.LatestLocation
+import com.hypertrack.android.hypertrack_sdk.LatestLocationResult
+import com.hypertrack.android.hypertrack_sdk.Outage
 import com.hypertrack.android.ui.common.util.nullIfBlank
+import com.hypertrack.android.ui.common.util.toLatLng
 import com.hypertrack.sdk.GeotagResult
 import com.hypertrack.sdk.HyperTrack
 import com.hypertrack.sdk.OutageReason
@@ -12,6 +15,7 @@ import com.hypertrack.sdk.Result
 import com.hypertrack.sdk.TrackingError
 import com.hypertrack.sdk.TrackingStateObserver
 
+// todo move to com.hypertrack.android.hypertrack_sdk
 class HyperTrackService(
     private val sdk: HyperTrack,
     private val crashReportsProvider: CrashReportsProvider
@@ -27,9 +31,15 @@ class HyperTrackService(
             return sdk.deviceID
         }
 
-    val latestLocation: Result<Location, OutageReason>
+    val latestLocation: LatestLocationResult
         get() {
-            return sdk.latestLocation
+            return sdk.latestLocation.let {
+                if (it.isSuccess) {
+                    LatestLocation(it.value.toLatLng())
+                } else {
+                    Outage(it.error)
+                }
+            }
         }
 
     fun setDeviceInfo(
@@ -124,5 +134,3 @@ class TrackingState(val crashReportsProvider: CrashReportsProvider? = null) :
 }
 
 enum class TrackingStateValue { TRACKING, ERROR, STOP, UNKNOWN, DEVICE_DELETED, PERMISIONS_DENIED }
-
-

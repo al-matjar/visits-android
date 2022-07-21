@@ -37,4 +37,10 @@ class HypertrackMapStyle(
         )
     }
 
+    val colorGeofenceFill = osUtilsProvider.colorFromResource(R.color.colorGeofenceFill)
+    val colorGeofence = osUtilsProvider.colorFromResource(R.color.colorGeofence)
+    val colorHyperTrackGreenSemitransparent = osUtilsProvider.colorFromResource(
+        R.color.colorHyperTrackGreenSemitransparent
+    )
+
 }

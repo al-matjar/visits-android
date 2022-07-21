@@ -24,6 +24,7 @@ import com.hypertrack.android.repository.TripsRepository
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.ui.common.util.toHotTransformation
+import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.ImageDecoder
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
@@ -73,6 +74,7 @@ open class TripsInteractorImpl(
     private val photoUploadInteractor: PhotoUploadQueueInteractor,
     private val imageDecoder: ImageDecoder,
     private val osUtilsProvider: OsUtilsProvider,
+    private val crashReportsProvider: CrashReportsProvider,
     private val ioDispatcher: CoroutineDispatcher,
     private val globalScope: CoroutineScope
 ) : TripsInteractor {
@@ -81,8 +83,10 @@ open class TripsInteractorImpl(
         it.filter { it.status != TripStatus.ACTIVE }
     }
 
-    override val currentTrip = Transformations.map(tripsRepository.trips) {
-        getCurrentTrip(it)
+    override val currentTrip = Transformations.map(tripsRepository.trips) { trips ->
+        getCurrentTrip(trips).also {
+            crashReportsProvider.log("Current trip ${it?.id}: ${it?.nextOrder?.estimate}")
+        }
     }.toHotTransformation().liveData
 
 

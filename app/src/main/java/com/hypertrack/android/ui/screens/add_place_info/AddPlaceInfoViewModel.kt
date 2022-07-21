@@ -3,7 +3,6 @@
 package com.hypertrack.android.ui.screens.add_place_info
 
 import android.annotation.SuppressLint
-import android.content.Context
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -14,219 +13,166 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.SphericalUtil
 import com.hypertrack.android.interactors.GeocodingInteractor
 import com.hypertrack.android.interactors.PlacesInteractor
-import com.hypertrack.android.models.Integration
-import com.hypertrack.android.models.local.Geofence
+import com.hypertrack.android.interactors.app.GeofencesForMapUpdatedEvent
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.repository.IntegrationsRepository
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.Consumable
+import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
+import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
-import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
-import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
+import com.hypertrack.android.ui.common.map_state.AddGeofencesMapUiAction
+import com.hypertrack.android.ui.common.map_state.MapUiEffectHandler
+import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
+import com.hypertrack.android.ui.common.util.isNearZero
+import com.hypertrack.android.ui.common.util.postValue
+import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.DEGREES_0
+import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.DEGREES_180
+import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.DEGREES_270
+import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.DEGREES_90
+import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.MAP_CAMERA_PADDING
+import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.RADIUS_CIRCLE_NULL_VALUE
+import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.RADIUS_SHAPE_NULL_VALUE
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.utils.*
+import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.formatters.MetersDistanceFormatter
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 //todo persist address state in create geofence scope?
 class AddPlaceInfoViewModel(
-    private val latLng: LatLng,
+    private val location: LatLng,
     private val initialAddress: String?,
     private val _name: String?,
     baseDependencies: BaseViewModelDependencies,
+    private val userStateFlow: StateFlow<UserLoggedIn?>,
     private val placesInteractor: PlacesInteractor,
     private val geocodingInteractor: GeocodingInteractor,
     private val integrationsRepository: IntegrationsRepository,
     private val distanceFormatter: MetersDistanceFormatter,
-    private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase
+    private val mapItemsFactory: HypertrackMapItemsFactory,
+    private val mapUiReducer: MapUiReducer,
+    private val mapUiEffectHandler: MapUiEffectHandler,
+    private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
 ) : BaseViewModel(baseDependencies) {
 
     val viewState = MutableLiveData<ViewState>()
     val adjacentGeofenceDialogEvent = MutableLiveData<Consumable<GeofenceCreationParams>>()
 
     private val addressDelegate = GooglePlaceAddressDelegate(osUtilsProvider)
-    private lateinit var geofencesMapDelegate: GeofencesMapDelegate
 
-    private val reducer = AddPlaceInfoReducer(distanceFormatter)
+    private val reducer = AddPlaceInfoReducer(distanceFormatter, mapUiReducer)
     private val stateMachine = StateMachine<Action, State, Effect>(
         javaClass.simpleName,
         crashReportsProvider,
         Initial,
         viewModelScope,
         Dispatchers.Main,
-        reducer::reduce,
+        this::reduce,
         this::applyEffects,
         this::stateChangeEffects
     )
     private val effectsHandler = AddPlaceInfoEffectsHandler(
-        latLng,
+        location,
         this::init,
         this::handleAction,
-        this::displayRadius,
         viewState,
         destination,
         adjacentGeofenceDialogEvent,
         placesInteractor,
+        mapItemsFactory,
+        mapUiEffectHandler,
         getErrorMessageUseCase,
         showErrorUseCase,
         logExceptionToCrashlyticsUseCase,
+        userStateFlow.mapState(appInteractor.appScope.appCoroutineScope) { it?.geofencesForMap }
     )
 
-    private var radiusShapes: List<Circle>? = null
+    init {
+        runInVmEffectsScope {
+            appInteractor.appEvent.collect {
+                when (it) {
+                    is GeofencesForMapUpdatedEvent -> {
+                        handleAction(MapUiAction(AddGeofencesMapUiAction(it.geofences)))
+                    }
+                    else -> {
+                    }
+                }
+            }
+        }
+    }
 
     fun handleAction(action: Action) {
         stateMachine.handleAction(action)
     }
 
+    private fun reduce(state: State, action: Action): ReducerResult<out State, out Effect> {
+        return userStateFlow.value?.let {
+            reducer.reduce(action, state, it)
+        } ?: IllegalActionException(action, state).let { exception ->
+            state.withEffects(
+                LogExceptionToCrashlyticsEffect(exception),
+                ShowErrorMessageEffect(exception.asError())
+            )
+        }
+    }
+
+
     @SuppressLint("MissingPermission")
-    fun onMapReady(context: Context, googleMap: GoogleMap) {
-        val mapWrapper = HypertrackMapWrapper(
+    fun onMapReady(googleMap: GoogleMap) {
+        HypertrackMapWrapper(
             googleMap, osUtilsProvider, crashReportsProvider, MapParams(
                 enableScroll = false,
                 enableZoomKeys = true,
                 enableMyLocationButton = false,
                 enableMyLocationIndicator = false
             )
-        )
-        geofencesMapDelegate = object : GeofencesMapDelegate(
-            context,
-            mapWrapper,
-            placesInteractor,
-            osUtilsProvider,
-            {}
-        ) {
-            override fun updateGeofencesOnMap(
-                mapWrapper: HypertrackMapWrapper,
-                geofences: List<Geofence>
-            ) {
-                super.updateGeofencesOnMap(mapWrapper, geofences)
-                handleAction(UpdateMapDataAction)
+        ).apply {
+            setOnCameraMovedListener {
+                handleAction(MapMovedAction(it))
             }
-        }
-        googleMap.setOnCameraIdleListener {
-            geofencesMapDelegate.onCameraIdle()
-        }
 
-        handleAction(MapReadyAction(mapWrapper))
-    }
-
-    fun onConfirmClicked(params: GeofenceCreationParams) {
-        handleAction(ConfirmClickedAction(params))
-    }
-
-    fun onAddIntegration() {
-        handleAction(GeofenceNameClickedAction)
-    }
-
-    fun onIntegrationAdded(integration: Integration) {
-        handleAction(IntegrationAddedAction(integration))
-    }
-
-    fun onDeleteIntegrationClicked() {
-        handleAction(IntegrationDeletedAction)
-    }
-
-    fun onAddressChanged(address: String) {
-        handleAction(AddressChangedAction(address))
-    }
-
-    fun onGeofenceNameChanged(name: String) {
-        handleAction(GeofenceNameChangedAction(name))
-    }
-
-    fun onRadiusChanged(text: String) {
-        handleAction(RadiusChangedAction(text))
-    }
-
-    fun onGeofenceDialogYes(params: GeofenceCreationParams) {
-        handleAction(CreateGeofenceAction(params))
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        if (this::geofencesMapDelegate.isInitialized) {
-            geofencesMapDelegate.onCleared()
+            setOnMarkerClickListener {
+                //todo effect
+                it.snippet?.let {
+                    destination.postValue(
+                        AddPlaceInfoFragmentDirections.actionGlobalPlaceDetailsFragment(
+                            geofenceId = it
+                        )
+                    )
+                }
+            }
+        }.also {
+            handleAction(MapReadyAction(it))
         }
     }
-
 
     private fun applyEffects(effects: Set<Effect>) {
-        viewModelScope.launch {
-            try {
-                effects.forEach { effect ->
-                    effectsHandler.applyEffect(effect)
-                }
-            } catch (e: Exception) {
-                handleErrorFlow(e).collect {
-                    handleAction(it)
-                }
+        effects.forEach { effect ->
+            runInVmEffectsScope {
+                effectsHandler.getEffectFlow(effect)
+                    .catchException { onError(it) }
+                    .collect {
+                        it?.let { handleAction(it) }
+                    }
             }
         }
     }
 
     private fun stateChangeEffects(newState: State): Set<Effect> {
-        return setOf(UpdateViewStateEffect(newState)) + when (newState) {
-            is Initialized -> {
-                setOf(DisplayRadiusEffect(newState.map, newState.radius))
-            }
-            else -> setOf()
-        }
+        return setOf(UpdateViewStateEffect(newState))
     }
-
-    private fun displayRadius(map: HypertrackMapWrapper, radius: Int?) {
-        radiusShapes?.forEach { it.remove() }
-        radiusShapes = map.addGeofenceShape(latLng, radius ?: RADIUS_SHAPE_NULL_VALUE)
-        try {
-            map.googleMap.moveCamera(
-                CameraUpdateFactory.newLatLngBounds(
-                    LatLngBounds.builder().apply {
-                        include(
-                            SphericalUtil.computeOffset(
-                                latLng,
-                                (radius ?: RADIUS_CIRCLE_NULL_VALUE).toDouble(),
-                                DEGREES_0
-                            )
-                        )
-                        include(
-                            SphericalUtil.computeOffset(
-                                latLng,
-                                (radius ?: RADIUS_CIRCLE_NULL_VALUE).toDouble(),
-                                DEGREES_90
-                            )
-                        )
-                        include(
-                            SphericalUtil.computeOffset(
-                                latLng,
-                                (radius ?: RADIUS_CIRCLE_NULL_VALUE).toDouble(),
-                                DEGREES_180
-                            )
-                        )
-                        include(
-                            SphericalUtil.computeOffset(
-                                latLng,
-                                (radius ?: RADIUS_CIRCLE_NULL_VALUE).toDouble(),
-                                DEGREES_270
-                            )
-                        )
-                    }.build(),
-                    MAP_CAMERA_PADDING
-                )
-            )
-        } catch (e: Exception) {
-            map.moveCamera(latLng, HypertrackMapWrapper.DEFAULT_ZOOM)
-            // todo log to crashlytics
-        }
-    }
-
 
     private suspend fun init(map: HypertrackMapWrapper) {
         suspend { integrationsRepository.hasIntegrations() }.asFlow().flatMapConcat { res ->
@@ -238,6 +184,7 @@ class AddPlaceInfoViewModel(
                             hasIntegrations = res.value,
                             address = address,
                             geofenceName = _name,
+                            location = location
                         )
                     }
                 }
@@ -259,31 +206,10 @@ class AddPlaceInfoViewModel(
     private suspend fun loadAddress(): String? {
         return initialAddress
             ?: withContext(Dispatchers.IO) {
-                geocodingInteractor.getPlaceFromCoordinates(latLng)?.let {
+                geocodingInteractor.getPlaceFromCoordinates(location)?.let {
                     addressDelegate.strictAddress(it)
                 }
             }
     }
 
-    companion object {
-        const val RADIUS_SHAPE_NULL_VALUE = 1
-        const val RADIUS_CIRCLE_NULL_VALUE = 50
-        const val DEGREES_0 = 0.0
-        const val DEGREES_90 = 90.0
-        const val DEGREES_180 = 180.0
-        const val DEGREES_270 = 270.0
-        const val MAP_CAMERA_PADDING = 50
-    }
 }
-
-class GeofenceCreationParams(
-    val name: String,
-    val address: String,
-    val description: String
-)
-
-data class GeofenceCreationData(
-    val params: GeofenceCreationParams,
-    val radius: Int,
-    val integration: Integration?
-)

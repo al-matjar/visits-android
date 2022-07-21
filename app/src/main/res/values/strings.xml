@@ -183,7 +183,7 @@
     <string name="place_visit_id">Visit ID</string>
     <string name="place_route_ro">Traveled %s for %s</string>
     <string name="place_visits_count">Visits</string>
-    <string name="place_today">Today</string>
+    <string name="place_today">@string/today</string>
     <string name="place_yesterday">Yesterday</string>
     <string name="place_integration_error">Failed to get integrations</string>
 
@@ -202,6 +202,7 @@
     <string name="add_place_company_name">Company name</string>
     <string name="add_place_geofence_description">Description</string>
     <string name="add_place_geofence_radius">Radius (meters)</string>
+    <string name="add_place_timeout">Operation timed out, please try again</string>
     <string name="add_place_geofence_radius_validation_error">Radius value should be between %s and %s</string>
 
     <string name="add_place_info_adjacent_geofence_error">There is another geofence adjacent to this position. Creation of adjacent geofences is prohibited</string>
@@ -291,6 +292,7 @@
     <string name="reload">Reload</string>
     <string name="map_is_not_ready_yet">Failed to perform action: Map is not loaded yet</string>
     <string name="dontkillmyapp_url">https://dontkillmyapp.com</string>
+    <string name="today">Today</string>
 
     <plurals name="time">
         <item quantity="one">time</item>

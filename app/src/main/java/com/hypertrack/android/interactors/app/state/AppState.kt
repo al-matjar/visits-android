@@ -4,10 +4,8 @@ import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.TripCreationScope
-import com.hypertrack.android.interactors.app.AppEffect
 import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.use_case.sdk.TrackingStarted
-import com.hypertrack.android.utils.ReducerResult
 
 sealed class AppState {
     fun isSdkTracking(): Boolean {

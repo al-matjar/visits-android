@@ -1,6 +1,5 @@
 package com.hypertrack.android.ui.common
 
-import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.hypertrack.android.di.AppScope
@@ -8,24 +7,21 @@ import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.optics.AppStateOptics
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
+import com.hypertrack.android.ui.common.map_state.MapUiEffectHandler
+import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.ui.screens.add_integration.AddIntegrationViewModel
 import com.hypertrack.android.ui.screens.add_place.AddPlaceViewModel
-import com.hypertrack.android.ui.screens.visits_management.VisitsManagementViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.profile.ProfileViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.summary.SummaryViewModel
-import com.hypertrack.android.ui.screens.permission_request.PermissionRequestViewModel
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModel
+import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModelDependencies
 import com.hypertrack.android.ui.screens.add_geotag.AddGeotagViewModel
 import com.hypertrack.android.ui.screens.outage.OutageViewModel
-import com.hypertrack.android.ui.screens.background_permissions.BackgroundPermissionsViewModel
 import com.hypertrack.android.ui.screens.select_trip_destination.SelectTripDestinationViewModel
 import com.hypertrack.android.ui.screens.send_feedback.SendFeedbackViewModel
-import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.CurrentTripViewModel
-import com.hypertrack.android.ui.screens.visits_management.tabs.history.BaseHistoryStyle
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersListViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesViewModel
 import com.hypertrack.android.ui.screens.visits_management.tabs.places.PlacesVisitsViewModel
-import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryViewModel
 import com.hypertrack.android.utils.Loading
 import com.hypertrack.android.utils.mapState
 import java.time.LocalDate
@@ -39,9 +35,21 @@ class UserScopeViewModelFactory(
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         val baseDependencies = BaseViewModelDependencies(
+            appInteractor,
             appScope.osUtilsProvider,
             appScope.osUtilsProvider,
             appScope.crashReportsProvider
+        )
+        val userLoggedInFlow = appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+            AppStateOptics.getUserLoggedIn(it)
+        }
+        val selectDestinationViewModelDependencies = SelectDestinationViewModelDependencies(
+            userLoggedInFlow,
+            userScope.googlePlacesInteractor,
+            appScope.geocodingInteractor,
+            userScope.deviceLocationProvider,
+            MapUiReducer(),
+            MapUiEffectHandler(appInteractor)
         )
         return when (modelClass) {
             OutageViewModel::class.java -> OutageViewModel(
@@ -64,17 +72,11 @@ class UserScopeViewModelFactory(
             ) as T
             AddPlaceViewModel::class.java -> AddPlaceViewModel(
                 baseDependencies,
-                userScope.placesInteractor,
-                userScope.googlePlacesInteractor,
-                appScope.geocodingInteractor,
-                userScope.deviceLocationProvider,
+                selectDestinationViewModelDependencies
             ) as T
             SelectDestinationViewModel::class.java -> SelectDestinationViewModel(
                 baseDependencies,
-                userScope.placesInteractor,
-                userScope.googlePlacesInteractor,
-                appScope.geocodingInteractor,
-                userScope.deviceLocationProvider,
+                selectDestinationViewModelDependencies
             ) as T
             PlacesViewModel::class.java -> PlacesViewModel(
                 baseDependencies,
@@ -87,7 +89,6 @@ class UserScopeViewModelFactory(
             ) as T
             SummaryViewModel::class.java -> SummaryViewModel(
                 baseDependencies,
-                appInteractor,
                 appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
                     AppStateOptics.getHistoryState(it)?.days?.get(LocalDate.now()) ?: Loading()
                 },
@@ -103,10 +104,7 @@ class UserScopeViewModelFactory(
             ) as T
             SelectTripDestinationViewModel::class.java -> SelectTripDestinationViewModel(
                 baseDependencies,
-                userScope.placesInteractor,
-                userScope.googlePlacesInteractor,
-                appScope.geocodingInteractor,
-                userScope.deviceLocationProvider,
+                selectDestinationViewModelDependencies
             ) as T
             PlacesVisitsViewModel::class.java -> PlacesVisitsViewModel(
                 baseDependencies,

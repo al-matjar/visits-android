@@ -1,13 +1,14 @@
 package com.hypertrack.android.ui.common.select_destination.reducer
 
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.select_destination.GooglePlaceModel
 import com.hypertrack.android.utils.NonEmptyList
 
-// @formatter:off
-
-sealed class Action
+sealed class Action {
+    override fun toString(): String = javaClass.simpleName
+}
 
 data class UserLocationReceived(val latLng: LatLng, val address: String) : Action()
 
@@ -23,25 +24,20 @@ data class MapCameraMoved(
     val cause: MapMoveCause,
     val isNearZero: Boolean,
 ) : Action()
-    sealed class MapMoveCause
-    object MovedByUser : MapMoveCause() {
-        override fun toString(): String = javaClass.simpleName
-    }
-    object MovedToPlace : MapMoveCause() {
-        override fun toString(): String = javaClass.simpleName
-    }
-    object MovedToUserLocation : MapMoveCause() {
-        override fun toString(): String = javaClass.simpleName
-    }
+
+sealed class MapMoveCause
+object MovedByUser : MapMoveCause()
+object MovedToPlace : MapMoveCause()
+object MovedToUserLocation : MapMoveCause()
 
 data class MapClicked(val latLng: LatLng, val address: String) : Action()
 
-object ConfirmClicked : Action() {
-    override fun toString(): String = javaClass.simpleName
-}
+object ConfirmClicked : Action()
 
-data class SearchQueryChanged(val query: String, val results: NonEmptyList<GooglePlaceModel>) :
-    Action()
+data class SearchQueryChanged(
+    val query: String,
+    val results: NonEmptyList<GooglePlaceModel>
+) : Action()
 
 data class AutocompleteError(
     val query: String,
@@ -54,8 +50,6 @@ data class PlaceSelectedAction(
     val latLng: LatLng
 ) : Action()
 
-object ShowMyLocationAction : Action() {
-    override fun toString(): String = javaClass.simpleName
-}
+object ShowMyLocationAction : Action()
 
-// @formatter:on
+data class GeofencesOnMapUpdatedAction(val geofences: List<Geofence>) : Action()

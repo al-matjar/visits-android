@@ -55,8 +55,6 @@ class ProfileViewModel(
     private suspend fun updateProfileItems() {
         val items = mutableListOf<KeyValueItem>()
 
-        val firebaseToken = VisitsMessagingService.getFirebaseToken()
-
         items.apply {
             userRepository.userData.load().toNullable()?.let { user ->
                 user.email?.let {
@@ -101,6 +99,13 @@ class ProfileViewModel(
             )
 
             if (MyApplication.DEBUG_MODE) {
+                val firebaseToken = VisitsMessagingService.getFirebaseToken().let {
+                    when (it) {
+                        is Success -> it.data
+                        is Failure -> it.exception.format()
+                    }
+                }
+
                 add(KeyValueItem("Firebase token (debug)", firebaseToken))
 
                 add(

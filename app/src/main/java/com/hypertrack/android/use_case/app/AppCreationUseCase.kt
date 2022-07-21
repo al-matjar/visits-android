@@ -43,7 +43,7 @@ import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
-import com.hypertrack.android.use_case.sdk.NewTrackingState
+import com.hypertrack.android.use_case.sdk.TrackingState
 import com.hypertrack.android.utils.BatteryLevelMonitor
 import com.hypertrack.android.utils.CognitoAccountLoginProviderImpl
 import com.hypertrack.android.utils.CrashReportsProvider
@@ -75,7 +75,7 @@ class AppCreationUseCase {
     fun execute(
         application: Application,
         crashReportsProvider: CrashReportsProvider,
-        trackingStateListener: (NewTrackingState) -> Unit
+        trackingStateListener: (TrackingState) -> Unit
     ): AppScope {
         buildNotificationChannels(application)
         //todo handle errors
@@ -103,7 +103,7 @@ class AppCreationUseCase {
     private fun createAppScope(
         appContext: Context,
         crashReportsProvider: CrashReportsProvider,
-        trackingStateListener: (NewTrackingState) -> Unit
+        trackingStateListener: (TrackingState) -> Unit
     ): AppScope {
         val moshi = createMoshi()
         val osUtilsProvider = OsUtilsProvider(appContext, crashReportsProvider)
@@ -170,6 +170,7 @@ class AppCreationUseCase {
             geocodingInteractor,
             osUtilsProvider
         )
+
         return AppScope(
             MyApplication.context,
             geocodingInteractor,
@@ -191,6 +192,7 @@ class AppCreationUseCase {
             ),
             DeviceStatusMarkerDisplayDelegate(
                 osUtilsProvider,
+                crashReportsProvider,
                 distanceFormatter,
                 timeFormatter,
                 datetimeRangeFormatterDelegate,

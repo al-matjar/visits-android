@@ -47,7 +47,8 @@ class AppInitializedActionTest {
                     userScope = mockk(),
                     userData = mockk(),
                     history = mockk(),
-                    userLocation = mockk()
+                    userLocation = mockk(),
+                    useCases = mockk()
                 )
             )
         }

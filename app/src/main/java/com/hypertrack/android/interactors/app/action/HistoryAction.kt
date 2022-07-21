@@ -10,7 +10,8 @@ sealed class HistoryAction {
 
 data class StartDayHistoryLoadingAction(
     val day: LocalDate,
-    val forceReloadIfLoading: Boolean = false
+    val forceReloadIfLoading: Boolean = false,
+    val forceReloadIfTimeout: Boolean = false
 ) : HistoryAction()
 
 data class DayHistoryLoadedAction(val day: LocalDate, val history: History) : HistoryAction()

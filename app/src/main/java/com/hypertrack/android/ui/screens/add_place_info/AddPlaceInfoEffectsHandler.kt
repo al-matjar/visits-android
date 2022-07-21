@@ -1,99 +1,189 @@
 package com.hypertrack.android.ui.screens.add_place_info
 
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.maps.android.SphericalUtil
 import com.hypertrack.android.interactors.PlacesInteractor
+import com.hypertrack.android.interactors.app.noAction
+import com.hypertrack.android.interactors.app.state.GeofencesForMapState
 import com.hypertrack.android.repository.CreateGeofenceError
 import com.hypertrack.android.repository.CreateGeofenceSuccess
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.Tab
+import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map_state.MapUiEffectHandler
+import com.hypertrack.android.ui.common.map_state.UpdateGeofenceForDetailsMapUiAction
 import com.hypertrack.android.ui.common.use_case.ShowErrorUseCase
 import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
+import com.hypertrack.android.ui.common.util.updateConsumableAsFlow
 import com.hypertrack.android.ui.screens.add_place.AddPlaceFragmentDirections
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
+import com.hypertrack.android.utils.Failure
+import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.logistics.android.github.R
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
-@Suppress("OPT_IN_USAGE")
+@Suppress("OPT_IN_USAGE", "EXPERIMENTAL_API_USAGE")
 class AddPlaceInfoEffectsHandler(
     private val placeLocation: LatLng,
     private val init: suspend (map: HypertrackMapWrapper) -> Unit,
     private val handleAction: (action: Action) -> Unit,
-    private val displayRadius: suspend (map: HypertrackMapWrapper, radius: Int?) -> Unit,
     private val viewState: MutableLiveData<ViewState>,
     private val destination: MutableLiveData<Consumable<NavDirections>>,
     private val adjacentGeofenceDialogEvent: MutableLiveData<Consumable<GeofenceCreationParams>>,
     private val placesInteractor: PlacesInteractor,
+    private val mapItemsFactory: HypertrackMapItemsFactory,
+    private val mapUiEffectHandler: MapUiEffectHandler,
     private val getErrorMessageUseCase: GetErrorMessageUseCase,
     private val showErrorUseCase: ShowErrorUseCase,
     private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
+    private val geofencesForMapStateFlow: StateFlow<GeofencesForMapState?>
 ) {
 
-    suspend fun applyEffect(effect: Effect) {
-        when (effect) {
+    fun getEffectFlow(effect: Effect): Flow<Action?> {
+        return when (effect) {
             is UpdateViewStateEffect -> {
-                getViewStateFlow(effect.state).collect {
+                getViewStateFlow(effect.state).map {
                     viewState.postValue(it)
-                }
-            }
-            is DisplayRadiusEffect -> {
-                displayRadius(effect.map, effect.radius)
+                }.noAction()
             }
             OpenAddIntegrationScreenEffect -> {
-                destination.postValue(
-                    AddPlaceInfoFragmentDirections.actionAddPlaceInfoFragmentToAddIntegrationFragment()
-                )
+                destination.updateConsumableAsFlow(
+                    AddPlaceInfoFragmentDirections
+                        .actionAddPlaceInfoFragmentToAddIntegrationFragment()
+                ).noAction()
             }
             is ShowErrorMessageEffect -> {
-                handleEffect(effect)
+                suspend { handleEffect(effect) }.asFlow().noAction()
             }
             is CreateGeofenceEffect -> {
-                handleEffect(effect)
+                suspend { handleEffect(effect) }.asFlow().noAction()
             }
             is ProceedWithAdjacentGeofenceCheckEffect -> {
-                handleEffect(effect)
+                getFlow(effect)
             }
             is InitEffect -> {
-                init(effect.map)
+                suspend { init(effect.map) }.asFlow().noAction()
             }
-            is LogExceptionToCrashlytics -> {
-                logExceptionToCrashlyticsUseCase.execute(effect.exception).collect()
+            is LogExceptionToCrashlyticsEffect -> {
+                logExceptionToCrashlyticsUseCase.execute(effect.exception).noAction()
             }
-        } as Any?
-    }
-
-    private suspend fun handleEffect(effect: ProceedWithAdjacentGeofenceCheckEffect) {
-        val radius = effect.radius
-        val params = effect.params
-        if (placesInteractor.adjacentGeofencesAllowed) {
-            //check adjacent geofences without waiting for them to fully load (only in cache)
-            placesInteractor.hasAdjacentGeofence(placeLocation, radius).let { has ->
-                if (!has) {
-                    handleAction(CreateGeofenceAction(params))
-                } else {
-                    adjacentGeofenceDialogEvent.postValue(Consumable(effect.params))
+            is MapUiEffect -> {
+                mapUiEffectHandler.getEffectFlow(effect.effect).map { action ->
+                    action?.let { MapUiAction(it) }
                 }
             }
-        } else {
-            placesInteractor.blockingHasAdjacentGeofence(placeLocation, radius)
-                .let { has ->
+            is StartUpdateRadiusEffect -> {
+                MapUiAction(UpdateGeofenceForDetailsMapUiAction(
+                    effect.radius?.let {
+                        mapItemsFactory.createGeofenceForDetailView(
+                            effect.location,
+                            effect.radius
+                        )
+                    }
+                )).toFlow()
+            }
+            is UpdateRadiusAndZoomEffect -> {
+                getFlow(effect)
+            }
+        }
+    }
+
+    private fun getFlow(effect: UpdateRadiusAndZoomEffect): Flow<Action?> {
+        return getEffectFlow(MapUiEffect(effect.updateRadiusEffect))
+            .flatMapConcat { action ->
+                suspend {
+                    val map = effect.updateRadiusEffect.map
+                    val location = effect.location
+                    val radius = effect.radius
+                    try {
+                        map.googleMap.moveCamera(
+                            CameraUpdateFactory.newLatLngBounds(
+                                LatLngBounds.builder().apply {
+                                    include(
+                                        SphericalUtil.computeOffset(
+                                            location,
+                                            (radius ?: RADIUS_CIRCLE_NULL_VALUE).toDouble(),
+                                            DEGREES_0
+                                        )
+                                    )
+                                    include(
+                                        SphericalUtil.computeOffset(
+                                            location,
+                                            (radius ?: RADIUS_CIRCLE_NULL_VALUE).toDouble(),
+                                            DEGREES_90
+                                        )
+                                    )
+                                    include(
+                                        SphericalUtil.computeOffset(
+                                            location,
+                                            (radius ?: RADIUS_CIRCLE_NULL_VALUE).toDouble(),
+                                            DEGREES_180
+                                        )
+                                    )
+                                    include(
+                                        SphericalUtil.computeOffset(
+                                            location,
+                                            (radius ?: RADIUS_CIRCLE_NULL_VALUE).toDouble(),
+                                            DEGREES_270
+                                        )
+                                    )
+                                }.build(),
+                                MAP_CAMERA_PADDING
+                            )
+                        )
+                        action
+                    } catch (e: Exception) {
+                        map.moveCamera(location, HypertrackMapWrapper.DEFAULT_ZOOM)
+                        OnErrorAction(e.asError())
+                    }
+                }.asFlow().flowOn(Dispatchers.Main)
+            }
+    }
+
+    private fun getFlow(effect: ProceedWithAdjacentGeofenceCheckEffect): Flow<Action?> {
+        val radius = effect.radius
+        val params = effect.params
+        return effect.useCases.checkForAdjacentGeofencesUseCase.execute(
+            placeLocation,
+            radius,
+            geofencesForMapStateFlow
+        ).map { result ->
+            when (result) {
+                is Success -> {
+                    val has = result.data
                     if (!has) {
-                        handleAction(CreateGeofenceAction(params))
+                        CreateGeofenceAction(params)
                     } else {
                         handleEffect(
                             ShowErrorMessageEffect(
                                 R.string.add_place_info_adjacent_geofence_error.asError()
                             )
                         )
+                        null
                     }
                 }
+                is Failure -> {
+                    OnErrorAction(result.exception.asError())
+                }
+            }
+            // todo "ignore adjacent geofence" dialog
+            // adjacentGeofenceDialogEvent.postValue(Consumable(effect.params))
         }
     }
 
@@ -200,6 +290,16 @@ class AddPlaceInfoEffectsHandler(
                 }
             )
         }
+    }
+
+    companion object {
+        const val RADIUS_SHAPE_NULL_VALUE = 1
+        const val RADIUS_CIRCLE_NULL_VALUE = 50
+        const val DEGREES_0 = 0.0
+        const val DEGREES_90 = 90.0
+        const val DEGREES_180 = 180.0
+        const val DEGREES_270 = 270.0
+        const val MAP_CAMERA_PADDING = 50
     }
 
 

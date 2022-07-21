@@ -34,12 +34,14 @@ import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.toView
 import com.hypertrack.android.ui.common.util.toViewOrHideIfNull
 import com.hypertrack.android.utils.createDatePickerDialog
+import kotlinx.android.synthetic.main.fragment_history.bRefreshHistory
 import kotlinx.android.synthetic.main.fragment_history.lError
 import kotlinx.android.synthetic.main.fragment_history.lTimeline
 import kotlinx.android.synthetic.main.inflate_error.view.bReload
 import kotlinx.android.synthetic.main.inflate_error.view.tvErrorMessage
 import kotlinx.android.synthetic.main.inflate_timeline.ivTimelineArrowUp
 import kotlinx.android.synthetic.main.inflate_timeline.lTimelineHeader
+import kotlinx.android.synthetic.main.inflate_timeline.notch
 import kotlinx.android.synthetic.main.inflate_timeline.rvTimeline
 import kotlinx.android.synthetic.main.inflate_timeline.tvSummaryDistance
 import kotlinx.android.synthetic.main.inflate_timeline.tvSummaryDuration
@@ -100,15 +102,15 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
                     }
                     ivTimelineArrowUp.setGoneState(!show)
                 }
-                viewState.showAddGeotagButton.let { show ->
-                    bAddGeotag.animation?.cancel()
-                    bAddGeotag.apply {
-                        if (show) {
-                            show()
-                        } else {
-                            hide()
-                        }
+                viewState.bottomSheetEnabled.let { enabled ->
+                    bottomSheetBehavior.isDraggable = enabled
+                    notch.setGoneState(!enabled)
+                }
+                viewState.showRefreshButton.let { show ->
+                    if (!show) {
+                        bRefreshHistory.clearAnimation()
                     }
+                    bRefreshHistory.setGoneState(!show)
                 }
                 timelineAdapter.updateItems(viewState.tiles)
             }
@@ -132,6 +134,23 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
                                     rotation(0f)
                                 }
                             }.setDuration(ANIMATION_DURATION).start()
+
+                            val show = !event.expanded
+                            listOf(bAddGeotag, bRefreshHistory).forEach { view ->
+                                view.animation?.cancel()
+                                view.apply {
+                                    if (show) {
+                                        show()
+                                        alpha = 0f
+                                        animate().alpha(1f).setDuration(ANIMATION_DURATION).start()
+                                    } else {
+                                        alpha = 1f
+                                        animate().alpha(0f).setDuration(ANIMATION_DURATION)
+                                            .withEndAction { hide() }
+                                            .start()
+                                    }
+                                }
+                            }
                         }
                         is ShowDatePickerDialogEvent -> {
                             showDatePickerDialog(event.date)
@@ -142,7 +161,7 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
                         is ShowGeotagDialogEvent -> {
                             createGeotagDialog(event.geotagDialog).show()
                         }
-                    }
+                    } as Any?
                 }
             }
 
@@ -160,6 +179,10 @@ class HistoryFragment : BaseFragment<MainActivity>(R.layout.fragment_history) {
 
             bAddGeotag.setOnClickListener {
                 vm.onAddGeotagClick()
+            }
+
+            bRefreshHistory.setOnClickListener {
+                vm.handleAction(OnReloadPressedAction)
             }
 
             bSelectDate.setOnClickListener {

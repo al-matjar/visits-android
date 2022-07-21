@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.collect
 
 class SummaryViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val appInteractor: AppInteractor,
     private val state: StateFlow<LoadingState<History, ErrorMessage>?>,
     private val distanceFormatter: DistanceFormatter,
     private val timeFormatter: TimeValueFormatter,

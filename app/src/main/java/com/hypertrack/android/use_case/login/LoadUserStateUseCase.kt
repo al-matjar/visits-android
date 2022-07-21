@@ -1,6 +1,7 @@
 package com.hypertrack.android.use_case.login
 
 import android.content.Context
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.state.HistoryState
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
@@ -8,6 +9,7 @@ import com.hypertrack.android.interactors.app.state.UserState
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.use_case.app.CreateUserScopeUseCase
 import com.hypertrack.android.use_case.app.SetCrashReportingIdUseCase
+import com.hypertrack.android.use_case.app.UserScopeUseCases
 import com.hypertrack.android.use_case.sdk.TrackingStarted
 import com.hypertrack.android.use_case.sdk.TrackingStopped
 import com.hypertrack.android.utils.DeviceInfoUtils
@@ -56,6 +58,9 @@ class LoadUserStateUseCase(
                                 } else {
                                     TrackingStopped
                                 }
+                            Injector.crashReportsProvider.log(
+                                "initial_tracking_state $initialTrackingState"
+                            )
                             UserLoggedIn(
                                 deviceId = DeviceId(userScope.hyperTrackService.deviceId),
                                 userData = userDataResult.data,
@@ -68,6 +73,11 @@ class LoadUserStateUseCase(
                                         ZoneId.systemDefault()
                                     ),
                                     days = mapOf(LocalDate.now() to Loading())
+                                ),
+                                useCases = UserScopeUseCases(
+                                    userScope.appInteractor,
+                                    userScope.appScope,
+                                    userScope
                                 )
                             ).asSuccess()
                         }

@@ -28,15 +28,6 @@ import com.hypertrack.android.ui.common.util.textString
 import com.hypertrack.android.utils.stringFromResource
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_order_detail.*
-import kotlinx.android.synthetic.main.fragment_order_detail.bDirections
-import kotlinx.android.synthetic.main.fragment_order_detail.divider
-import kotlinx.android.synthetic.main.fragment_order_detail.etVisitNote
-import kotlinx.android.synthetic.main.fragment_order_detail.ivBack
-import kotlinx.android.synthetic.main.fragment_order_detail.rvMetadata
-import kotlinx.android.synthetic.main.fragment_order_detail.rvPhotos
-import kotlinx.android.synthetic.main.fragment_order_detail.tvAddress
-import kotlinx.android.synthetic.main.fragment_order_detail.tvCancel
-import kotlinx.android.synthetic.main.fragment_order_detail.tvTakePicture
 
 
 class OrderDetailsFragment : ProgressDialogFragment(R.layout.fragment_order_detail) {
@@ -84,8 +75,8 @@ class OrderDetailsFragment : ProgressDialogFragment(R.layout.fragment_order_deta
             etVisitNote.setText(it)
         }
 
-        vm.showCompleteButtons.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-            orderCompletionGroup.setGoneState(!it)
+        vm.showCompleteButtons.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { show ->
+            lCompletion.setGoneState(!show)
         }
 
         vm.showSnoozeButton.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {

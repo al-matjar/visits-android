@@ -107,4 +107,14 @@ data class Geofence(
             return polygon.map { osUtilsProvider.distanceMeters(latLng, it) }.maxOrNull()!!
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        return if (other is Geofence) {
+            other.id == id
+        } else false
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
 }

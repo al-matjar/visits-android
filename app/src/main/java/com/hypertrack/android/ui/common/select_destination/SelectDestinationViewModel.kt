@@ -6,48 +6,83 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.*
-import com.hypertrack.android.interactors.GeocodingInteractor
-import com.hypertrack.android.interactors.GooglePlacesInteractor
-import com.hypertrack.android.interactors.PlacesInteractor
+import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.di.Injector
+import com.hypertrack.android.interactors.app.GeofencesForMapUpdatedEvent
+import com.hypertrack.android.models.local.GeofenceId
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.SingleLiveEvent
-import com.hypertrack.android.ui.common.delegates.GeofenceId
-import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.address.GooglePlaceAddressDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.map.viewportPosition
-import com.hypertrack.android.ui.common.select_destination.reducer.*
+import com.hypertrack.android.ui.common.select_destination.reducer.Action
+import com.hypertrack.android.ui.common.select_destination.reducer.AnimateMapToUserLocation
+import com.hypertrack.android.ui.common.select_destination.reducer.AutocompleteError
+import com.hypertrack.android.ui.common.select_destination.reducer.AutocompleteFlow
+import com.hypertrack.android.ui.common.select_destination.reducer.ClearSearchQuery
+import com.hypertrack.android.ui.common.select_destination.reducer.CloseKeyboard
+import com.hypertrack.android.ui.common.select_destination.reducer.ConfirmClicked
+import com.hypertrack.android.ui.common.select_destination.reducer.DisplayLocationInfo
+import com.hypertrack.android.ui.common.select_destination.reducer.Effect
+import com.hypertrack.android.ui.common.select_destination.reducer.GeofencesOnMapUpdatedAction
+import com.hypertrack.android.ui.common.select_destination.reducer.HideProgressbar
+import com.hypertrack.android.ui.common.select_destination.reducer.LocationSelected
+import com.hypertrack.android.ui.common.select_destination.reducer.MapCameraMoved
+import com.hypertrack.android.ui.common.select_destination.reducer.MapClicked
+import com.hypertrack.android.ui.common.select_destination.reducer.MapFlow
+import com.hypertrack.android.ui.common.select_destination.reducer.MapNotReady
+import com.hypertrack.android.ui.common.select_destination.reducer.MapReady
+import com.hypertrack.android.ui.common.select_destination.reducer.MapReadyAction
+import com.hypertrack.android.ui.common.select_destination.reducer.MapUiEffect
+import com.hypertrack.android.ui.common.select_destination.reducer.MoveMapToPlace
+import com.hypertrack.android.ui.common.select_destination.reducer.MoveMapToUserLocation
+import com.hypertrack.android.ui.common.select_destination.reducer.MovedByUser
+import com.hypertrack.android.ui.common.select_destination.reducer.MovedToPlace
+import com.hypertrack.android.ui.common.select_destination.reducer.MovedToUserLocation
+import com.hypertrack.android.ui.common.select_destination.reducer.PlaceData
+import com.hypertrack.android.ui.common.select_destination.reducer.PlaceSelected
+import com.hypertrack.android.ui.common.select_destination.reducer.PlaceSelectedAction
+import com.hypertrack.android.ui.common.select_destination.reducer.Proceed
+import com.hypertrack.android.ui.common.select_destination.reducer.RemoveSearchFocus
+import com.hypertrack.android.ui.common.select_destination.reducer.SearchQueryChanged
+import com.hypertrack.android.ui.common.select_destination.reducer.SelectDestinationViewModelReducer
+import com.hypertrack.android.ui.common.select_destination.reducer.ShowMyLocationAction
+import com.hypertrack.android.ui.common.select_destination.reducer.State
+import com.hypertrack.android.ui.common.select_destination.reducer.UserLocationReceived
 import com.hypertrack.android.ui.common.util.isNearZero
 import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.screens.add_place.AddPlaceFragmentDirections
-import com.hypertrack.android.utils.DeviceLocationProvider
+import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.asNonEmpty
-import kotlinx.coroutines.async
+import com.hypertrack.android.utils.exception.IllegalActionException
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 open class SelectDestinationViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val placesInteractor: PlacesInteractor,
-    private val googlePlacesInteractor: GooglePlacesInteractor,
-    private val geocodingInteractor: GeocodingInteractor,
-    private val deviceLocationProvider: DeviceLocationProvider,
+    dependencies: SelectDestinationViewModelDependencies
 ) : BaseViewModel(baseDependencies) {
+    protected val userState = dependencies.userState
+    private val googlePlacesInteractor = dependencies.googlePlacesInteractor
+    private val geocodingInteractor = dependencies.geocodingInteractor
+    private val deviceLocationProvider = dependencies.deviceLocationProvider
+    private val mapUiReducer = dependencies.mapUiReducer
+    private val mapUiEffectHandler = dependencies.mapUiEffectHandler
 
     //    private val enableLogging = MyApplication.DEBUG_MODE
     private val enableLogging = true
 
     protected open val defaultZoom = 13f
 
-    private val reducer = SelectDestinationViewModelReducer()
+    private val reducer = SelectDestinationViewModelReducer(mapUiReducer)
     protected lateinit var state: State
 
     private val addressDelegate = GooglePlaceAddressDelegate(osUtilsProvider)
     private val placesDelegate = GooglePlacesSearchDelegate(googlePlacesInteractor)
-    protected lateinit var geofencesMapDelegate: GeofencesMapDelegate
 
     private var isMapMovingToPlace: Boolean = false
     private var isMapMovingToUserLocation: Boolean = false
@@ -61,22 +96,38 @@ open class SelectDestinationViewModel(
     val goBackEvent = SingleLiveEvent<DestinationData>()
     val removeSearchFocusEvent = SingleLiveEvent<Boolean>()
 
-    protected fun sendAction(action: Action) {
-        viewModelScope.launch {
-            val actionLog = "action = $action"
-            if (enableLogging) Log.v("hypertrack-verbose", actionLog)
-            crashReportsProvider.log(actionLog)
-            try {
-                val res = reducer.reduceAction(state, action)
-                applyState(res.newState)
-                applyEffects(res.effects)
-            } catch (e: Exception) {
-                if (MyApplication.DEBUG_MODE) {
-                    throw e
-                } else {
-                    showExceptionMessageAndReport(e)
+    init {
+        runInVmEffectsScope {
+            appInteractor.appEvent.collect {
+                when (it) {
+                    is GeofencesForMapUpdatedEvent -> {
+                        handleAction(GeofencesOnMapUpdatedAction(it.geofences))
+                    }
+                    else -> {
+                    }
                 }
             }
+        }
+    }
+
+    private fun handleAction(action: Action) {
+        viewModelScope.launch {
+            userState.value?.let { userLoggedIn ->
+                val actionLog = "action = $action"
+                if (enableLogging) Log.v("hypertrack-verbose", actionLog)
+                crashReportsProvider.log(actionLog)
+                try {
+                    val res = reducer.reduceAction(state, action, userLoggedIn)
+                    applyState(res.newState)
+                    applyEffects(res.effects)
+                } catch (e: Exception) {
+                    if (MyApplication.DEBUG_MODE) {
+                        throw e
+                    } else {
+                        showExceptionMessageAndReport(e)
+                    }
+                }
+            } ?: showExceptionMessageAndReport(IllegalActionException(action, userState.value))
         }
     }
 
@@ -90,8 +141,14 @@ open class SelectDestinationViewModel(
                 showConfirmButton.postValue(true)
 
                 when (state.flow) {
-                    is AutocompleteFlow -> placesResults.postValue(state.flow.places.elements)
-                    MapFlow -> placesResults.postValue(listOf())
+                    is AutocompleteFlow -> {
+                        placesResults.postValue(state.flow.places.elements)
+                        showMyLocationButton.postValue(false)
+                    }
+                    MapFlow -> {
+                        placesResults.postValue(listOf())
+                        showMyLocationButton.postValue(true)
+                    }
                 }
             }
         } as Unit
@@ -101,7 +158,7 @@ open class SelectDestinationViewModel(
         crashReportsProvider.log(stateLog)
     }
 
-    private fun applyEffects(effects: Set<Effect>) {
+    private suspend fun applyEffects(effects: Set<Effect>) {
         for (effect in effects) {
             val effectLog = "effect = $effect"
             if (enableLogging) Log.v("hypertrack-verbose", effectLog)
@@ -136,8 +193,8 @@ open class SelectDestinationViewModel(
                 ClearSearchQuery -> {
                     searchQuery.postValue("")
                 }
-                is DisplayUserLocation -> {
-                    effect.map.addUserLocation(effect.latLng) as Any?
+                is MapUiEffect -> {
+                    mapUiEffectHandler.getEffectFlow(effect.effect).collect()
                 }
             } as Any?
         }
@@ -159,10 +216,11 @@ open class SelectDestinationViewModel(
             if (enableLogging) Log.v("hypertrack-verbose", "new state = $state")
         }
 
+        // todo change to subscription
         deviceLocationProvider.getCurrentLocation {
             it?.let { userLocation ->
                 viewModelScope.launch {
-                    sendAction(
+                    handleAction(
                         UserLocationReceived(
                             userLocation,
                             addressDelegate.displayAddress(
@@ -171,7 +229,6 @@ open class SelectDestinationViewModel(
                         )
                     )
                 }
-
             }
         }
     }
@@ -190,7 +247,7 @@ open class SelectDestinationViewModel(
             onCameraMoved(wrapper)
             val isMapMovingToPlace = isMapMovingToPlace
             viewModelScope.launch {
-                sendAction(
+                handleAction(
                     MapCameraMoved(
                         position,
                         position.let {
@@ -213,7 +270,7 @@ open class SelectDestinationViewModel(
 
         wrapper.setOnMapClickListener {
             viewModelScope.launch {
-                sendAction(
+                handleAction(
                     MapClicked(
                         googleMap.viewportPosition,
                         geocodingInteractor.getPlaceFromCoordinates(googleMap.viewportPosition)
@@ -223,15 +280,21 @@ open class SelectDestinationViewModel(
                 )
             }
         }
-        geofencesMapDelegate = createGeofencesMapDelegate(context, wrapper) {
-            destination.postValue(
-                AddPlaceFragmentDirections.actionGlobalPlaceDetailsFragment(
-                    geofenceId = it.value
+        wrapper.setOnMarkerClickListener {
+            // todo effect
+            it.snippet?.let {
+                destination.postValue(
+                    AddPlaceFragmentDirections.actionGlobalPlaceDetailsFragment(
+                        geofenceId = it
+                    )
                 )
-            )
+            }
         }
+
+        onMapInitialized(wrapper)
+
         viewModelScope.launch {
-            sendAction(MapReadyAction(
+            handleAction(MapReadyAction(
                 wrapper,
                 googleMap.viewportPosition,
                 googleMap.viewportPosition.let {
@@ -245,42 +308,54 @@ open class SelectDestinationViewModel(
         }
     }
 
+    protected open fun onMapInitialized(map: HypertrackMapWrapper) {
+    }
+
     fun onSearchQueryChanged(query: String) {
         viewModelScope.launch {
             val state = state
             if (state is MapReady) {
-                try {
-                    val res = viewModelScope.async {
-                        placesDelegate.search(query, state.userLocation?.latLng)
-                    }.await()
-                    if (res.isNotEmpty()) {
-                        sendAction(SearchQueryChanged(query, res.asNonEmpty()))
+                placesDelegate.search(query, state.userLocation?.latLng).let { result ->
+                    when (result) {
+                        is Success -> {
+                            if (result.data.isNotEmpty()) {
+                                handleAction(SearchQueryChanged(query, result.data.asNonEmpty()))
+                            }
+                        }
+                        is Failure -> {
+                            showExceptionMessageAndReport(result.exception)
+                            handleAction(AutocompleteError(query))
+                        }
                     }
-                } catch (e: Exception) {
-                    showExceptionMessageAndReport(e)
-                    sendAction(AutocompleteError(query))
                 }
             }
         }
-
     }
 
     fun onConfirmClicked() {
-        sendAction(ConfirmClicked)
+        handleAction(ConfirmClicked)
     }
 
     fun onPlaceItemClick(item: GooglePlaceModel) {
         viewModelScope.launch {
-            placesDelegate.fetchPlace(item).let { place ->
-                place.latLng?.let { ll ->
-                    sendAction(
-                        PlaceSelectedAction(
-                            displayAddress = addressDelegate.displayAddress(place),
-                            strictAddress = addressDelegate.strictAddress(place),
-                            name = place.name,
-                            ll
-                        )
-                    )
+            placesDelegate.fetchPlace(item).let { result ->
+                when (result) {
+                    is Success -> {
+                        val place = result.data
+                        place.latLng?.let { ll ->
+                            handleAction(
+                                PlaceSelectedAction(
+                                    displayAddress = addressDelegate.displayAddress(place),
+                                    strictAddress = addressDelegate.strictAddress(place),
+                                    name = place.name,
+                                    ll
+                                )
+                            )
+                        }
+                    }
+                    is Failure -> {
+                        showExceptionMessageAndReport(result.exception)
+                    }
                 }
             }
         }
@@ -295,30 +370,14 @@ open class SelectDestinationViewModel(
     }
 
     protected open fun onCameraMoved(map: HypertrackMapWrapper) {
-        placesInteractor.loadGeofencesForMap(map.cameraPosition)
-        geofencesMapDelegate.onCameraIdle()
     }
 
     private fun moveMapCamera(map: HypertrackMapWrapper, latLng: LatLng) {
         map.moveCamera(latLng, defaultZoom)
     }
 
-    protected open fun createGeofencesMapDelegate(
-        context: Context,
-        wrapper: HypertrackMapWrapper,
-        markerClickListener: (GeofenceId) -> Unit
-    ): GeofencesMapDelegate {
-        return GeofencesMapDelegate(
-            context,
-            wrapper,
-            placesInteractor,
-            osUtilsProvider,
-            markerClickListener
-        )
-    }
-
     fun onMyLocationClick() {
-        sendAction(ShowMyLocationAction)
+        handleAction(ShowMyLocationAction)
     }
 
 }
@@ -342,3 +401,4 @@ fun PlaceData.toDestinationData(): DestinationData {
         }
     }
 }
+

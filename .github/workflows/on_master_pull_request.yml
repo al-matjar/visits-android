@@ -27,35 +27,46 @@ jobs:
           GOOGLE_SERVICES_CONFIG: ${{ secrets.GOOGLE_SERVICES_CONFIG }}
         run: echo $GOOGLE_SERVICES_CONFIG > app/google-services.json
 
+      # Release keystore
+
       - name: Add release keystore
         env:
           APP_KEYSTORE: ${{ secrets.APP_KEYSTORE }}
-        run: echo $APP_KEYSTORE | base64 --decode > app/logistics.keystore
+        run: echo $APP_KEYSTORE | base64 --decode > visits.keystore; pwd; ls;
 
-      - name: Add release keystore credentials
+      - name: Add release keystore path
+        run: echo "visitsKeystorePath=../visits.keystore" >> local.properties
+
+      - name: Add release keystore data
         env:
-          KEYSTORE_CREDENTIALS: ${{ secrets.KEYSTORE_CREDENTIALS }}
-        run: echo $KEYSTORE_CREDENTIALS | base64 --decode >> gradle.properties
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+        run: echo "visitsKeystorePassword=$KEYSTORE_PASSWORD" >> local.properties;
+          echo "visitsKeyAlias=$KEYSTORE_KEY_ALIAS" >> local.properties;
+          echo "visitsKeyPassword=$KEYSTORE_KEY_PASSWORD" >> local.properties;
+
+      # Misc
 
       - name: Add Google Places API key
         env:
           PLACES_API_KEY: ${{secrets.PLACES_API_KEY}}
-        run: echo "placesApiKey=$PLACES_API_KEY" >> gradle.properties
+        run: echo "googlePlacesApiKey=$PLACES_API_KEY" >> local.properties
 
       - name: Add Branch.io API key
         env:
           BRANCH_IO_API_KEY: ${{secrets.BRANCH_IO_API_KEY}}
-        run: echo "logisticsBranchKey=$BRANCH_IO_API_KEY" >> gradle.properties
+        run: echo "visitsBranchKey=$BRANCH_IO_API_KEY" >> local.properties
 
       - name: Add Hypertrack services API key
         env:
           SERVICES_API_KEY: ${{secrets.SERVICES_API_KEY}}
-        run: echo "servicesApiKey=$SERVICES_API_KEY" >> gradle.properties
+        run: echo "servicesApiKey=$SERVICES_API_KEY" >> local.properties
 
       - name: Add Hypertrack GraphQL API key
         env:
           GRAPHQL_API_KEY: ${{secrets.GRAPHQL_API_KEY}}
-        run: echo "graphqlApiKey=$GRAPHQL_API_KEY" >> gradle.properties
+        run: echo "graphqlApiKey=$GRAPHQL_API_KEY" >> local.properties
 
       - name: Build with Gradle
         run: ./gradlew build

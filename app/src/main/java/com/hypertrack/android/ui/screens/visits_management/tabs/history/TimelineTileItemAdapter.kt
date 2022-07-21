@@ -5,6 +5,7 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.appcompat.widget.AppCompatTextView
 import com.hypertrack.android.models.local.Drive
 import com.hypertrack.android.models.local.Stop
+import com.hypertrack.android.models.local.TrackingStopped
 import com.hypertrack.android.models.local.UnknownActivity
 import com.hypertrack.android.models.local.Walk
 import com.hypertrack.android.ui.base.BaseAdapter
@@ -37,7 +38,6 @@ class TimelineTileItemAdapter(
         private val activityTimeFrame: AppCompatTextView = holder.findViewById(R.id.tvTimeframe)
         private val statusStripe: AppCompatImageView = holder.findViewById(R.id.ivStatusStripe)
         private val eventIcon: AppCompatImageView = holder.findViewById(R.id.ivEventIcon)
-        private val notch: View = holder.findViewById(R.id.notch)
 
         override fun bind(item: TimelineTile) {
             activityIcon.setImageResourceNullable(
@@ -69,11 +69,17 @@ class TimelineTileItemAdapter(
             activityPlace.goneIfNull(item.address)
 
             statusStripe.setImageResource(
-                if (item.isOutage) {
-                    if (item.isStart) {
-                        R.drawable.ic_ht_timeline_outage_start
-                    } else {
-                        R.drawable.ic_ht_timeline_outage
+                if (item.payload is InactiveStatusTile) {
+                    when {
+                        item.payload.outageReason == TrackingStopped -> {
+                            R.drawable.ic_ht_timeline_outage_end
+                        }
+                        item.isStart -> {
+                            R.drawable.ic_ht_timeline_outage_start
+                        }
+                        else -> {
+                            R.drawable.ic_ht_timeline_outage
+                        }
                     }
                 } else {
                     if (item.isStart) {

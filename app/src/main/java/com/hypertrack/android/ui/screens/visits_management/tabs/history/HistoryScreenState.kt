@@ -1,7 +1,7 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.history
 
 import androidx.lifecycle.MutableLiveData
-import com.hypertrack.android.interactors.app.state.HistoryData
+import com.hypertrack.android.interactors.app.state.HistorySuccessState
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.utils.ErrorMessage
@@ -19,7 +19,7 @@ data class Initial(
 data class MapReadyState(
     val date: LocalDate,
     val map: HypertrackMapWrapper,
-    val historyData: LoadingState<HistoryData, ErrorMessage>,
+    val historyState: LoadingState<HistorySuccessState, ErrorMessage>,
     val viewEventHandle: MutableLiveData<Consumable<ViewEvent>>
 ) : HistoryScreenState()
 

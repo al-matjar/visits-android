@@ -7,6 +7,7 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.RectangularBounds
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.hypertrack.android.interactors.GooglePlacesInteractor
+import com.hypertrack.android.utils.Result
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -17,7 +18,7 @@ class GooglePlacesSearchDelegate(
 
     private var token: AutocompleteSessionToken? = null
 
-    suspend fun search(query: String, location: LatLng?): List<GooglePlaceModel> {
+    suspend fun search(query: String, location: LatLng?): Result<List<GooglePlaceModel>> {
         // Create a new token for the autocomplete session. Pass this to FindAutocompletePredictionsRequest,
         // and once again when the user makes a selection (for example when calling selectPlace()).
         if (token == null) {
@@ -27,7 +28,7 @@ class GooglePlacesSearchDelegate(
         return googlePlacesInteractor.getPlaces(query, token!!, location)
     }
 
-    suspend fun fetchPlace(item: GooglePlaceModel): Place {
+    suspend fun fetchPlace(item: GooglePlaceModel): Result<Place> {
         return googlePlacesInteractor.fetchPlace(item, token!!).also {
             token = null
         }

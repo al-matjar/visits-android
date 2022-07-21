@@ -16,7 +16,7 @@ import com.hypertrack.android.ui.common.UserScopeViewModelFactory
 import com.hypertrack.android.ui.common.ViewModelFactory
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.use_case.app.AppCreationUseCase
-import com.hypertrack.android.use_case.sdk.NewTrackingState
+import com.hypertrack.android.use_case.sdk.TrackingState
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.crashlytics.FirebaseCrashReportsProvider
 import com.hypertrack.android.utils.OsUtilsProvider
@@ -31,11 +31,9 @@ object Injector {
     lateinit var crashReportsProvider: CrashReportsProvider
     private lateinit var resourceProvider: ResourceProvider
 
-    private val trackingStateListener = { trackingState: NewTrackingState ->
-        crashReportsProvider.log(trackingState.toString())
+    private val trackingStateListener = { trackingState: TrackingState ->
+        crashReportsProvider.log("trackingStateListener $trackingState")
         appInteractor.handleAction(TrackingStateChangedAction(trackingState))
-    }.also {
-        Log.v("trackingStateListener", it.toString())
     }
 
     private lateinit var appInteractor: AppInteractor

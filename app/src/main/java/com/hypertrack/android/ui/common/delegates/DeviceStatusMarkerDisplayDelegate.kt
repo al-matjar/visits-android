@@ -14,11 +14,11 @@ import com.hypertrack.android.models.local.MotionActivityServicesUnavailable
 import com.hypertrack.android.models.local.Stop
 import com.hypertrack.android.models.local.TrackingServiceTerminated
 import com.hypertrack.android.models.local.TrackingStopped
-import com.hypertrack.android.models.local.Unexpected
 import com.hypertrack.android.models.local.Unknown
 import com.hypertrack.android.models.local.UnknownActivity
 import com.hypertrack.android.models.local.Walk
 import com.hypertrack.android.ui.common.adapters.formatUnderscore
+import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.android.utils.datetime.TimeValue
 import com.hypertrack.android.utils.datetime.OpenDateTimeRange
@@ -30,6 +30,7 @@ import java.time.ZonedDateTime
 
 class DeviceStatusMarkerDisplayDelegate(
     private val osUtilsProvider: OsUtilsProvider,
+    private val crashReportsProvider: CrashReportsProvider,
     private val distanceFormatter: DistanceFormatter,
     private val timeValueFormatter: TimeValueFormatter,
     private val dateTimeRangeFormatterDelegate: DateTimeRangeFormatterDelegate
@@ -71,8 +72,17 @@ class DeviceStatusMarkerDisplayDelegate(
             }
             is DeviceStatusMarkerInactive -> {
                 when (marker.reason) {
-                    is Unknown -> marker.reason.reason.formatUnderscore(capitalizeOnlyFirst = true)
-                    else -> osUtilsProvider.stringFromResource(marker.reason.stringRes)
+                    is Unknown -> {
+                        crashReportsProvider.logException(
+                            Exception(
+                                "unknown outage reason: ${marker.reason.reason}"
+                            )
+                        )
+                        marker.reason.reason.formatUnderscore(capitalizeOnlyFirst = true)
+                    }
+                    else -> {
+                        osUtilsProvider.stringFromResource(marker.reason.stringRes)
+                    }
                 }
 
             }

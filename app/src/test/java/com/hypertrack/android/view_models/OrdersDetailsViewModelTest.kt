@@ -20,11 +20,11 @@ import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.observeAndGetValue
+import com.hypertrack.android.ui.MainActivity.Companion.REQUEST_CODE_IMAGE_CAPTURE
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.common.adapters.formatUnderscore
 import com.hypertrack.android.ui.screens.order_details.OrderDetailsViewModel
-import com.hypertrack.android.ui.screens.order_details.OrderDetailsViewModel.Companion.REQUEST_IMAGE_CAPTURE
 import com.hypertrack.logistics.android.github.R
 import io.mockk.*
 import junit.framework.Assert.*
@@ -316,7 +316,7 @@ class OrdersDetailsViewModelTest {
             createVm("1", tripsInteractor, queueInteractor).let {
                 it.onAddPhotoClicked(mockk(relaxed = true), "")
                 it.onActivityResult(
-                    REQUEST_IMAGE_CAPTURE,
+                    REQUEST_CODE_IMAGE_CAPTURE,
                     AppCompatActivity.RESULT_OK,
                     null
                 )
@@ -489,13 +489,13 @@ class OrdersDetailsViewModelTest {
                 )
 
                 it.onActivityResult(
-                    REQUEST_IMAGE_CAPTURE,
+                    REQUEST_CODE_IMAGE_CAPTURE,
                     AppCompatActivity.RESULT_OK,
                     null
                 )
 
                 it.onActivityResult(
-                    REQUEST_IMAGE_CAPTURE,
+                    REQUEST_CODE_IMAGE_CAPTURE,
                     AppCompatActivity.RESULT_OK,
                     null
                 )

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class GetConfiguredHypertrackSdkInstanceUseCase(
-    private val trackingStateListener: (NewTrackingState) -> Unit,
+    private val trackingStateListener: (TrackingState) -> Unit,
     private val getHypertrackSdkInstanceUseCase: GetHypertrackSdkInstanceUseCase,
 ) {
 

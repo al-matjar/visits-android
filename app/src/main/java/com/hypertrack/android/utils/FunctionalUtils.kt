@@ -21,6 +21,14 @@ fun <T> tryAsResult(code: () -> T): Result<T> {
     }
 }
 
+suspend fun <T> tryAsResultSuspend(code: suspend () -> T): Result<T> {
+    return try {
+        Success(code.invoke())
+    } catch (e: Exception) {
+        Failure(e)
+    }
+}
+
 fun tryAsSimpleResult(code: () -> Unit): SimpleResult {
     return try {
         code.invoke().let { JustSuccess }

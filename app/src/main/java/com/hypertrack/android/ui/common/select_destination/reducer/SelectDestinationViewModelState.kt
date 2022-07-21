@@ -1,9 +1,7 @@
 package com.hypertrack.android.ui.common.select_destination.reducer
 
-import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
-import com.hypertrack.android.ui.common.select_destination.GooglePlaceModel
-import com.hypertrack.android.utils.NonEmptyList
+import com.hypertrack.android.ui.common.map_state.MapUiState
 
 // @formatter:off
 
@@ -14,48 +12,20 @@ data class MapNotReady(
     val waitingForUserLocationMove: Boolean
 ) : State()
 
-data class UserLocation(
-    val latLng: LatLng,
-    val address: String
-)
-
 data class MapReady(
-    val map: HypertrackMapWrapper,
+    val mapUiState: MapUiState,
     val userLocation: UserLocation?,
     val placeData: PlaceData,
     val flow: UserFlow,
     val waitingForUserLocationMove: Boolean
-) : State()
-
-sealed class PlaceData
-data class PlaceSelected(
-    val displayAddress: String,
-    val strictAddress: String?,
-    val name: String?,
-    val latLng: LatLng
-) : PlaceData()
-
-data class LocationSelected(
-    val latLng: LatLng,
-    val address: String,
-) : PlaceData()
-
-sealed class UserFlow
-object MapFlow : UserFlow() {
-    override fun toString(): String = javaClass.simpleName
+) : State() {
+    val map: HypertrackMapWrapper
+        get() = mapUiState.map
 }
-
-data class AutocompleteFlow(
-    val places: NonEmptyList<GooglePlaceModel>
-) : UserFlow()
 
 // @formatter:on
 
 fun MapNotReady.withUserLocation(userLocation: UserLocation): MapNotReady {
-    return copy(userLocation = userLocation)
-}
-
-fun MapReady.withUserLocation(userLocation: UserLocation): MapReady {
     return copy(userLocation = userLocation)
 }
 

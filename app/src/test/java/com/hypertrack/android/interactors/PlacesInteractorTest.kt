@@ -30,6 +30,7 @@ class PlacesInteractorTest {
             }
         }
         val placesInteractor = PlacesInteractorImpl(
+            appInteractor = mockk(),
             PlacesRepositoryImpl(
                 DeviceId("1"),
                 apiClient,
@@ -40,8 +41,7 @@ class PlacesInteractorTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
-            TestCoroutineScope(),
+            globalScope = TestCoroutineScope(),
         )
         runBlocking {
             placesInteractor.createGeofence(

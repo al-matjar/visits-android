@@ -5,7 +5,8 @@ import com.hypertrack.android.di.TripCreationScope
 import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.repository.user.UserData
-import com.hypertrack.android.use_case.sdk.NewTrackingState
+import com.hypertrack.android.use_case.app.UserScopeUseCases
+import com.hypertrack.android.use_case.sdk.TrackingState
 
 sealed class UserState
 object UserNotLoggedIn : UserState() {
@@ -14,10 +15,13 @@ object UserNotLoggedIn : UserState() {
 
 data class UserLoggedIn(
     val deviceId: DeviceId,
-    val userData: UserData,
     val userScope: UserScope,
-    val trackingState: NewTrackingState,
-    val userLocation: LatLng?,
+    val useCases: UserScopeUseCases,
+    val userData: UserData,
+    val trackingState: TrackingState,
     val history: HistoryState,
-    val tripCreationScope: TripCreationScope? = null
+    val userLocation: LatLng?,
+    val geofencesForMap: GeofencesForMapState = GeofencesForMapState(),
+    val tripCreationScope: TripCreationScope? = null,
 ) : UserState()
+

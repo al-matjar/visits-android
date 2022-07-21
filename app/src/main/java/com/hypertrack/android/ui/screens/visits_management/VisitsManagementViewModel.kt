@@ -1,9 +1,7 @@
 package com.hypertrack.android.ui.screens.visits_management
 
 import androidx.lifecycle.*
-import com.hypertrack.android.di.Injector
 import com.hypertrack.android.di.UserScope
-import com.hypertrack.android.interactors.app.RegisterScreenAction
 import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.AppInitialized
@@ -16,7 +14,7 @@ import com.hypertrack.android.ui.common.Tab
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.use_case.sdk.DeviceDeleted
 import com.hypertrack.android.use_case.sdk.LocationServicesDisabled
-import com.hypertrack.android.use_case.sdk.NewTrackingState
+import com.hypertrack.android.use_case.sdk.TrackingState
 import com.hypertrack.android.use_case.sdk.PermissionsDenied
 import com.hypertrack.android.use_case.sdk.TrackingFailure
 import com.hypertrack.android.use_case.sdk.TrackingStarted
@@ -67,7 +65,7 @@ class VisitsManagementViewModel(
                         is TrackingSwitchClickedAction -> {
                             switchTracking(
                                 action,
-                                trackingIndicatorState,
+                                trackingIndicatorState.requireValue(),
                                 userScope.hyperTrackService
                             )
                         }
@@ -79,7 +77,6 @@ class VisitsManagementViewModel(
                 is Success -> {
                 }
                 is Failure -> {
-//                    crashReportsProvider.logException(it.exception)
                     showExceptionMessageAndReport(it.exception)
                 }
             }.toFlow()
@@ -89,7 +86,6 @@ class VisitsManagementViewModel(
     private fun handleEffect(effectFlow: Flow<Unit>) {
         runInVmEffectsScope {
             effectFlow.catchException {
-//                crashReportsProvider.logException(it)
                 showExceptionMessageAndReport(it)
             }.collect()
         }
@@ -109,6 +105,7 @@ class VisitsManagementViewModel(
                 when (it) {
                     is Success -> {
                         if (it.data != false) {
+                            crashReportsProvider.log("initial_start_tracking")
                             userScope.hyperTrackService.startTracking()
                             preferencesRepository.trackingStartedOnFirstLaunch.save(false)
                         }
@@ -123,14 +120,16 @@ class VisitsManagementViewModel(
 
     private fun switchTracking(
         action: TrackingSwitchClickedAction,
-        indicatorState: MutableLiveData<TrackingIndicatorState>,
+        indicatorState: TrackingIndicatorState,
         hyperTrackService: HyperTrackService
     ): Flow<Result<Unit>> {
         return tryAsResult {
-            if (action.isChecked != trackingIndicatorState.requireValue().isTracking) {
-                if (trackingIndicatorState.requireValue().isTracking) {
+            if (action.isChecked != indicatorState.isTracking) {
+                if (indicatorState.isTracking) {
+                    crashReportsProvider.log("stop_tracking_pressed")
                     hyperTrackService.stopTracking()
                 } else {
+                    crashReportsProvider.log("start_tracking_pressed")
                     hyperTrackService.startTracking()
                 }
             }
@@ -163,7 +162,7 @@ class VisitsManagementViewModel(
         } as Any?
     }
 
-    private fun getTrackingIndicatorState(trackingState: NewTrackingState): TrackingIndicatorState {
+    private fun getTrackingIndicatorState(trackingState: TrackingState): TrackingIndicatorState {
         return when (trackingState) {
             TrackingStarted -> {
                 TrackingIndicatorState(

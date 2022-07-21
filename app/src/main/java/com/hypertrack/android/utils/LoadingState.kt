@@ -24,3 +24,18 @@ class Loading<S, F> : LoadingState<S, F>() {
 }
 
 data class LoadingFailure<S, F>(val failure: F) : LoadingState<S, F>()
+
+fun <S, F> S.asLoadingSuccess(): LoadingSuccess<S, F> {
+    return LoadingSuccess(this)
+}
+
+fun <S, F> F.asLoadingFailure(): LoadingFailure<S, F> {
+    return LoadingFailure(this)
+}
+
+fun <S> Result<S>.asLoadingState(): LoadingState<S, Exception> {
+    return when (this) {
+        is Success -> data.asLoadingSuccess()
+        is Failure -> exception.asLoadingFailure()
+    }
+}

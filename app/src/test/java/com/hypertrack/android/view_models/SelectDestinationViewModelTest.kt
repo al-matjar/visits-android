@@ -2,8 +2,11 @@ package com.hypertrack.android.view_models
 
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.MainCoroutineScopeRule
+import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
+import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.ui.common.select_destination.SelectDestinationViewModel
 import com.hypertrack.android.ui.common.select_destination.reducer.*
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -19,7 +22,9 @@ class SelectDestinationViewModelTest {
 
     @Test
     fun init() {
-        val reducer = SelectDestinationViewModelReducer()
+        val reducer = SelectDestinationViewModelReducer(
+            mapUiReducer = MapUiReducer()
+        )
 
         runBlocking {
             var state: State = SelectDestinationViewModelReducer.INITIAL_STATE
@@ -57,9 +62,9 @@ class SelectDestinationViewModelTest {
     private fun SelectDestinationViewModelReducer.sendAction(
         oldState: State,
         action: Action
-    ): ReducerResult {
+    ): ReducerResult<out State, Effect> {
         println("action = $action")
-        val res = reduceAction(oldState, action)
+        val res = reduceAction(oldState, action, userLoggedIn())
         println("new state = ${res.newState}")
         println("effects = ${res.effects}")
         return res

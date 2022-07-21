@@ -6,8 +6,10 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.ui.common.map_state.MapUiEffect
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.select_destination.DestinationData
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.ViewState
 import java.lang.Exception
 
 sealed class Effect {
@@ -19,7 +21,7 @@ data class ErrorEffect(val exception: Exception) : Effect()
 
 data class ClearAndMoveMapEffect(val map: HypertrackMapWrapper, val position: LatLng) : Effect()
 data class MoveMapEffect(val map: HypertrackMapWrapper, val position: LatLng) : Effect()
-data class SetMapActiveState(val map: HypertrackMapWrapper, val active: Boolean) : Effect()
+data class SetMapActiveStateEffect(val map: HypertrackMapWrapper, val active: Boolean) : Effect()
 data class AnimateMapEffect(val map: HypertrackMapWrapper, val position: LatLng) : Effect()
 data class AnimateMapToTripEffect(
     val map: HypertrackMapWrapper,
@@ -27,19 +29,7 @@ data class AnimateMapToTripEffect(
     val userLocation: LatLng?
 ) : Effect()
 
-data class ClearAndDisplayTripAndUserLocationOnMapEffect(
-    val map: HypertrackMapWrapper,
-    val trip: LocalTrip,
-    val userLocation: LatLng?
-) : Effect()
-
 data class ClearMapEffect(val map: HypertrackMapWrapper) : Effect()
-data class ClearMapAndDisplayUserLocationEffect(
-    val map: HypertrackMapWrapper,
-    val userLocation: LatLng?
-) : Effect()
-
-data class AddUserLocationToMap(val map: HypertrackMapWrapper, val location: LatLng?) : Effect()
 data class SubscribeOnUserScopeEventsEffect(val userScope: UserScope) : Effect()
 data class RefreshTripsEffect(val userScope: UserScope) : Effect()
 
@@ -64,4 +54,6 @@ data class ProceedTripCreationEffect(
 
 data class StartTripUpdateTimer(val userScope: UserScope) : Effect()
 data class StopTripUpdateTimer(val userScope: UserScope) : Effect()
+
+data class MapUiEffect(val effect: MapUiEffect) : Effect()
 

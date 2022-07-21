@@ -1,6 +1,6 @@
 package com.hypertrack.android.ui.screens.sign_in
 
-import com.hypertrack.android.utils.ReducerResult
+import com.hypertrack.android.utils.state_machine.ReducerResult
 
 data class State(
     val login: String,

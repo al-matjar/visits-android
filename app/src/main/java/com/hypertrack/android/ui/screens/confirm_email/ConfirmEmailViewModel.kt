@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.map
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class ConfirmEmailViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val appInteractor: AppInteractor,
     private val verifyByOtpCodeUseCase: VerifyByOtpCodeUseCase,
     private val resendEmailConfirmationUseCase: ResendEmailConfirmationUseCase,
     private val loadUserStateAfterSignInUseCase: LoadUserStateAfterSignInUseCase,

@@ -4,7 +4,7 @@ import androidx.lifecycle.*
 import com.google.android.gms.maps.GoogleMap
 import com.hypertrack.android.interactors.app.HistoryViewAppAction
 import com.hypertrack.android.interactors.app.AppInteractor
-import com.hypertrack.android.interactors.app.state.HistoryData
+import com.hypertrack.android.interactors.app.state.HistorySuccessState
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
 import com.hypertrack.android.ui.base.Consumable
@@ -24,7 +24,6 @@ import java.time.LocalDate
 @Suppress("OPT_IN_USAGE")
 class HistoryViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val appInteractor: AppInteractor,
     private val state: StateFlow<HistoryScreenState?>,
     private val dateTimeFormatter: DateTimeFormatter,
     private val timeValueFormatter: TimeValueFormatter,
@@ -104,8 +103,8 @@ class HistoryViewModel(
         val state = state.value
         return if (
             state is MapReadyState &&
-            state.historyData is LoadingSuccess<HistoryData, ErrorMessage> &&
-            state.historyData.data.bottomSheetExpanded
+            state.historyState is LoadingSuccess<HistorySuccessState, ErrorMessage> &&
+            state.historyState.data.bottomSheetExpanded
         ) {
             handleAction(OnBackPressedAction)
             true
@@ -132,33 +131,39 @@ class HistoryViewModel(
                 loadingViewState()
             }
             is MapReadyState -> {
-                when (state.historyData) {
+                when (state.historyState) {
                     is Loading -> loadingViewState()
                     is LoadingFailure -> {
                         ViewState(
                             dateText = null,
                             showProgressbar = false,
-                            errorText = state.historyData.failure,
+                            errorText = state.historyState.failure,
                             tiles = listOf(),
                             daySummaryTitle = null,
                             showTimelineRecyclerView = false,
                             showUpArrow = false,
-                            showAddGeotagButton = true,
                             totalDriveDurationText = null,
                             totalDriveDistanceText = null,
+                            showRefreshButton = false,
+                            bottomSheetEnabled = false
                         )
                     }
                     is LoadingSuccess -> {
-                        val historyData = state.historyData
+                        val historyData = state.historyState
                         val summary = historyData.data.summary
+                        val isToday = state.date == LocalDate.now()
                         ViewState(
-                            dateText = dateTimeFormatter.formatDate(state.date),
+                            dateText = if (isToday) {
+                                resourceProvider.stringFromResource(R.string.today)
+                            } else {
+                                dateTimeFormatter.formatDate(state.date)
+                            },
                             showProgressbar = false,
                             errorText = null,
                             tiles = historyData.data.timelineTiles,
-                            showAddGeotagButton = !historyData.data.bottomSheetExpanded,
                             showTimelineRecyclerView = !summary.isZero(),
                             showUpArrow = historyData.data.timelineTiles.isNotEmpty(),
+                            bottomSheetEnabled = historyData.data.timelineTiles.isNotEmpty(),
                             totalDriveDurationText = if (!summary.isZero()) {
                                 timeValueFormatter.formatTimeValue(summary.totalDriveDuration).let {
                                     osUtilsProvider.stringFromResource(
@@ -182,6 +187,7 @@ class HistoryViewModel(
                                     R.string.timeline_empty_summary
                                 }
                             ),
+                            showRefreshButton = isToday
                         )
                     }
                 }
@@ -201,9 +207,10 @@ class HistoryViewModel(
             daySummaryTitle = null,
             showTimelineRecyclerView = false,
             showUpArrow = false,
-            showAddGeotagButton = true,
             totalDriveDurationText = null,
             totalDriveDistanceText = null,
+            showRefreshButton = false,
+            bottomSheetEnabled = false,
         )
     }
 

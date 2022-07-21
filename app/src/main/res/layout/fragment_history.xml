@@ -75,6 +75,17 @@
         app:srcCompat="@drawable/ic_plus"
         app:tint="@color/colorWhite" />
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/bRefreshHistory"
+        style="@style/FloatingActionButtonSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:background="@color/colorRed"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_refresh" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 

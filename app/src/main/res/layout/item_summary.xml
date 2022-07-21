@@ -11,8 +11,7 @@
     <ImageView
         android:id="@+id/ivItemIcon"
         android:layout_width="24dp"
-        android:layout_height="24dp"
-        tools:srcCompat="@drawable/ic_checkout" />
+        android:layout_height="24dp" />
 
     <TextView
         android:id="@+id/tvItemName"

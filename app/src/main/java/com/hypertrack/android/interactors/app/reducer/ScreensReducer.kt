@@ -52,7 +52,7 @@ import com.hypertrack.android.interactors.app.state.TabsView
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.Initial
-import com.hypertrack.android.utils.ReducerResult
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.withEffects
 import java.time.LocalDate
@@ -141,7 +141,8 @@ class ScreensReducer(
             }
         ) { userLoggedIn ->
             historyViewReducer.map(userLoggedIn, userLoggedIn.history, initial).withEffects {
-                it + setOf(
+                val historyEffects = it.effects
+                val startLoadingEffect = setOf(
                     AppActionEffect(
                         HistoryAppAction(
                             StartDayHistoryLoadingAction(
@@ -151,6 +152,7 @@ class ScreensReducer(
                         )
                     )
                 )
+                historyEffects + startLoadingEffect
             }
         }.withState {
             HistoryTab(it)

@@ -12,6 +12,7 @@ class Visit(
     val visitId: String,
     val title: String,
     val durationText: String?,
+    val dateTimeText: String?,
     val routeToText: String?,
     val integrationName: String?,
     val addressText: String

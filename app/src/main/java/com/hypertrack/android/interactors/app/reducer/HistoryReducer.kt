@@ -20,7 +20,7 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.history.OnResume
 import com.hypertrack.android.utils.Loading
 import com.hypertrack.android.utils.LoadingFailure
 import com.hypertrack.android.utils.LoadingSuccess
-import com.hypertrack.android.utils.ReducerResult
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.withEffects
 import java.time.LocalDate
@@ -100,10 +100,12 @@ class HistoryReducer(
         return when (action) {
             is StartDayHistoryLoadingAction -> {
                 val shouldLoad = if (action.day == LocalDate.now()) {
-                    ChronoUnit.MILLIS.between(
+                    val timeoutPassed = ChronoUnit.MILLIS.between(
                         oldState.lastTodayReload,
                         ZonedDateTime.now()
-                    ) > HISTORY_RELOAD_TIMEOUT && oldState.days[action.day].let { day ->
+                    ) > HISTORY_RELOAD_TIMEOUT || action.forceReloadIfTimeout
+
+                    timeoutPassed && oldState.days[action.day].let { day ->
                         if (day != null) {
                             // should load if not already loading
                             action.forceReloadIfLoading || day !is Loading

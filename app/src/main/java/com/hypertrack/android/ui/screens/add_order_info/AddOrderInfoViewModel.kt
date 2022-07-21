@@ -28,7 +28,6 @@ import kotlinx.coroutines.withContext
 class AddOrderInfoViewModel(
     private val params: AddOrderParams,
     baseDependencies: BaseViewModelDependencies,
-    private val appInteractor: AppInteractor,
     private val tripsInteractor: TripsInteractor,
     private val geocodingInteractor: GeocodingInteractor,
 ) : BaseViewModel(baseDependencies) {

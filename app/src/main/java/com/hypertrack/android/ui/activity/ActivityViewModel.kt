@@ -1,7 +1,9 @@
 package com.hypertrack.android.ui.activity
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
@@ -11,9 +13,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDirections
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.hypertrack.android.deeplink.BranchWrapper
 import com.hypertrack.android.di.AppScope
-import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.AppAction
 import com.hypertrack.android.interactors.app.AppErrorAction
 import com.hypertrack.android.interactors.app.AppInteractor
@@ -21,12 +25,13 @@ import com.hypertrack.android.interactors.app.ActivityOnNewIntent
 import com.hypertrack.android.ui.activity.use_case.HandleDeeplinkResultUseCase
 import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
-import com.hypertrack.android.interactors.app.DeeplinkCheckedAction
-import com.hypertrack.android.interactors.app.RegisterScreenAction
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
+import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.activity.use_case.HandleNotificationClickUseCase
+import com.hypertrack.android.ui.activity.use_case.CheckForUpdatesUseCase
+import com.hypertrack.android.ui.activity.use_case.RequestUpdateIfAvailableUseCase
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.withErrorHandling
 import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionError
@@ -37,6 +42,7 @@ import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.ErrorMessage
+import com.hypertrack.android.utils.MyApplication.Companion.context
 import com.hypertrack.android.utils.NotificationUtil
 import com.hypertrack.android.utils.catchException
 import kotlinx.coroutines.CoroutineScope
@@ -79,6 +85,10 @@ class ActivityViewModel(
     private val handleDeeplinkResultUseCase = HandleDeeplinkResultUseCase(
         getBranchDataFromAppBackendUseCase
     )
+    private val requestUpdateIfAvailableUseCase = RequestUpdateIfAvailableUseCase(
+        CheckForUpdatesUseCase()
+    )
+
     private val deeplinkDelegate = DeeplinkDelegate(appCoroutineScope, branchWrapper)
 
     init {
@@ -103,8 +113,13 @@ class ActivityViewModel(
         // no need for DeeplinkCheckStartedAction because it
         // either called with SplashScreen or onNewIntent will be called anyway
         deeplinkDelegate.onActivityStart(activity, intent)
+
         withErrorHandling(this::onError) {
             showPermissionPrompt()
+        }
+
+        runInVmEffectsScope {
+            handleEffect(requestUpdateIfAvailableUseCase.execute(activity))
         }
     }
 

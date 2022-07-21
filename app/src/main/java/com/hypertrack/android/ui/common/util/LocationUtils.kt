@@ -1,6 +1,7 @@
 package com.hypertrack.android.ui.common.util
 
 import android.location.Location
+import com.fonfon.kgeohash.GeoHash
 import com.google.android.gms.maps.model.LatLng
 import kotlin.math.pow
 import kotlin.math.round
@@ -44,6 +45,10 @@ fun LatLng.format(): String {
 
 fun LatLng.copy(latitude: Double? = null, longitude: Double? = null): LatLng {
     return LatLng(latitude ?: this.latitude, longitude ?: this.longitude)
+}
+
+fun LatLng.getGeoHash(charsCount: Int = 4): GeoHash {
+    return GeoHash(latitude, longitude, charsCount)
 }
 
 

@@ -4,6 +4,8 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -13,7 +15,13 @@ import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.UserLocationChangedAction
 import com.hypertrack.android.ui.common.util.toLatLng
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.Exception
+import kotlin.coroutines.suspendCoroutine
 
 interface DeviceLocationProvider {
     val deviceLocation: MutableLiveData<LatLng?>
@@ -22,52 +30,76 @@ interface DeviceLocationProvider {
 
 class FusedDeviceLocationProvider(
     private val appInteractor: AppInteractor,
+    private val appCoroutineScope: CoroutineScope,
     private val context: Context,
-    private val crashReportsProvider: CrashReportsProvider
+    private val hyperTrackService: HyperTrackService,
+    private val crashReportsProvider: CrashReportsProvider,
 ) : DeviceLocationProvider, LocationCallback() {
 
     private val locationClient = LocationServices.getFusedLocationProviderClient(context)
 
     override val deviceLocation: MutableLiveData<LatLng?> = MutableLiveData()
 
-    // todo check permissions
     init {
         try {
-            locationClient.requestLocationUpdates(LocationRequest.create().apply {
-                priority = LocationRequest.PRIORITY_NO_POWER
-            }, this, context.mainLooper)
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                locationClient.requestLocationUpdates(LocationRequest.create().apply {
+                    priority = LocationRequest.PRIORITY_NO_POWER
+                }, this, context.mainLooper)
+            } else {
+                crashReportsProvider.logException(Exception("No Location permissions"))
+            }
         } catch (e: Exception) {
             crashReportsProvider.logException(e)
         }
     }
 
+    // todo remove legacy
     override fun getCurrentLocation(callback: (latLng: LatLng?) -> Unit) {
-        if (context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            try {
-                locationClient.lastLocation
-                    .addOnCompleteListener {
-                        if (it.isSuccessful && it.result != null)
-                            callback.invoke(it.result.toLatLng())
-                        else {
-                            callback.invoke(null)
-                        }
+        appCoroutineScope.launch {
+            getCurrentLocationFromFusedProvider().let {
+                it ?: hyperTrackService.latestLocation.toLatLng()
+            }.also {
+                withContext(Dispatchers.Main) {
+                    callback.invoke(it)
+                }
+            }
+        }
+    }
+
+    private suspend fun getCurrentLocationFromFusedProvider(): LatLng? {
+        return if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            locationClient.lastLocation.toSuspendCoroutine().let {
+                when (it) {
+                    is Success -> {
+                        it.data.toLatLng()
                     }
-                    .addOnFailureListener {
-                        crashReportsProvider.logException(it)
-                        callback.invoke(null)
+                    is Failure -> {
+                        crashReportsProvider.logException(it.exception)
+                        null
                     }
-            } catch (e: Exception) {
-                crashReportsProvider.logException(e)
-                callback.invoke(null)
+                }
             }
         } else {
-            crashReportsProvider.logException(IllegalStateException("FusedDeviceLocationProvider: No location permissions"))
-            callback.invoke(null)
+            crashReportsProvider.logException(
+                IllegalStateException(
+                    "FusedDeviceLocationProvider: No location permissions"
+                )
+            )
+            null
         }
     }
 
     override fun onLocationResult(result: LocationResult) {
-        result.lastLocation?.toLatLng().let {
+        result.lastLocation.toLatLng().let {
             appInteractor.handleAction(UserLocationChangedAction(it))
             deviceLocation.postValue(it)
         }

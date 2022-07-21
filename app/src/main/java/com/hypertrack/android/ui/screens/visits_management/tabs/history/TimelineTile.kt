@@ -7,16 +7,14 @@ import com.hypertrack.android.models.local.OutageReason
 import com.hypertrack.android.models.local.UserActivity
 import java.time.ZonedDateTime
 
-//todo locations
 data class TimelineTile(
     val datetime: ZonedDateTime,
     val payload: TimelineTilePayload,
-    val isStart: Boolean,
-    val isOutage: Boolean,
     val description: String,
     val timeString: String?,
     val address: String?,
-    val locations: List<LatLng>?
+    val locations: List<LatLng>?,
+    val isStart: Boolean = false
 )
 
 sealed class TimelineTilePayload {

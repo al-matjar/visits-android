@@ -15,12 +15,13 @@ import com.hypertrack.android.interactors.app.action.StartDayHistoryLoadingActio
 import com.hypertrack.android.interactors.app.effect.MoveMapToBoundsEffect
 import com.hypertrack.android.interactors.app.effect.MoveMapToLocationEffect
 import com.hypertrack.android.interactors.app.effect.UpdateMapEffect
-import com.hypertrack.android.interactors.app.state.HistoryData
+import com.hypertrack.android.interactors.app.state.HistorySuccessState
 import com.hypertrack.android.interactors.app.state.HistoryState
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.models.local.DeviceStatusMarkerActive
 import com.hypertrack.android.models.local.DeviceStatusMarkerInactive
 import com.hypertrack.android.models.local.History
+import com.hypertrack.android.models.local.TrackingStopped
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.ActiveStatusTile
@@ -57,7 +58,7 @@ import com.hypertrack.android.utils.LoadingFailure
 import com.hypertrack.android.utils.LoadingState
 import com.hypertrack.android.utils.LoadingSuccess
 import com.hypertrack.android.utils.MyApplication
-import com.hypertrack.android.utils.ReducerResult
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.withEffects
 import com.hypertrack.logistics.android.github.R
@@ -93,11 +94,11 @@ class HistoryViewReducer(
                     when (historyState) {
                         is LoadingSuccess -> {
                             val historyViewState = getHistorySuccessState(
-                                viewState.historyData,
+                                viewState.historyState,
                                 historyState.data
                             )
                             viewState.copy(
-                                historyData = historyState.mapSuccess { historyViewState }
+                                historyState = historyState.mapSuccess { historyViewState }
                             ).withEffects(
                                 getUpdateAndMoveMapEffects(
                                     viewState.map,
@@ -108,8 +109,8 @@ class HistoryViewReducer(
                         }
                         is Loading, is LoadingFailure -> {
                             viewState.copy(
-                                historyData = historyState.mapSuccess {
-                                    getHistorySuccessState(viewState.historyData, it)
+                                historyState = historyState.mapSuccess {
+                                    getHistorySuccessState(viewState.historyState, it)
                                 }
                             ).withEffects()
                         }
@@ -154,7 +155,19 @@ class HistoryViewReducer(
             is ViewReadyAction -> {
                 viewState.copy(map = action.map, viewEventHandle = action.viewEventHandle)
                     .withEffects(
-                        getUpdateAndMoveMapEffects(action.map, historyState, userState.userLocation)
+                        getUpdateAndMoveMapEffects(
+                            action.map,
+                            historyState,
+                            userState.userLocation
+                        ) + when (viewState.historyState) {
+                            is LoadingSuccess -> {
+                                changeBottomSheetStateEffect(
+                                    viewState.historyState.data.bottomSheetExpanded,
+                                    viewState
+                                )
+                            }
+                            else -> setOf()
+                        }
                     )
             }
             is OnDateSelectedAction -> {
@@ -230,7 +243,19 @@ class HistoryViewReducer(
                     )
                 )
             }
-            OnReloadPressedAction, OnResumeAction -> {
+            OnReloadPressedAction -> {
+                viewState.withEffects(
+                    AppActionEffect(
+                        HistoryAppAction(
+                            StartDayHistoryLoadingAction(
+                                viewState.date,
+                                forceReloadIfTimeout = true
+                            )
+                        )
+                    )
+                )
+            }
+            OnResumeAction -> {
                 viewState.withEffects(
                     AppActionEffect(HistoryAppAction(StartDayHistoryLoadingAction(viewState.date)))
                 )
@@ -261,10 +286,7 @@ class HistoryViewReducer(
                     historyState.mapSuccess { getHistorySuccessState(Loading(), it) },
                     action.viewEventHandle
                 ).withEffects(
-                    getUpdateAndMoveMapEffects(action.map, historyState, userState.userLocation) +
-                            setOf(
-
-                            )
+                    getUpdateAndMoveMapEffects(action.map, historyState, userState.userLocation)
                 )
             }
             OnResumeAction -> {
@@ -309,10 +331,10 @@ class HistoryViewReducer(
     }
 
     private fun getHistorySuccessState(
-        oldState: LoadingState<HistoryData, ErrorMessage>,
+        oldState: LoadingState<HistorySuccessState, ErrorMessage>,
         history: History
-    ): HistoryData {
-        return HistoryData(
+    ): HistorySuccessState {
+        return HistorySuccessState(
             timelineTiles = mapHistoryToTiles(history),
             summary = DaySummary(
                 history.summary.totalDriveDistance,
@@ -333,8 +355,6 @@ class HistoryViewReducer(
                     TimelineTile(
                         it.arrival.value,
                         GeofenceVisitTile(it),
-                        isStart = false,
-                        isOutage = false,
                         description = appScope.geofenceVisitDisplayDelegate.getGeofenceName(it),
                         timeString = appScope.geofenceVisitDisplayDelegate.getVisitTimeTextForTimeline(
                             it
@@ -347,8 +367,6 @@ class HistoryViewReducer(
                     TimelineTile(
                         it.createdAt,
                         GeotagTile(it),
-                        isStart = false,
-                        isOutage = false,
                         description = appScope.osUtilsProvider.stringFromResource(R.string.geotag),
                         address = appScope.geotagDisplayDelegate.formatMetadata(it),
                         timeString = appScope.geotagDisplayDelegate.getTimeTextForTimeline(it),
@@ -363,7 +381,6 @@ class HistoryViewReducer(
                             is DeviceStatusMarkerInactive -> InactiveStatusTile(it.reason)
                         },
                         isStart = false,
-                        isOutage = false,
                         description = appScope.deviceStatusMarkerDisplayDelegate.getDescription(it),
                         address = appScope.deviceStatusMarkerDisplayDelegate.getAddress(it),
                         timeString = appScope.deviceStatusMarkerDisplayDelegate.getTimeStringForTimeline(
@@ -377,6 +394,19 @@ class HistoryViewReducer(
             .toMutableList()
             .apply {
                 firstOrNull()?.let { this[0] = this[0].copy(isStart = true) }
+            }
+            .let {
+                it.mapIndexed { index, timelineTile ->
+                    if (index > 0) {
+                        val previous = it[index - 1]
+                        if (
+                            previous.payload is InactiveStatusTile &&
+                            previous.payload.outageReason == TrackingStopped
+                        ) {
+                            timelineTile.copy(isStart = true)
+                        } else timelineTile
+                    } else timelineTile
+                }
             }
     }
 
@@ -395,10 +425,10 @@ class HistoryViewReducer(
     private fun withLoadingSuccess(
         action: HistoryViewAction,
         state: MapReadyState,
-        block: (HistoryData) -> ReducerResult<HistoryScreenState, AppEffect>
+        block: (HistorySuccessState) -> ReducerResult<HistoryScreenState, AppEffect>
     ): ReducerResult<HistoryScreenState, AppEffect> {
-        return when (state.historyData) {
-            is LoadingSuccess -> block.invoke(state.historyData.data)
+        return when (state.historyState) {
+            is LoadingSuccess -> block.invoke(state.historyState.data)
             is Loading, is LoadingFailure -> illegalAction(action, state)
         }
     }
@@ -410,23 +440,30 @@ class HistoryViewReducer(
     ): ReducerResult<HistoryScreenState, AppEffect> {
         return withLoadingSuccess(action, state) { historyData ->
             val newState = toExpandedState.invoke(historyData.bottomSheetExpanded)
-            state.copy(historyData = state.historyData.mapSuccess {
+            state.copy(historyState = state.historyState.mapSuccess {
                 it.copy(bottomSheetExpanded = newState)
             }).withEffects(
                 if (historyData.bottomSheetExpanded != newState) {
-                    setOf(
-                        HistoryViewEffect(
-                            ViewEventEffect(
-                                state.viewEventHandle, SetBottomSheetStateEvent(
-                                    expanded = newState,
-                                    arrowDown = newState,
-                                )
-                            )
-                        )
-                    )
+                    changeBottomSheetStateEffect(newState, state)
                 } else setOf()
             )
         }
+    }
+
+    private fun changeBottomSheetStateEffect(
+        newState: Boolean,
+        state: MapReadyState
+    ): Set<AppEffect> {
+        return setOf(
+            HistoryViewEffect(
+                ViewEventEffect(
+                    state.viewEventHandle, SetBottomSheetStateEvent(
+                        expanded = newState,
+                        arrowDown = newState,
+                    )
+                )
+            )
+        )
     }
 
     private fun getUpdateAndMoveMapEffects(

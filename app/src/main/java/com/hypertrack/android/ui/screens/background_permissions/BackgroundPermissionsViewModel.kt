@@ -16,7 +16,6 @@ import com.hypertrack.android.utils.exception.IllegalActionException
 
 class BackgroundPermissionsViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val appInteractor: AppInteractor,
 ) : BaseViewModel(baseDependencies) {
 
     fun handleAction(action: Action) {

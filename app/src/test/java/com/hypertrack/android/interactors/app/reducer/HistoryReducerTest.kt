@@ -8,16 +8,14 @@ import com.hypertrack.android.interactors.app.action.StartDayHistoryLoadingActio
 import com.hypertrack.android.interactors.app.state.HistoryState
 import com.hypertrack.android.interactors.app.state.HistoryStateTest.Companion.historyState
 import com.hypertrack.android.models.local.History
-import com.hypertrack.android.ui.screens.visits_management.tabs.history.Initial
 import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.Loading
 import com.hypertrack.android.utils.LoadingFailure
 import com.hypertrack.android.utils.LoadingState
 import com.hypertrack.android.utils.LoadingSuccess
-import com.hypertrack.android.utils.ReducerResult
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate

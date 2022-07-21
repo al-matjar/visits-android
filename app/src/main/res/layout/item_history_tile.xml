@@ -77,15 +77,5 @@
         app:layout_constraintTop_toBottomOf="@id/tvActivitySummary"
         tools:ignore="HardcodedText" />
 
-    <View
-        android:id="@+id/notch"
-        android:layout_width="140dp"
-        android:layout_height="2dp"
-        android:background="@color/tertiary_2_xdark"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

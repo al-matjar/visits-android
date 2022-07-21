@@ -1,93 +1,107 @@
 package com.hypertrack.android.ui.common.select_destination.reducer
 
+import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map_state.AddGeofencesMapUiAction
+import com.hypertrack.android.ui.common.map_state.MapUiReducer
+import com.hypertrack.android.ui.common.map_state.MapUiState
+import com.hypertrack.android.ui.common.map_state.OnMapMovedMapUiAction
+import com.hypertrack.android.ui.common.map_state.UpdateMapViewMapUiAction
+import com.hypertrack.android.ui.common.map_state.UpdateUserLocationMapUiAction
+import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.exception.IllegalActionException
+import com.hypertrack.android.utils.withEffects
 
-class SelectDestinationViewModelReducer {
+class SelectDestinationViewModelReducer(
+    private val mapUiReducer: MapUiReducer
+) {
 
-    fun reduceAction(state: State, action: Action): ReducerResult {
-        return when (action) {
-            is UserLocationReceived -> {
-                reduce(action, state)
-            }
-            is MapReadyAction -> {
-                when (state) {
-                    is MapNotReady -> {
-                        val userLocationEffects = getMapMoveEffectsIfNeeded(
-                            state.waitingForUserLocationMove,
-                            state.userLocation,
-                            action.map
-                        )
-
-                        val displayUserLocationEffect = if (state.userLocation != null) {
-                            setOf(DisplayUserLocation(state.userLocation.latLng, action.map))
-                        } else {
-                            setOf()
-                        }
-
-                        MapReady(
-                            action.map,
-                            state.userLocation,
-                            LocationSelected(
-                                action.cameraPosition,
-                                action.address
-                            ),
-                            MapFlow,
-                            waitingForUserLocationMove = if (state.waitingForUserLocationMove) {
-                                userLocationEffects.isEmpty()
-                            } else {
-                                false
-                            }
-                        ).withEffects(
-                            userLocationEffects + displayUserLocationEffect + setOf(
-                                HideProgressbar
+    fun reduceAction(
+        state: State,
+        action: Action,
+        userState: UserLoggedIn
+    ): ReducerResult<out State, Effect> {
+        return when (state) {
+            is MapReady -> {
+                when (action) {
+                    is UserLocationReceived -> {
+                        // todo change to subscription
+                        // todo move map to user location only one time at start
+                        val userLocation = UserLocation(action.latLng, action.address)
+                        mapUiReducer.reduce(
+                            UpdateUserLocationMapUiAction(action.latLng),
+                            state.mapUiState
+                        ).withState {
+                            state.copy(
+                                userLocation = userLocation,
+                                mapUiState = it
                             )
-                        )
+                        }.withEffects { result ->
+                            val mapUiEffects = result.effects.map { MapUiEffect(it) }.toSet()
+                            mapUiEffects + getMapMoveEffectsIfNeeded(
+                                state.waitingForUserLocationMove,
+                                userLocation,
+                                state.map
+                            )
+                        }
                     }
-                    is MapReady -> throw IllegalActionException(action, state)
-                }
-            }
-            is MapCameraMoved -> {
-                when (state) {
-                    is MapReady -> {
+                    is MapReadyAction -> {
+                        mapUiReducer.reduce(
+                            UpdateMapViewMapUiAction(action.map),
+                            state.mapUiState
+                        ).withState {
+                            state.copy(mapUiState = it)
+                        }.withEffects { result ->
+                            result.effects.map { MapUiEffect(it) }.toSet()
+                        }
+                    }
+                    is MapCameraMoved -> {
                         @Suppress("RedundantIf")
                         when (state.flow) {
-                            is AutocompleteFlow -> state.asReducerResult()
+                            is AutocompleteFlow -> {
+                                state.withEffects()
+                            }
                             MapFlow -> {
                                 when (action.cause) {
-                                    MovedToPlace -> state.asReducerResult()
+                                    MovedToPlace -> {
+                                        state.withEffects()
+                                    }
                                     MovedToUserLocation, MovedByUser -> {
-                                        MapReady(
-                                            state.map,
-                                            state.userLocation,
-                                            LocationSelected(
-                                                action.latLng,
-                                                action.address
-                                            ),
-                                            MapFlow,
-                                            //if user performed map move or clicked a place (which leads to programmatic move)
-                                            //we don't need to move map to his location anymore
-                                            //unless it was first map movement near zero coordinates on map init
-                                            waitingForUserLocationMove = if (!action.isNearZero) {
-                                                false
-                                            } else {
-                                                true
-                                            }
-                                        ).withEffects(
-                                            DisplayLocationInfo(action.address, null)
-                                        )
+                                        mapUiReducer.reduce(
+                                            OnMapMovedMapUiAction(action.latLng),
+                                            state.mapUiState
+                                        ).withState {
+                                            MapReady(
+                                                it,
+                                                state.userLocation,
+                                                LocationSelected(
+                                                    action.latLng,
+                                                    action.address
+                                                ),
+                                                MapFlow,
+                                                //if user performed map move or clicked a place (which leads to programmatic move)
+                                                //we don't need to move map to his location anymore
+                                                //unless it was first map movement near zero coordinates on map init
+                                                waitingForUserLocationMove = if (!action.isNearZero) {
+                                                    false
+                                                } else {
+                                                    true
+                                                }
+                                            )
+                                        }.withEffects {
+                                            val mapEffects =
+                                                it.effects.map { MapUiEffect(it) }.toSet()
+                                            mapEffects + setOf(
+                                                DisplayLocationInfo(action.address, null)
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    is MapNotReady -> state.withEffects()
-                }
-            }
-            is PlaceSelectedAction -> {
-                when (state) {
-                    is MapNotReady -> throw IllegalActionException(action, state)
-                    is MapReady -> {
+                    is PlaceSelectedAction -> {
                         val place = PlaceSelected(
                             latLng = action.latLng,
                             displayAddress = action.displayAddress,
@@ -107,74 +121,111 @@ class SelectDestinationViewModelReducer {
                                 ),
                             )
                     }
-                }
-            }
-            is MapClicked -> {
-                when (state) {
-                    is MapNotReady -> throw IllegalActionException(action, state)
-                    is MapReady -> when (state.flow) {
-                        MapFlow -> state.asReducerResult()
-                        is AutocompleteFlow -> state.withMapFlow(MapFlow)
-                            .withEffects(
-                                CloseKeyboard,
-                                ClearSearchQuery,
-                                RemoveSearchFocus,
-                                DisplayLocationInfo(action.address, null)
-                            )
+                    is MapClicked -> {
+                        when (state.flow) {
+                            MapFlow -> state.withEffects()
+                            is AutocompleteFlow -> state.withMapFlow(MapFlow)
+                                .withEffects(
+                                    CloseKeyboard,
+                                    ClearSearchQuery,
+                                    RemoveSearchFocus,
+                                    DisplayLocationInfo(action.address, null)
+                                )
+                        }
                     }
-                }
-            }
-            is SearchQueryChanged -> {
-                when (state) {
-                    is MapNotReady -> throw IllegalActionException(action, state)
-                    is MapReady -> state.withAutocompleteFlow(AutocompleteFlow(action.results))
-                        .asReducerResult()
-                }
-            }
-            is AutocompleteError -> {
-                when (state) {
-                    is MapNotReady -> throw IllegalActionException(action, state)
-                    is MapReady -> state.withMapFlow(MapFlow)
-                        .withEffects(CloseKeyboard)
-                }
-            }
-            ConfirmClicked -> {
-                when (state) {
-                    is MapNotReady -> throw IllegalActionException(action, state)
-                    is MapReady -> state.withEffects(
-                        CloseKeyboard,
-                        Proceed(state.placeData)
-                    )
-                }
-            }
-            ShowMyLocationAction -> {
-                when (state) {
-                    is MapReady -> {
+                    is SearchQueryChanged -> {
+                        state.withAutocompleteFlow(AutocompleteFlow(action.results))
+                            .withEffects()
+                    }
+                    is AutocompleteError -> {
+                        state.withMapFlow(MapFlow)
+                            .withEffects(CloseKeyboard)
+                    }
+                    ConfirmClicked -> {
                         state.withEffects(
-                            if (state.userLocation != null) {
-                                setOf(AnimateMapToUserLocation(state.userLocation, state.map))
-                            } else {
-                                setOf()
-                            }
+                            CloseKeyboard,
+                            Proceed(state.placeData, userState.useCases)
                         )
                     }
-                    is MapNotReady -> state.asReducerResult()
+                    ShowMyLocationAction -> {
+                        state.withEffects(
+                            if (state.userLocation != null) {
+                                setOf(
+                                    AnimateMapToUserLocation(
+                                        state.userLocation,
+                                        state.map
+                                    )
+                                )
+                            } else setOf()
+                        )
+                    }
+                    is GeofencesOnMapUpdatedAction -> {
+                        mapUiReducer.reduce(
+                            AddGeofencesMapUiAction(action.geofences),
+                            state.mapUiState
+                        ).withState {
+                            state.copy(mapUiState = it)
+                        }.withEffects { result ->
+                            result.effects.map { MapUiEffect(it) }.toSet()
+                        }
+                    }
                 }
             }
-        }
-    }
+            is MapNotReady -> {
+                when (action) {
+                    is MapReadyAction -> {
+                        val userLocationEffects = getMapMoveEffectsIfNeeded(
+                            state.waitingForUserLocationMove,
+                            state.userLocation,
+                            action.map
+                        )
 
-    private fun reduce(action: UserLocationReceived, state: State): ReducerResult {
-        val userLocation = UserLocation(action.latLng, action.address)
-        return when (state) {
-            is MapNotReady -> state.withUserLocation(userLocation).asReducerResult()
-            is MapReady -> state.withUserLocation(userLocation).withEffects(
-                getMapMoveEffectsIfNeeded(
-                    state.waitingForUserLocationMove,
-                    userLocation,
-                    state.map
-                ) + setOf(DisplayUserLocation(userLocation.latLng, state.map))
-            )
+                        mapUiReducer.reduce(
+                            UpdateMapViewMapUiAction(action.map), MapUiState(
+                                action.map,
+                                userLocation = state.userLocation?.latLng
+                            )
+                        ).withState {
+                            MapReady(
+                                it,
+                                state.userLocation,
+                                LocationSelected(
+                                    action.cameraPosition,
+                                    action.address
+                                ),
+                                MapFlow,
+                                waitingForUserLocationMove = if (state.waitingForUserLocationMove) {
+                                    userLocationEffects.isEmpty()
+                                } else {
+                                    false
+                                }
+                            )
+                        }.withEffects { result ->
+                            val mapUiEffects = result.effects.map { MapUiEffect(it) }
+                            userLocationEffects + mapUiEffects + setOf(
+                                HideProgressbar
+                            )
+                        }
+                    }
+                    is UserLocationReceived -> {
+                        val userLocation = UserLocation(action.latLng, action.address)
+                        state.withUserLocation(userLocation).withEffects()
+                    }
+                    ShowMyLocationAction,
+                    ConfirmClicked,
+                    is GeofencesOnMapUpdatedAction -> {
+                        // ignore
+                        state.withEffects()
+                    }
+                    is AutocompleteError,
+                    is SearchQueryChanged,
+                    is MapClicked,
+                    is PlaceSelectedAction,
+                    is MapCameraMoved -> {
+                        illegalAction(action, state)
+                    }
+                }
+            }
         }
     }
 
@@ -193,25 +244,15 @@ class SelectDestinationViewModelReducer {
         }
     }
 
+    private fun illegalAction(action: Action, state: State): ReducerResult<State, Effect> {
+        return if (MyApplication.DEBUG_MODE) {
+            throw IllegalActionException(action, state)
+        } else {
+            state.withEffects()
+        }
+    }
+
     companion object {
         val INITIAL_STATE = MapNotReady(null, true)
     }
 }
-
-class ReducerResult(val newState: State, val effects: Set<Effect>) {
-    constructor(newState: State) : this(newState, setOf())
-}
-
-fun State.asReducerResult(): ReducerResult {
-    return ReducerResult(this)
-}
-
-fun State.withEffects(effects: Set<Effect>): ReducerResult {
-    return ReducerResult(this, effects)
-}
-
-fun State.withEffects(vararg effect: Effect): ReducerResult {
-    return ReducerResult(this, effect.toMutableSet())
-}
-
-

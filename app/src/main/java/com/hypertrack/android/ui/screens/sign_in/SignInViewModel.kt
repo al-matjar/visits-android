@@ -4,7 +4,6 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.deeplink.BranchWrapper
-import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
 import com.hypertrack.android.ui.common.util.postValue
@@ -28,6 +27,7 @@ import com.hypertrack.android.use_case.login.LoggedIn
 import com.hypertrack.android.use_case.deeplink.LoginWithDeeplinkParamsUseCase
 import com.hypertrack.android.use_case.login.SignInUseCase
 import com.hypertrack.android.utils.*
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.logistics.android.github.R
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.map
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class SignInViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val appInteractor: AppInteractor,
     private val signInUseCase: SignInUseCase,
     private val getBranchDataFromAppBackendUseCase: GetBranchDataFromAppBackendUseCase,
     private val loginWithDeeplinkParamsUseCase: LoginWithDeeplinkParamsUseCase,

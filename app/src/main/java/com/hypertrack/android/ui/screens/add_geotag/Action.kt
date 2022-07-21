@@ -1,7 +1,7 @@
 package com.hypertrack.android.ui.screens.add_geotag
 
+import com.hypertrack.android.hypertrack_sdk.LatestLocationResult
 import com.hypertrack.android.interactors.GeotagCreationResult
-import com.hypertrack.android.interactors.LatestLocationResult
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 
 sealed class Action

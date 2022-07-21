@@ -19,7 +19,6 @@ import com.hypertrack.android.utils.exception.IllegalActionException
 
 class PermissionRequestViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val appInteractor: AppInteractor
 ) : BaseViewModel(baseDependencies) {
 
     val showPermissionsButton = MutableLiveData(true)

@@ -1,7 +1,5 @@
 package com.hypertrack.android.utils.state_machine
 
-import com.hypertrack.android.utils.ReducerResult
-
 class ReducerResultWithViewStateEffect<S, E, VE : E>(
     newState: S,
     effects: Set<E>,

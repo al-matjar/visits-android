@@ -22,7 +22,7 @@ import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
-import com.hypertrack.android.use_case.sdk.NewTrackingState
+import com.hypertrack.android.use_case.sdk.TrackingState
 import com.hypertrack.android.utils.BatteryLevelMonitor
 import com.hypertrack.android.utils.CognitoAccountLoginProvider
 import com.hypertrack.android.utils.CrashReportsProvider
@@ -78,7 +78,7 @@ class AppScope(
     val batteryLevelMonitor: BatteryLevelMonitor,
     val notificationUtil: NotificationUtil,
     val moshi: Moshi,
-    val trackingStateListener: (NewTrackingState) -> Unit,
+    val trackingStateListener: (TrackingState) -> Unit,
     val appCoroutineScope: CoroutineScope,
     val stateMachineContext: CoroutineContext,
 ) {

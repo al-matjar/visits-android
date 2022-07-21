@@ -12,6 +12,7 @@ import com.hypertrack.android.interactors.trip.NotClockedInException
 import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.OrderStatus
+import com.hypertrack.android.ui.MainActivity.Companion.REQUEST_CODE_IMAGE_CAPTURE
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.adapters.KeyValueItem
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
@@ -195,7 +196,7 @@ class OrderDetailsViewModel(
 
             activity.startActivityForResult(
                 osUtilsProvider.createTakePictureIntent(activity, file),
-                REQUEST_IMAGE_CAPTURE
+                REQUEST_CODE_IMAGE_CAPTURE
             )
         } catch (e: Exception) {
             showError(R.string.cannot_create_file_msg)
@@ -203,7 +204,7 @@ class OrderDetailsViewModel(
     }
 
     fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == AppCompatActivity.RESULT_OK) {
+        if (requestCode == REQUEST_CODE_IMAGE_CAPTURE && resultCode == AppCompatActivity.RESULT_OK) {
             viewModelScope.launch {
                 currentPhotoPath?.let {
                     loadingState.postValue(true)
@@ -304,10 +305,6 @@ class OrderDetailsViewModel(
 
     private fun shouldShowNote(isEditable: Boolean?, note: String?): Boolean {
         return isEditable == true || note.nullIfBlank() != null
-    }
-
-    companion object {
-        const val REQUEST_IMAGE_CAPTURE = 1
     }
 
 }

@@ -4,36 +4,28 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
 import com.hypertrack.android.di.AppScope
+import com.hypertrack.android.interactors.app.action.GeofencesForMapLoadedAction
 import com.hypertrack.android.interactors.app.effect.HistoryEffectHandler
 import com.hypertrack.android.interactors.app.effect.MapEffectsHandler
+import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryReducer
-import com.hypertrack.android.interactors.app.reducer.HistorySubState
 import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
 import com.hypertrack.android.interactors.app.reducer.ScreensReducer
-import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
-import com.hypertrack.android.interactors.app.state.TabView
-import com.hypertrack.android.interactors.app.state.TabsView
-import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.base.toConsumable
 import com.hypertrack.android.ui.common.util.updateConsumableAsFlow
 import com.hypertrack.android.use_case.app.InitAppUseCase
 import com.hypertrack.android.use_case.app.UseCases
-import com.hypertrack.android.use_case.error.LogExceptionIfFailureUseCase
-import com.hypertrack.android.use_case.map.ClearMapUseCase
-import com.hypertrack.android.use_case.map.UpdateMapDataUseCase
 import com.hypertrack.android.utils.AbstractFailure
 import com.hypertrack.android.utils.AbstractSuccess
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.MyApplication
-import com.hypertrack.android.utils.Result
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.toFlow
-import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -43,7 +35,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -67,7 +58,8 @@ class AppInteractor(
         appScope,
         HistoryReducer(appScope, HistoryViewReducer(appScope)),
         HistoryViewReducer(appScope),
-        ScreensReducer(HistoryViewReducer(appScope))
+        ScreensReducer(HistoryViewReducer(appScope)),
+        GeofencesForMapReducer()
     )
     private val appStateMachine = object : StateMachine<AppAction, AppState, AppEffect>(
         "AppState",
@@ -105,6 +97,12 @@ class AppInteractor(
 
     fun handleAction(action: AppAction) {
         appStateMachine.handleAction(action)
+    }
+
+    fun handleActionFlow(action: AppAction): Flow<Unit> {
+        return {
+            appStateMachine.handleAction(action)
+        }.asFlow()
     }
 
     private fun applyEffects(effects: Set<AppEffect>) {
@@ -231,6 +229,17 @@ class AppInteractor(
             is NavigateEffect -> {
                 _navigationEvent.updateConsumableAsFlow(effect.destination).noAction()
             }
+            is LoadGeofencesForMapEffect -> {
+                effect.useCases.loadGeofencesForMapUseCase.execute(effect.geoHash, effect.pageToken)
+                    .map {
+                        GeofencesForMapAppAction(
+                            GeofencesForMapLoadedAction(
+                                effect.geoHash,
+                                it
+                            )
+                        )
+                    }
+            }
         }
     }
 
@@ -257,7 +266,7 @@ class AppInteractor(
 // don't use .map { null } on arbitrary typed Flow to avoid bugs
 // e.g. missing error handling
 // set flow to Unit, and then map to no action
-fun Flow<Unit>.noAction(): Flow<AppAction?> {
+fun <T> Flow<Unit>.noAction(): Flow<T?> {
     return map { null }
 }
 

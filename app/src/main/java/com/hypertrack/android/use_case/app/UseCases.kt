@@ -1,7 +1,9 @@
 package com.hypertrack.android.use_case.app
 
 import com.hypertrack.android.di.AppScope
+import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
 import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.use_case.login.GetPublishableKeyWithCognitoUseCase
@@ -17,11 +19,14 @@ import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkUseCase
 import com.hypertrack.android.use_case.error.LogExceptionIfFailureUseCase
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
+import com.hypertrack.android.use_case.geofences.CheckForAdjacentGeofencesUseCase
+import com.hypertrack.android.use_case.geofences.LoadGeofencesForMapUseCase
 import com.hypertrack.android.use_case.login.DeleteUserScopeDataUseCase
 import com.hypertrack.android.use_case.login.LoadUserDataUseCase
 import com.hypertrack.android.use_case.login.VerifyByOtpCodeUseCase
 import com.hypertrack.android.use_case.sdk.GetConfiguredHypertrackSdkInstanceUseCase
 import com.hypertrack.android.use_case.sdk.GetHypertrackSdkInstanceUseCase
+import com.hypertrack.android.utils.Intersect
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class UseCases(

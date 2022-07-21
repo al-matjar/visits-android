@@ -5,26 +5,38 @@ import androidx.lifecycle.*
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.hypertrack.android.di.UserScope
-import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.DestroyTripCreationScopeAction
+import com.hypertrack.android.interactors.app.GeofencesForMapUpdatedEvent
+import com.hypertrack.android.interactors.app.TrackingStateChangedEvent
+import com.hypertrack.android.interactors.app.noAction
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
-import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.repository.TripCreationError
 import com.hypertrack.android.repository.TripCreationSuccess
 import com.hypertrack.android.ui.base.*
-import com.hypertrack.android.ui.common.delegates.GeofencesMapDelegate
 import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
+import com.hypertrack.android.ui.common.map_state.MapUiEffectHandler
+import com.hypertrack.android.ui.common.map_state.MapUiReducer
+import com.hypertrack.android.ui.common.map_state.OnMapMovedMapUiAction
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper.Companion.DEFAULT_ZOOM
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.common.util.*
-import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.ActiveTrip
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.InitializedState
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.NoActiveTrip
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.NotInitializedState
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.NotTracking
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.State
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.Tracking
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.ViewState
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersAdapter
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
+import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.catchException
 import com.hypertrack.logistics.android.github.R
@@ -36,14 +48,15 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-@Suppress("OPT_IN_USAGE")
+@Suppress("OPT_IN_USAGE", "EXPERIMENTAL_API_USAGE")
 class CurrentTripViewModel(
     baseDependencies: BaseViewModelDependencies,
-    private val appInteractor: AppInteractor,
+    private val mapUiEffectHandler: MapUiEffectHandler
 ) : BaseViewModel(baseDependencies) {
 
     private val reducer = CurrentTripReducer(
         appInteractor.appState,
+        MapUiReducer(),
         loadingState,
         this::getViewState
     )
@@ -79,24 +92,20 @@ class CurrentTripViewModel(
         )
     }
 
-    private lateinit var geofencesMapDelegate: GeofencesMapDelegate
-    private var locationMarker: Marker? = null
-
     val viewState = MutableLiveData<ViewState>()
 
     init {
-        appInteractor.appState.observeManaged { appState ->
-            when (appState) {
-                is AppInitialized -> {
-                    when (appState.userState) {
-                        is UserLoggedIn -> {
-                            handleAction(TrackingStateChangedAction(appState.isSdkTracking()))
-                        }
-                        UserNotLoggedIn -> {
-                        }
+        runInVmEffectsScope {
+            appInteractor.appEvent.collect {
+                when (it) {
+                    is GeofencesForMapUpdatedEvent -> {
+                        handleAction(GeofencesOnMapUpdatedAction(it.geofences))
                     }
-                }
-                is AppNotInitialized -> {
+                    is TrackingStateChangedEvent -> {
+                        handleAction(TrackingStateChangedAction(it.trackingState.isTracking()))
+                    }
+                    else -> {
+                    }
                 }
             }
         }
@@ -114,13 +123,6 @@ class CurrentTripViewModel(
         )
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        if (this::geofencesMapDelegate.isInitialized) {
-            geofencesMapDelegate.onCleared()
-        }
-    }
-
     private fun applyEffects(effects: Set<Effect>) {
         for (effect in effects) {
             applyEffect(effect)
@@ -131,70 +133,50 @@ class CurrentTripViewModel(
         appInteractor.appScope.appCoroutineScope.launch {
             getEffectFlow(effect)
                 .catchException {
-//                    crashReportsProvider.logException(it)
                     showExceptionMessageAndReport(it)
-                }.collect()
+                }.collect {
+                    it?.let { handleAction(it) }
+                }
         }
     }
 
-    private fun getEffectFlow(effect: Effect): Flow<Unit> {
+    private fun getEffectFlow(effect: Effect): Flow<Action?> {
         return when (effect) {
             is ErrorEffect -> {
-                getErrorFlow(effect.exception)
+                getErrorFlow(effect.exception).noAction()
             }
             is UpdateViewStateEffect -> {
-                { viewState.postValue(effect.viewState) }.asFlow()
+                { viewState.postValue(effect.viewState) }.asFlow().noAction()
             }
             is SubscribeOnUserScopeEventsEffect -> {
-                getSubscribeOnUserScopeEventsFlow(effect.userScope)
-            }
-            is AddUserLocationToMap -> {
-                {
-                    locationMarker?.remove()
-                    locationMarker = effect.map.addUserLocation(effect.location)
-                }.asFlow().flowOn(Dispatchers.Main)
-            }
-            is ClearAndDisplayTripAndUserLocationOnMapEffect -> {
-                {
-                    effect.map.clear()
-                    effect.map.addTrip(effect.trip)
-                    effect.map.addUserLocation(effect.userLocation)
-                    effect.map.animateCameraToTrip(effect.trip, effect.userLocation)
-                }.asFlow().flowOn(Dispatchers.Main)
+                getSubscribeOnUserScopeEventsFlow(effect.userScope).noAction()
             }
             is ClearMapEffect -> {
-                { effect.map.clear() }.asFlow().flowOn(Dispatchers.Main)
+                { effect.map.clear() }.asFlow().flowOn(Dispatchers.Main).noAction()
             }
             is MoveMapEffect -> {
                 { effect.map.moveCamera(effect.position, DEFAULT_ZOOM) }.asFlow()
-                    .flowOn(Dispatchers.Main)
+                    .flowOn(Dispatchers.Main).noAction()
             }
             is ClearAndMoveMapEffect -> {
                 {
                     effect.map.clear()
                     effect.map.moveCamera(effect.position, DEFAULT_ZOOM)
-                }.asFlow().flowOn(Dispatchers.Main)
-            }
-            is ClearMapAndDisplayUserLocationEffect -> {
-                {
-                    effect.map.clear()
-                    effect.map.addUserLocation(effect.userLocation)
-                    Unit
-                }.asFlow().flowOn(Dispatchers.Main)
+                }.asFlow().flowOn(Dispatchers.Main).noAction()
             }
             is PrepareMapEffect -> {
-                getPrepareMapFlow(effect.context, effect.map, effect.userScope)
+                getPrepareMapFlow(effect.context, effect.map).noAction()
             }
             is AnimateMapToTripEffect -> {
                 //todo fix map padding on first trip zoom
                 { effect.map.animateCameraToTrip(effect.trip, effect.userLocation) }.asFlow()
-                    .flowOn(Dispatchers.Main)
+                    .flowOn(Dispatchers.Main).noAction()
             }
             is AnimateMapEffect -> {
                 { effect.map.animateCamera(effect.position, DEFAULT_ZOOM) }.asFlow()
-                    .flowOn(Dispatchers.Main)
+                    .flowOn(Dispatchers.Main).noAction()
             }
-            is SetMapActiveState -> {
+            is SetMapActiveStateEffect -> {
                 {
                     effect.map.googleMap.setMapStyle(
                         if (effect.active) {
@@ -204,22 +186,22 @@ class CurrentTripViewModel(
                         }
                     )
                     Unit
-                }.asFlow().flowOn(Dispatchers.Main)
+                }.asFlow().flowOn(Dispatchers.Main).noAction()
             }
             is ProceedTripCreationEffect -> {
                 getProceedCreatingTripFlow(
                     effect.userScope,
                     effect.destinationData
-                )
+                ).noAction()
             }
             is RefreshTripsEffect -> {
-                suspend { effect.userScope.tripsInteractor.refreshTrips() }.asFlow()
+                suspend { effect.userScope.tripsInteractor.refreshTrips() }.asFlow().noAction()
             }
             is NavigateEffect -> {
-                { destination.postValue(effect.destination) }.asFlow()
+                { destination.postValue(effect.destination) }.asFlow().noAction()
             }
             is CompleteTripEffect -> {
-                getOnCompleteClickFlow(effect.tripId, effect.map, effect.userScope)
+                getOnCompleteClickFlow(effect.tripId, effect.map, effect.userScope).noAction()
             }
             is ShareTripLinkEffect -> {
                 {
@@ -229,19 +211,22 @@ class CurrentTripViewModel(
                             title = osUtilsProvider.stringFromResource(R.string.share_trip_via)
                         )
                     }
-                }.asFlow()
+                }.asFlow().noAction()
             }
             is StartTripUpdateTimer -> {
                 {
                     effect.userScope.tripsUpdateTimerInteractor
                         .registerObserver(this.javaClass.simpleName)
-                }.asFlow()
+                }.asFlow().noAction()
             }
             is StopTripUpdateTimer -> {
                 {
                     effect.userScope.tripsUpdateTimerInteractor
                         .unregisterObserver(this.javaClass.simpleName)
-                }.asFlow()
+                }.asFlow().noAction()
+            }
+            is MapUiEffect -> {
+                mapUiEffectHandler.getEffectFlow(effect.effect).map { it?.let { MapUiAction(it) } }
             }
         }
     }
@@ -273,10 +258,9 @@ class CurrentTripViewModel(
     private fun getPrepareMapFlow(
         context: Context,
         googleMap: GoogleMap,
-        userScope: UserScope
     ): Flow<Unit> {
         return {
-            val mapWrapper = HypertrackMapWrapper(
+            HypertrackMapWrapper(
                 googleMap, osUtilsProvider, crashReportsProvider, MapParams(
                     enableScroll = true,
                     enableZoomKeys = false,
@@ -285,45 +269,18 @@ class CurrentTripViewModel(
                 )
             ).apply {
                 setOnCameraMovedListener {
-                    geofencesMapDelegate.onCameraIdle()
-                }
-            }
-
-            geofencesMapDelegate = object : GeofencesMapDelegate(
-                context,
-                mapWrapper,
-                userScope.placesInteractor,
-                osUtilsProvider,
-                {
-                    destination.postValue(
-                        VisitsManagementFragmentDirections.actionVisitManagementFragmentToPlaceDetailsFragment(
-                            geofenceId = it.value
-                        )
-                    )
-                }
-            ) {
-                override fun updateGeofencesOnMap(
-                    mapWrapper: HypertrackMapWrapper,
-                    geofences: List<Geofence>
-                ) {
-                    if (userScope.tripsInteractor.currentTrip.value == null) {
-                        super.updateGeofencesOnMap(mapWrapper, geofences)
-                    }
-                    // the update clears the map, so we need to add user location back
-                    handleAction(OnGeofencesUpdateAction)
+                    handleAction(MapUiAction(OnMapMovedMapUiAction(it)))
                 }
 
-                override fun onCameraIdle() {
-                    if (userScope.tripsInteractor.currentTrip.value == null) {
-                        super.onCameraIdle()
+                setOnMarkerClickListener { marker ->
+                    marker.snippet?.let {
+                        handleAction(OnMarkerClickAction(it))
                     }
                 }
             }
-            mapWrapper
         }.asFlow()
             .map {
                 handleAction(OnMapReadyAction(context, it))
-                Unit
             }
             .flowOn(Dispatchers.Main)
     }
@@ -382,7 +339,7 @@ class CurrentTripViewModel(
             }
             is InitializedState -> {
                 when (state.trackingState) {
-                    NotTracking -> {
+                    is NotTracking -> {
                         ViewState(
                             showWhereAreYouGoingButton = false,
                             tripData = null,
@@ -390,7 +347,10 @@ class CurrentTripViewModel(
                         )
                     }
                     is Tracking -> {
-                        val trip = state.trackingState.trip
+                        val trip = when (val tripState = state.trackingState.tripState) {
+                            is ActiveTrip -> tripState.trip
+                            is NoActiveTrip -> null
+                        }
                         ViewState(
                             showWhereAreYouGoingButton = trip == null,
                             tripData = trip?.let {

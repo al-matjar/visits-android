@@ -27,6 +27,8 @@ import com.hypertrack.android.repository.access_token.AccessTokenRepository
 import com.hypertrack.android.repository.MeasurementUnitsRepository
 import com.hypertrack.android.repository.PlacesRepositoryImpl
 import com.hypertrack.android.repository.TripsRepositoryImpl
+import com.hypertrack.android.ui.common.map_state.MapUiEffectHandler
+import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.use_case.app.AppCreationUseCase.Companion.LIVE_API_URL_BASE
 import com.hypertrack.android.use_case.handle_push.HandlePushUseCase
 import com.hypertrack.android.utils.CrashReportsProvider
@@ -78,10 +80,16 @@ class CreateUserScopeUseCase(
         val osUtilsProvider = appScope.osUtilsProvider
         val moshi = appScope.moshi
         val deviceId = DeviceId(hyperTrackSdk.deviceID)
+        val hyperTrackService = HyperTrackService(
+            hyperTrackSdk,
+            appScope.crashReportsProvider
+        )
         val deviceLocationProvider = FusedDeviceLocationProvider(
             appInteractor,
+            appScope.appCoroutineScope,
             appScope.appContext,
-            crashReportsProvider
+            hyperTrackService,
+            crashReportsProvider,
         )
         val api = createRemoteApi(
             BASE_URL,
@@ -97,11 +105,6 @@ class CreateUserScopeUseCase(
             moshi,
             crashReportsProvider
         )
-
-        val hyperTrackService = HyperTrackService(
-            hyperTrackSdk,
-            appScope.crashReportsProvider
-        )
         val scope = CoroutineScope(Dispatchers.IO)
         val placesRepository = PlacesRepositoryImpl(
             deviceId,
@@ -111,13 +114,12 @@ class CreateUserScopeUseCase(
             crashReportsProvider
         )
         val integrationsRepository = IntegrationsRepositoryImpl(apiClient)
-        val intersect = Intersect()
         val placesInteractor = PlacesInteractorImpl(
+            appInteractor,
             placesRepository,
             integrationsRepository,
             osUtilsProvider,
             appScope.geofenceNameDelegate,
-            intersect,
             appScope.appCoroutineScope
         )
 
@@ -152,6 +154,7 @@ class CreateUserScopeUseCase(
             photoUploadQueueInteractor,
             appScope.imageDecoder,
             osUtilsProvider,
+            crashReportsProvider,
             Dispatchers.IO,
             appScope.appCoroutineScope
         )
@@ -217,6 +220,7 @@ class CreateUserScopeUseCase(
             photoUploadQueueInteractor,
             permissionsInteractor,
             integrationsRepository,
+            placesRepository,
             measurementUnitsRepository,
             hyperTrackService,
             deviceId,
@@ -230,7 +234,9 @@ class CreateUserScopeUseCase(
                 appScope.resourceProvider,
                 appScope.notificationUtil,
                 appScope.dateTimeFormatter,
-            )
+            ),
+            MapUiReducer(),
+            MapUiEffectHandler(appInteractor)
         )
     }
 
@@ -263,7 +269,6 @@ class CreateUserScopeUseCase(
                     )
                     .addInterceptor(AccessTokenInterceptor(accessTokenRepository))
                     .addInterceptor(UserAgentInterceptor())
-                    //todo constants
                     .readTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
                     .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS).apply {
                         if (MyApplication.DEBUG_MODE) {

@@ -20,8 +20,8 @@ class GetConfiguredHypertrackSdkInstanceUseCaseTest {
     fun `it should create hypertrack sdk instance with correct parameters`() {
         runBlocking {
             val listenerSlot = slot<TrackingStateObserver.OnTrackingStateChangeListener>()
-            val listenerResults = mutableListOf<NewTrackingState>()
-            val trackingStateListener = { state: NewTrackingState ->
+            val listenerResults = mutableListOf<TrackingState>()
+            val trackingStateListener = { state: TrackingState ->
                 listenerResults.add(state)
                 Unit
             }
@@ -56,7 +56,7 @@ class GetConfiguredHypertrackSdkInstanceUseCaseTest {
     companion object {
         fun getConfiguredHypertrackSdkInstanceUseCase(
             sdk: HyperTrack,
-            trackingStateListener: (NewTrackingState) -> Unit
+            trackingStateListener: (TrackingState) -> Unit
         ): GetConfiguredHypertrackSdkInstanceUseCase {
             return GetConfiguredHypertrackSdkInstanceUseCase(
                 getHypertrackSdkInstanceUseCase = mockk {

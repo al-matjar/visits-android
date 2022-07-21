@@ -2,10 +2,16 @@ package com.hypertrack.android.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.navigation.NavDestination
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.activity.ActivityViewModel
+import androidx.navigation.findNavController
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.hypertrack.android.ui.base.NavActivity
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.base.withErrorHandling
@@ -111,6 +117,16 @@ class MainActivity : NavActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         withErrorHandling(activityViewModel::onError) {
             getCurrentFragment().onActivityResult(requestCode, resultCode, data)
+            // todo to use case
+            if (requestCode == REQUEST_CODE_UPDATE) {
+                when (resultCode) {
+                    RESULT_CANCELED, RESULT_OK -> {
+                    }
+                    else -> {
+                        crashReportsProvider.logException(Exception("Update failed: resultCode=$resultCode, data=$data"))
+                    }
+                }
+            }
         }
     }
 
@@ -133,5 +149,9 @@ class MainActivity : NavActivity() {
 
     companion object {
         var inForeground: Boolean = false
+
+        const val REQUEST_CODE_IMAGE_CAPTURE = 1
+        const val REQUEST_CODE_UPDATE = 2
     }
 }
+

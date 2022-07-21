@@ -10,11 +10,11 @@ import com.hypertrack.android.interactors.app.state.HistoryTab
 import com.hypertrack.android.interactors.app.state.TabsView
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
-import com.hypertrack.android.interactors.app.state.UserState
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryScreenState
 
 object AppStateOptics {
 
+    //todo move history-related methods to HistoryOptic
     fun getHistoryViewState(state: AppState): HistoryScreenState? {
         return when (state) {
             is AppInitialized -> {
@@ -77,6 +77,21 @@ object AppStateOptics {
                 state.viewState
             }
         )
+    }
+
+    // todo reuse in pther places
+    fun getUserLoggedIn(state: AppState): UserLoggedIn? {
+        return when (state) {
+            is AppInitialized -> {
+                when (state.userState) {
+                    is UserLoggedIn -> {
+                        state.userState
+                    }
+                    UserNotLoggedIn -> null
+                }
+            }
+            is AppNotInitialized -> null
+        }
     }
 }
 

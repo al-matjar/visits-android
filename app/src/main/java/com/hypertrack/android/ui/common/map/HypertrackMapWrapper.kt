@@ -11,6 +11,11 @@ import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.LocalTrip
 import com.hypertrack.android.models.local.OrderStatus
+import com.hypertrack.android.ui.common.map.entities.HypertrackMapEntity
+import com.hypertrack.android.ui.common.map.entities.MapCircle
+import com.hypertrack.android.ui.common.map.entities.MapCircleOptions
+import com.hypertrack.android.ui.common.map.entities.MapShape
+import com.hypertrack.android.ui.common.map.entities.MapShapeOptions
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.OsUtilsProvider
 import com.hypertrack.logistics.android.github.R
@@ -74,6 +79,11 @@ class HypertrackMapWrapper(
         Dash(tripRouteWidth * 2),
         Gap(tripRouteWidth)
     )
+    private val colorGeofenceFill = osUtilsProvider.colorFromResource(R.color.colorGeofenceFill)
+    private val colorGeofence = osUtilsProvider.colorFromResource(R.color.colorGeofence)
+    private val colorHyperTrackGreenSemitransparent = osUtilsProvider.colorFromResource(
+        R.color.colorHyperTrackGreenSemitransparent
+    )
 
     fun setOnCameraMovedListener(listener: (LatLng) -> Unit) {
         googleMap.setOnCameraIdleListener { listener.invoke(googleMap.viewportPosition) }
@@ -88,8 +98,8 @@ class HypertrackMapWrapper(
             googleMap.addPolygon(
                 PolygonOptions()
                     .addAll(geofence.polygon!!)
-                    .fillColor(osUtilsProvider.colorFromResource(R.color.colorGeofenceFill))
-                    .strokeColor(osUtilsProvider.colorFromResource(R.color.colorGeofence))
+                    .fillColor(colorGeofenceFill)
+                    .strokeColor(colorGeofence)
                     .strokeWidth(3f)
                     .visible(true)
             )
@@ -98,8 +108,8 @@ class HypertrackMapWrapper(
                 googleMap.addCircle(
                     CircleOptions()
                         .center(geofence.latLng)
-                        .fillColor(osUtilsProvider.colorFromResource(R.color.colorGeofenceFill))
-                        .strokeColor(osUtilsProvider.colorFromResource(R.color.colorGeofence))
+                        .fillColor(colorGeofenceFill)
+                        .strokeColor(colorGeofence)
                         .strokeWidth(3f)
                         .radius(radius.toDouble())
                         .visible(true)
@@ -108,7 +118,7 @@ class HypertrackMapWrapper(
             googleMap.addCircle(
                 CircleOptions()
                     .center(geofence.latLng)
-                    .fillColor(osUtilsProvider.colorFromResource(R.color.colorGeofence))
+                    .fillColor(colorGeofence)
                     .strokeColor(Color.TRANSPARENT)
                     .radius(30.0)
                     .visible(true)
@@ -116,55 +126,25 @@ class HypertrackMapWrapper(
         }
     }
 
-    fun addGeofenceShape(latLng: LatLng, radius: Int): List<Circle> {
-        val res = mutableListOf<Circle>()
-        googleMap.addCircle(
-            CircleOptions()
-                .center(latLng)
-                .fillColor(osUtilsProvider.colorFromResource(R.color.colorGeofenceFill))
-                .strokeColor(osUtilsProvider.colorFromResource(R.color.colorGeofence))
-                .strokeWidth(3f)
-                .radius(radius.toDouble())
-                .visible(true)
-        ).also {
-            res.add(it)
-        }
-        googleMap.addCircle(
-            CircleOptions()
-                .center(latLng)
-                .fillColor(osUtilsProvider.colorFromResource(R.color.colorGeofence))
-                .strokeColor(Color.TRANSPARENT)
-                .radius((radius / 10).toDouble())
-                .visible(true)
-        ).also {
-            res.add(it)
-        }
-        return res
-    }
-
-    fun addGeofenceMarker(geofence: Geofence) {
+    fun addGeofence(geofence: Geofence) {
         val it = geofence
         if (geofence.isPolygon) {
             googleMap.addPolygon(
                 PolygonOptions()
                     .addAll(geofence.polygon!!)
-                    .fillColor(osUtilsProvider.colorFromResource(R.color.colorGeofenceFill))
-                    .strokeColor(osUtilsProvider.colorFromResource(R.color.colorGeofence))
+                    .fillColor(colorGeofenceFill)
+                    .strokeColor(colorGeofence)
                     .strokeWidth(3f)
                     .visible(true)
             )
         } else {
-            it.radius?.let { radius ->
+            it.radius.let { radius ->
                 googleMap.addCircle(
                     CircleOptions()
                         .radius(radius.toDouble())
                         .center(it.latLng)
-                        .fillColor(osUtilsProvider.colorFromResource(R.color.colorGeofenceFill))
-                        .strokeColor(
-                            osUtilsProvider.colorFromResource(
-                                R.color.colorHyperTrackGreenSemitransparent
-                            )
-                        )
+                        .fillColor(colorGeofenceFill)
+                        .strokeColor(colorHyperTrackGreenSemitransparent)
                 )
             }
         }
@@ -184,12 +164,8 @@ class HypertrackMapWrapper(
                 .radius(radius.toDouble())
                 .center(latLng)
                 .strokePattern(listOf(Dash(30f), Gap(20f)))
-                .fillColor(osUtilsProvider.colorFromResource(R.color.colorGeofenceFill))
-                .strokeColor(
-                    osUtilsProvider.colorFromResource(
-                        R.color.colorHyperTrackGreenSemitransparent
-                    )
-                )
+                .fillColor(colorGeofenceFill)
+                .strokeColor(colorHyperTrackGreenSemitransparent)
         )
     }
 
@@ -251,6 +227,20 @@ class HypertrackMapWrapper(
                     .position(order.destinationLatLng)
                     .zIndex(100f)
             )
+        }
+    }
+
+    fun add(entity: HypertrackMapEntity): List<MapShape<*>> {
+        return entity.shapes.map(this::addShape)
+    }
+
+    private fun addShape(options: MapShapeOptions<*>): MapShape<*> {
+        return when (options) {
+            is MapCircleOptions -> {
+                googleMap.addCircle(options.options).let {
+                    MapCircle(it)
+                }
+            }
         }
     }
 
@@ -354,14 +344,21 @@ class HypertrackMapWrapper(
         }
     }
 
+    fun addPolygon(polygonOptions: PolygonOptions) {
+        googleMap.addPolygon(polygonOptions)
+    }
+
+    @SuppressLint("PotentialBehaviorOverride")
+    fun setOnMarkerClickListener(listener: (Marker) -> Unit) {
+        googleMap.setOnMarkerClickListener {
+            listener.invoke(it)
+            true
+        }
+    }
+
     companion object {
         const val DEFAULT_ZOOM = 13f
         const val BOUNDS_CAMERA_PADDING = 100
-    }
-
-    private class StyleAttrs {
-        var tripRouteWidth = 0f
-        var tripRouteColor = 0
     }
 
 }

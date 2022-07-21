@@ -10,18 +10,37 @@ import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.ui.common.map_state.MapUiReducer
+import com.hypertrack.android.ui.common.map_state.MapUiState
+import com.hypertrack.android.ui.common.map_state.TriggerLoadingGeofencesForMapPositionEffect
+import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.ui.common.map_state.AddGeofencesMapUiAction
+import com.hypertrack.android.ui.common.map_state.UpdateMapViewMapUiAction
+import com.hypertrack.android.ui.common.map_state.UpdateUserLocationMapUiAction
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.ui.screens.visits_management.VisitsManagementFragmentDirections
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.ActiveTrip
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.MapOptic
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.InitializedState
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.MapUiStateOptic
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.NoActiveTrip
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.NotInitializedState
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.NotTracking
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.State
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.Tracking
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.ViewState
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.withEffects
 import com.hypertrack.android.utils.exception.IllegalActionException
-import com.hypertrack.android.utils.ReducerResult
+import com.hypertrack.android.utils.state_machine.ReducerResult
 
 class CurrentTripReducer(
     private val appState: LiveData<AppState>,
+    private val mapReducer: MapUiReducer,
     private val loadingState: LiveData<Boolean>,
     private val getViewState: (State) -> ViewState
 ) {
 
-    fun reduce(state: State, action: Action): ReducerResult<State, Effect> {
+    fun reduce(state: State, action: Action): ReducerResult<out State, Effect> {
         return appState.requireValue().let { appState ->
             when (appState) {
                 is AppInitialized -> {
@@ -32,6 +51,7 @@ class CurrentTripReducer(
                                 state,
                                 action,
                                 appState,
+                                appState.userState,
                                 userScope,
                                 userScope.tripsInteractor.currentTrip.value,
                                 userScope.deviceLocationProvider.deviceLocation.value,
@@ -54,19 +74,28 @@ class CurrentTripReducer(
         state: State,
         action: Action,
         appState: AppInitialized,
+        userState: UserLoggedIn,
         userScope: UserScope,
         trip: LocalTrip?,
         userLocation: LatLng?,
         isLoading: Boolean
-    ): ReducerResult<State, Effect> {
+    ): ReducerResult<out State, Effect> {
         return when (state) {
             is NotInitializedState -> {
                 when (action) {
                     OnViewCreatedAction -> {
                         val newTrackingState = if (appState.isSdkTracking()) {
-                            Tracking(userLocation, trip)
+                            Tracking(
+                                mapUiState = null,
+                                userLocation = userLocation,
+                                tripState = trip?.let {
+                                    ActiveTrip(it)
+                                } ?: NoActiveTrip
+                            )
                         } else {
-                            NotTracking
+                            // todo show geofences in this state?
+                            // map is initialized after OnViewCreatedAction
+                            NotTracking(map = null)
                         }
                         val subscribeEffect = setOf(
                             SubscribeOnUserScopeEventsEffect(userScope)
@@ -78,11 +107,9 @@ class CurrentTripReducer(
                         )
                         val timerEffect = when (newTrackingState) {
                             is Tracking -> setOf(StartTripUpdateTimer(userScope))
-                            NotTracking -> setOf()
+                            is NotTracking -> setOf()
                         }
                         InitializedState(
-                            // map is initialized after OnViewCreatedAction
-                            map = null,
                             trackingState = newTrackingState
                         ).withEffects(
                             subscribeEffect
@@ -108,7 +135,7 @@ class CurrentTripReducer(
                     }
                     OnPauseAction,
                     OnResumeAction,
-                    OnGeofencesUpdateAction,
+                    is GeofencesOnMapUpdatedAction,
                     is TripUpdatedAction -> {
                         // do nothing
                         state.withEffects()
@@ -116,16 +143,19 @@ class CurrentTripReducer(
                     OnAddOrderClickAction,
                     OnCompleteClickAction,
                     OnMyLocationClickAction,
-                    is OnOrderClickAction,
                     OnShareTripClickAction,
                     OnTripFocusedAction,
-                    OnWhereAreYouGoingClickAction -> {
+                    OnWhereAreYouGoingClickAction,
+                    is OnMarkerClickAction,
+                    is MapUiAction,
+                    is OnOrderClickAction -> {
                         // ui events are not possible here
                         state.withEffects(ErrorEffect(IllegalActionException(action, state)))
                     }
                 }
             }
             is InitializedState -> {
+                val map: HypertrackMapWrapper? = MapOptic.get(state)
                 when (state.trackingState) {
                     is Tracking -> {
                         when (action) {
@@ -139,17 +169,26 @@ class CurrentTripReducer(
                                 )
                             }
                             is UserLocationChangedAction -> {
-                                state.copy(
-                                    trackingState = state.trackingState.copy(
-                                        userLocation = action.location
+                                if (state.trackingState.mapUiState != null) {
+                                    val newMapResult = mapReducer.reduce(
+                                        UpdateUserLocationMapUiAction(action.location),
+                                        state.trackingState.mapUiState
                                     )
-                                ).withEffects(
-                                    if (state.map != null) {
-                                        setOf(AddUserLocationToMap(state.map, action.location))
-                                    } else {
-                                        setOf()
-                                    }
-                                )
+                                    state.copy(
+                                        trackingState = state.trackingState.copy(
+                                            mapUiState = newMapResult.newState,
+                                            userLocation = action.location
+                                        )
+                                    ).withEffects(
+                                        newMapResult.effects.map { MapUiEffect(it) }.toSet()
+                                    )
+                                } else {
+                                    state.copy(
+                                        trackingState = state.trackingState.copy(
+                                            userLocation = action.location
+                                        )
+                                    ).withEffects()
+                                }
                             }
                             is ErrorAction -> {
                                 reduce(action, state)
@@ -159,24 +198,26 @@ class CurrentTripReducer(
                                     state.withEffects()
                                 } else {
                                     //tracking stopped
-                                    val effects = if (state.map != null) {
+                                    val timerEffect = setOf(
+                                        StopTripUpdateTimer(userScope)
+                                    )
+                                    val mapEffects = if (map != null) {
                                         mutableSetOf<Effect>(
-                                            SetMapActiveState(state.map, active = false)
+                                            SetMapActiveStateEffect(map, active = false)
                                         ).apply {
                                             if (userLocation != null) {
                                                 add(
-                                                    ClearAndMoveMapEffect(state.map, userLocation)
+                                                    ClearAndMoveMapEffect(map, userLocation)
                                                 )
                                             }
                                         }
                                     } else {
                                         setOf()
-                                    } + setOf(
-                                        StopTripUpdateTimer(userScope)
-                                    )
+                                    }
+
                                     state.copy(
-                                        trackingState = NotTracking
-                                    ).withEffects(effects)
+                                        trackingState = NotTracking(map)
+                                    ).withEffects(timerEffect + mapEffects)
                                 }
                             }
                             is OnAddOrderClickAction -> {
@@ -196,42 +237,59 @@ class CurrentTripReducer(
                             is OnCompleteClickAction -> {
                                 state.withEffects(
                                     trip?.let {
-                                        setOf(CompleteTripEffect(it.id, state.map, userScope))
+                                        setOf(CompleteTripEffect(it.id, map, userScope))
                                     } ?: setOf(
                                         ErrorEffect(NullPointerException("trip is null"))
                                     )
                                 )
                             }
                             is OnMapReadyAction -> {
-                                val map = action.map
-                                val mapStateEffects = setOf(
-                                    SetMapActiveState(map, active = true)
-                                ) + if (userLocation != null) {
-                                    setOf(
-                                        AddUserLocationToMap(map, userLocation)
+                                val newMap = action.map
+                                mapReducer.reduce(
+                                    UpdateMapViewMapUiAction(newMap), MapUiState(
+                                        newMap,
+                                        userLocation = userLocation
                                     )
-                                } else {
-                                    setOf()
-                                }
-                                val effects = mapStateEffects + if (trip != null) {
-                                    setOf(
-                                        AnimateMapToTripEffect(map, trip, userLocation)
+                                ).withState {
+                                    MapUiStateOptic.set(state, state.trackingState, it)
+                                }.withEffects {
+                                    val mapUiEffects = it.effects.map { MapUiEffect(it) }.toSet()
+                                    val mapActiveStateEffect = setOf(
+                                        SetMapActiveStateEffect(newMap, active = true)
                                     )
-                                } else {
-                                    if (userLocation != null) {
-                                        setOf(
-                                            MoveMapEffect(map, userLocation)
-                                        )
-                                    } else {
-                                        setOf()
-                                    }
+                                    val mapEffects =
+                                        when (val tripState = state.trackingState.tripState) {
+                                            is ActiveTrip -> {
+                                                setOf(
+                                                    AnimateMapToTripEffect(
+                                                        newMap,
+                                                        tripState.trip,
+                                                        userLocation
+                                                    )
+                                                )
+                                            }
+                                            is NoActiveTrip -> {
+                                                val userLocationEffect = if (userLocation != null) {
+                                                    setOf(
+                                                        MoveMapEffect(newMap, userLocation)
+                                                    )
+                                                } else setOf()
+
+                                                val geofencesOnMapEffect = MapUiEffect(
+                                                    TriggerLoadingGeofencesForMapPositionEffect(
+                                                        newMap
+                                                    )
+                                                )
+                                                userLocationEffect + geofencesOnMapEffect
+                                            }
+                                        }
+                                    mapActiveStateEffect + mapEffects + mapUiEffects
                                 }
-                                state.copy(map = map).withEffects(effects)
                             }
                             OnMyLocationClickAction -> {
                                 state.withEffects(
-                                    if (state.map != null && userLocation != null) {
-                                        setOf(AnimateMapEffect(state.map, userLocation))
+                                    if (map != null && userLocation != null) {
+                                        setOf(AnimateMapEffect(map, userLocation))
                                     } else {
                                         setOf()
                                     }
@@ -263,10 +321,10 @@ class CurrentTripReducer(
                             OnTripFocusedAction -> {
                                 state.withEffects(
                                     if (trip != null) {
-                                        if (state.map != null) {
+                                        if (map != null) {
                                             setOf(
                                                 AnimateMapToTripEffect(
-                                                    state.map,
+                                                    map,
                                                     trip,
                                                     userLocation
                                                 )
@@ -283,59 +341,145 @@ class CurrentTripReducer(
                                 reduce(action, state)
                             }
                             is TripUpdatedAction -> {
-                                state.copy(
-                                    trackingState = state.trackingState.copy(
-                                        trip = action.trip
+                                // either trip data is updated, or trip added/removed
+                                val newTripState = action.trip?.let {
+                                    ActiveTrip(it)
+                                } ?: NoActiveTrip
+
+                                if (map != null) {
+                                    val newMapResult = mapReducer.reduce(
+                                        UpdateMapViewMapUiAction(map),
+                                        MapUiState(
+                                            map,
+                                            userLocation = userLocation,
+                                            trip = action.trip,
+                                            geofences = setOf()
+                                        )
                                     )
-                                ).withEffects(
-                                    if (state.map != null) {
-                                        if (action.trip != null) {
-                                            setOf(
-                                                ClearAndDisplayTripAndUserLocationOnMapEffect(
-                                                    state.map,
-                                                    action.trip,
-                                                    userLocation
-                                                )
+                                    newMapResult.withState {
+                                        state.copy(
+                                            trackingState = state.trackingState.copy(
+                                                tripState = newTripState,
+                                                mapUiState = it
                                             )
-                                        } else {
-                                            setOf(
-                                                ClearMapAndDisplayUserLocationEffect(
-                                                    state.map,
-                                                    state.trackingState.userLocation
+                                        )
+                                    }.withEffects {
+                                        val mapUiEffects =
+                                            it.effects.map { MapUiEffect(it) }.toSet()
+
+                                        val mapEffects = when (newTripState) {
+                                            is ActiveTrip -> {
+                                                // if new trip added or new order added
+                                                val oldTripState = state.trackingState.tripState
+                                                if (
+                                                    oldTripState is NoActiveTrip ||
+                                                    (oldTripState is ActiveTrip &&
+                                                            oldTripState.trip.orders != newTripState.trip.orders)
+                                                ) {
+                                                    setOf(
+                                                        AnimateMapToTripEffect(
+                                                            map,
+                                                            newTripState.trip,
+                                                            userLocation
+                                                        )
+                                                    )
+                                                } else setOf()
+                                            }
+                                            // tracking started, and there is no trip
+                                            is NoActiveTrip -> {
+                                                val userLocationEffects =
+                                                    if (userLocation != null) {
+                                                        setOf(
+                                                            MoveMapEffect(map, userLocation)
+                                                        )
+                                                    } else setOf()
+                                                val geofencesOnMapEffects = MapUiEffect(
+                                                    TriggerLoadingGeofencesForMapPositionEffect(
+                                                        map
+                                                    )
                                                 )
-                                            )
+                                                userLocationEffects + geofencesOnMapEffects
+                                            }
                                         }
-                                    } else {
-                                        setOf()
+                                        mapUiEffects + mapEffects
                                     }
-                                )
+                                } else {
+                                    state.copy(
+                                        trackingState = state.trackingState.copy(
+                                            tripState = newTripState
+                                        )
+                                    ).withEffects()
+                                }
                             }
                             is InitMapAction -> {
                                 reduce(action, state, userScope)
                             }
-                            OnGeofencesUpdateAction -> {
-                                state.withEffects(
-                                    if (state.map != null) {
-                                        setOf(
-                                            AddUserLocationToMap(
-                                                state.map,
-                                                userScope.deviceLocationProvider.deviceLocation.value
+                            is MapUiAction -> {
+                                if (
+                                    state.trackingState.tripState is NoActiveTrip &&
+                                    state.trackingState.mapUiState != null
+                                ) {
+                                    mapReducer.reduce(
+                                        action.action,
+                                        state.trackingState.mapUiState
+                                    ).withState {
+                                        state.copy(
+                                            trackingState = state.trackingState.copy(
+                                                mapUiState = it
                                             )
                                         )
-                                    } else setOf()
+                                    }.withEffects {
+                                        it.effects.map { effect -> MapUiEffect(effect) }.toSet()
+                                    }
+                                } else state.withEffects()
+                            }
+                            is OnMarkerClickAction -> {
+                                state.withEffects(
+                                    NavigateEffect(
+                                        VisitsManagementFragmentDirections.actionGlobalPlaceDetailsFragment(
+                                            action.snippet
+                                        )
+                                    )
                                 )
+                            }
+                            is GeofencesOnMapUpdatedAction -> {
+                                when (state.trackingState.tripState) {
+                                    is ActiveTrip -> {
+                                        state.withEffects()
+                                    }
+                                    NoActiveTrip -> {
+                                        if (state.trackingState.mapUiState != null) {
+                                            mapReducer.reduce(
+                                                AddGeofencesMapUiAction(action.geofences),
+                                                state.trackingState.mapUiState
+                                            ).withState {
+                                                state.copy(
+                                                    trackingState = state.trackingState.copy(
+                                                        mapUiState = it
+                                                    )
+                                                )
+                                            }.withEffects { result ->
+                                                result.effects.map { MapUiEffect(it) }.toSet()
+                                            }
+                                        } else {
+                                            state.withEffects()
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-                    NotTracking -> {
+                    is NotTracking -> {
                         when (action) {
                             is ErrorAction -> {
                                 reduce(action, state)
                             }
                             is OnMapReadyAction -> {
-                                state.copy(map = action.map).withEffects(
+                                state.copy(
+                                    trackingState = state.trackingState.copy(map = action.map)
+                                ).withEffects(
                                     setOf(
-                                        SetMapActiveState(action.map, active = false)
+                                        SetMapActiveStateEffect(action.map, active = false)
                                     ) + if (userLocation != null) {
                                         setOf(MoveMapEffect(action.map, userLocation))
                                     } else {
@@ -361,43 +505,74 @@ class CurrentTripReducer(
                             is TrackingStateChangedAction -> {
                                 if (action.isTracking) {
                                     // tracking started
-                                    val newState = state.copy(
-                                        trackingState = Tracking(
-                                            trip = trip,
-                                            userLocation = userLocation
-                                        )
-                                    )
-                                    val map = state.map
-                                    val effects = setOf(
-                                        StartTripUpdateTimer(userScope)
-                                    ) + if (map != null) {
-                                        setOf(
-                                            SetMapActiveState(map, active = true),
-                                        ) + when {
-                                            trip != null -> {
-                                                setOf(
-                                                    ClearAndDisplayTripAndUserLocationOnMapEffect(
-                                                        map,
-                                                        trip,
-                                                        userLocation
-                                                    ),
-                                                    AnimateMapToTripEffect(map, trip, userLocation)
+                                    val map = MapOptic.get(state)
+
+                                    val newTripState = trip?.let {
+                                        ActiveTrip(it)
+                                    } ?: NoActiveTrip
+
+                                    if (map != null) {
+                                        mapReducer.reduce(
+                                            UpdateMapViewMapUiAction(map),
+                                            MapUiState(
+                                                map,
+                                                userLocation = userLocation,
+                                                trip = trip,
+                                                geofences = setOf()
+                                            )
+                                        ).withState {
+                                            state.copy(
+                                                trackingState = Tracking(
+                                                    tripState = newTripState,
+                                                    userLocation = userLocation,
+                                                    mapUiState = it
                                                 )
+                                            )
+                                        }.withEffects {
+                                            val mapUiEffects =
+                                                it.effects.map { MapUiEffect(it) }.toSet()
+                                            val timerEffect = setOf(
+                                                StartTripUpdateTimer(userScope)
+                                            )
+                                            val mapEffects = setOf(
+                                                SetMapActiveStateEffect(map, active = true),
+                                            ) + when (newTripState) {
+                                                is ActiveTrip -> {
+                                                    setOf(
+                                                        AnimateMapToTripEffect(
+                                                            map,
+                                                            newTripState.trip,
+                                                            userLocation
+                                                        )
+                                                    )
+                                                }
+                                                // tracking started, and there is no trip
+                                                is NoActiveTrip -> {
+                                                    val userLocationEffects =
+                                                        if (userLocation != null) {
+                                                            setOf(
+                                                                MoveMapEffect(map, userLocation)
+                                                            )
+                                                        } else setOf()
+                                                    val geofencesOnMapEffects = MapUiEffect(
+                                                        TriggerLoadingGeofencesForMapPositionEffect(
+                                                            map
+                                                        )
+                                                    )
+                                                    userLocationEffects + geofencesOnMapEffects
+                                                }
                                             }
-                                            userLocation != null -> {
-                                                setOf(
-                                                    AddUserLocationToMap(map, userLocation),
-                                                    MoveMapEffect(map, userLocation)
-                                                )
-                                            }
-                                            else -> {
-                                                setOf()
-                                            }
+                                            mapUiEffects + timerEffect + mapEffects
                                         }
                                     } else {
-                                        setOf()
+                                        state.copy(
+                                            trackingState = Tracking(
+                                                tripState = newTripState,
+                                                userLocation = userLocation,
+                                                mapUiState = null
+                                            )
+                                        ).withEffects()
                                     }
-                                    newState.withEffects(effects)
                                 } else {
                                     state.withEffects()
                                 }
@@ -407,8 +582,9 @@ class CurrentTripReducer(
                             }
                             OnResumeAction,
                             OnPauseAction,
-                            OnGeofencesUpdateAction,
+                            is MapUiAction,
                             is TripUpdatedAction,
+                            is GeofencesOnMapUpdatedAction,
                             is UserLocationChangedAction -> {
                                 //do nothing
                                 state.withEffects()
@@ -416,8 +592,10 @@ class CurrentTripReducer(
                             OnAddOrderClickAction,
                             OnCompleteClickAction,
                             OnMyLocationClickAction,
+                            OnTripFocusedAction,
+                            is OnMarkerClickAction,
                             is OnOrderClickAction,
-                            OnTripFocusedAction -> {
+                            -> {
                                 // illegal actions
                                 state.withEffects(
                                     ErrorEffect(IllegalActionException(action, state))

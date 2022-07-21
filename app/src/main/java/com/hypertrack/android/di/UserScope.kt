@@ -15,14 +15,17 @@ import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.repository.IntegrationsRepository
 import com.hypertrack.android.repository.MeasurementUnitsRepository
+import com.hypertrack.android.repository.PlacesRepository
 import com.hypertrack.android.ui.common.UserScopeViewModelFactory
+import com.hypertrack.android.ui.common.map_state.MapUiEffectHandler
+import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.use_case.handle_push.HandlePushUseCase
 import com.hypertrack.android.utils.DeviceLocationProvider
 import com.hypertrack.android.utils.HyperTrackService
 
 class UserScope(
     val appScope: AppScope,
-    appInteractor: AppInteractor,
+    val appInteractor: AppInteractor,
     // interactors
     val tripsInteractor: TripsInteractor,
     val tripsUpdateTimerInteractor: TripsUpdateTimerInteractor,
@@ -35,6 +38,7 @@ class UserScope(
     val permissionsInteractor: PermissionsInteractor,
     // repositories
     val integrationsRepository: IntegrationsRepository,
+    val placesRepository: PlacesRepository,
     val measurementUnitsRepository: MeasurementUnitsRepository,
     // other
     val hyperTrackService: HyperTrackService,
@@ -42,7 +46,9 @@ class UserScope(
     val apiClient: ApiClient,
     val graphQlApiClient: GraphQlApiClient,
     val deviceLocationProvider: DeviceLocationProvider,
-    val handlePushUseCase: HandlePushUseCase
+    val handlePushUseCase: HandlePushUseCase,
+    val mapUiReducer: MapUiReducer,
+    val mapUiEffectHandler: MapUiEffectHandler
 ) {
 
     val userScopeViewModelFactory = UserScopeViewModelFactory(

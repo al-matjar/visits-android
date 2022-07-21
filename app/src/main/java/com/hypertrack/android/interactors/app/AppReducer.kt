@@ -8,24 +8,25 @@ import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.TripCreationScope
 import com.hypertrack.android.interactors.app.optics.AppStateOptics
+import com.hypertrack.android.interactors.app.optics.GeofencesForMapOptic
+import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryReducer
-import com.hypertrack.android.interactors.app.reducer.HistorySubState
 import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
 import com.hypertrack.android.interactors.app.reducer.ScreensReducer
 import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
-import com.hypertrack.android.interactors.app.state.HistoryTab
 import com.hypertrack.android.interactors.app.state.NoneScreenView
 import com.hypertrack.android.interactors.app.state.SplashScreenView
-import com.hypertrack.android.interactors.app.state.TabsView
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.interactors.app.state.UserState
+import com.hypertrack.android.interactors.app.state.allGeofences
 import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.MyApplication
-import com.hypertrack.android.utils.ReducerResult
+import com.hypertrack.android.utils.state_machine.ReducerResult
+import com.hypertrack.android.utils.state_machine.effectIf
 import com.hypertrack.android.utils.withEffects
 import com.hypertrack.logistics.android.github.NavGraphDirections
 
@@ -34,7 +35,8 @@ class AppReducer(
     private val appScope: AppScope,
     private val historyReducer: HistoryReducer,
     private val historyViewReducer: HistoryViewReducer,
-    private val screensReducer: ScreensReducer
+    private val screensReducer: ScreensReducer,
+    private val geofencesForMapReducer: GeofencesForMapReducer
 ) {
 
     fun reduce(state: AppState, action: AppAction): ReducerResult<out AppState, out AppEffect> {
@@ -113,6 +115,7 @@ class AppReducer(
                         // do nothing
                         state.withEffects()
                     }
+                    is GeofencesForMapAppAction,
                     is CreateTripCreationScopeAction,
                     DestroyTripCreationScopeAction,
                     is DeeplinkLoginErrorAction,
@@ -255,7 +258,11 @@ class AppReducer(
                                     userState = state.userState.copy(
                                         trackingState = action.trackingState
                                     )
-                                ).withEffects()
+                                ).withEffects(
+                                    effectIf(action.trackingState != state.userState.trackingState) {
+                                        AppEventEffect(TrackingStateChangedEvent(action.trackingState))
+                                    }
+                                )
                             }
                             UserNotLoggedIn -> {
                                 state.withEffects()
@@ -353,6 +360,37 @@ class AppReducer(
                             }
                             UserNotLoggedIn -> {
                                 illegalAction(action, state)
+                            }
+                        }
+                    }
+                    is GeofencesForMapAppAction -> {
+                        when (state.userState) {
+                            is UserLoggedIn -> {
+                                geofencesForMapReducer.reduce(
+                                    action.action,
+                                    state.userState.geofencesForMap.tiles,
+                                    state.userState.useCases
+                                ).withEffects {
+                                    val geofencesForMapEffects = it.effects
+                                    val appEventEffect = setOf(
+                                        it.newState.let { geofencesForMapState ->
+                                            AppEventEffect(
+                                                GeofencesForMapUpdatedEvent(
+                                                    geofencesForMapState.allGeofences()
+                                                )
+                                            )
+                                        })
+                                    geofencesForMapEffects + appEventEffect
+                                }.withState { newGeofencesState ->
+                                    GeofencesForMapOptic.set(
+                                        state,
+                                        state.userState,
+                                        newGeofencesState
+                                    )
+                                }
+                            }
+                            UserNotLoggedIn -> {
+                                state.withEffects()
                             }
                         }
                     }

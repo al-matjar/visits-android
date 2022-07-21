@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.*
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
+import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.ui.common.use_case.ShowErrorUseCase
 import com.hypertrack.android.ui.common.use_case.get_error_message.DisplayableError
 import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionError
@@ -28,7 +29,7 @@ open class BaseViewModel(
 ) : ViewModel() {
 
     protected val crashReportsProvider = baseDependencies.crashReportsProvider
-
+    protected val appInteractor = baseDependencies.appInteractor
     protected val osUtilsProvider = baseDependencies.osUtilsProvider
     protected val resourceProvider = baseDependencies.resourceProvider
 
@@ -123,6 +124,7 @@ open class BaseViewModel(
 }
 
 class BaseViewModelDependencies(
+    val appInteractor: AppInteractor,
     val osUtilsProvider: OsUtilsProvider,
     val resourceProvider: ResourceProvider,
     val crashReportsProvider: CrashReportsProvider,

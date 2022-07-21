@@ -5,6 +5,7 @@ import com.hypertrack.android.deeplink.BranchErrorException
 import com.hypertrack.android.interactors.trip.NotClockedInException
 import com.hypertrack.android.ui.screens.sign_in.use_case.InvalidDeeplinkFormat
 import com.hypertrack.android.use_case.deeplink.InvalidDeeplinkException
+import com.hypertrack.android.use_case.geofences.AdjacentGeofencesCheckTimeoutException
 import com.hypertrack.android.use_case.handle_push.UnknownPushNotificationException
 import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.MyApplication
@@ -72,6 +73,9 @@ class GetErrorMessageUseCase(
                 }
                 exception is NotClockedInException -> {
                     getTextErrorString(TextError(R.string.order_not_clocked_in))
+                }
+                exception is AdjacentGeofencesCheckTimeoutException -> {
+                    getTextErrorString(TextError(R.string.add_place_timeout))
                 }
                 exception.isNetworkError() -> {
                     getTextErrorString(NetworkError)

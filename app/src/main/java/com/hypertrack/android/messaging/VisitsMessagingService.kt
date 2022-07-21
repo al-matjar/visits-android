@@ -8,7 +8,9 @@ import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.PushReceivedAction
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.Result
 import com.hypertrack.android.utils.format
+import com.hypertrack.android.utils.toSuspendCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -28,22 +30,16 @@ class VisitsMessagingService : FirebaseMessagingService() {
     }
 
     companion object {
-        //use only for debug
-        suspend fun getFirebaseToken(): String = suspendCoroutine {
-            FirebaseMessaging.getInstance().token
-                .addOnSuccessListener { token ->
-                    if (MyApplication.DEBUG_MODE) {
-                        Log.v(
-                            VisitsMessagingService::class.java.simpleName,
-                            "Got Firebase token: $token"
-                        )
-                    }
-                    it.resume(token)
+        // use only for debug
+        suspend fun getFirebaseToken(): Result<String> {
+            return FirebaseMessaging.getInstance().token.toSuspendCoroutine().also {
+                if (MyApplication.DEBUG_MODE) {
+                    Log.v(
+                        VisitsMessagingService::class.java.simpleName,
+                        "Got Firebase token: $it"
+                    )
                 }
-                .addOnFailureListener { exception ->
-                    it.resume(exception.format())
-                }
+            }
         }
-
     }
 }

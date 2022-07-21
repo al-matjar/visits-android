@@ -26,7 +26,8 @@ class AppReducerTest {
                 useCases = mockk(),
                 historyReducer = mockk(),
                 screensReducer = mockk(),
-                historyViewReducer = mockk()
+                historyViewReducer = mockk(),
+                geofencesForMapReducer = mockk()
             )
         }
 
@@ -58,7 +59,8 @@ class AppReducerTest {
                     },
                     userData = mockk(),
                     history = mockk(),
-                    userLocation = mockk()
+                    userLocation = mockk(),
+                    useCases = mockk()
                 ),
                 viewState = viewState,
                 showProgressbar = showProgressbar
@@ -75,7 +77,8 @@ class AppReducerTest {
                 userScope = userScope,
                 userData = mockk(),
                 history = mockk(),
-                userLocation = mockk()
+                userLocation = mockk(),
+                useCases = mockk()
             )
         }
 

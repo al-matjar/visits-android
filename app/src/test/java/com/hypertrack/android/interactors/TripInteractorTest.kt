@@ -15,6 +15,9 @@ import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.*
+import com.hypertrack.android.utils.CrashReportsProvider
+import com.hypertrack.android.utils.FirebaseCrashReportsProviderTest
+import com.hypertrack.android.utils.FirebaseCrashReportsProviderTest.Companion.crashReportsProvider
 import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.JustSuccess
 import io.mockk.*
@@ -417,6 +420,7 @@ class TripInteractorTest {
                 queueInteractor,
                 mockk(relaxed = true) {},
                 mockk(relaxed = true) {},
+                crashReportsProvider = crashReportsProvider(),
                 Dispatchers.Main,
                 TestCoroutineScope()
             ) {

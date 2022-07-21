@@ -100,6 +100,7 @@ class PlacesVisitsViewModel(
             geofenceId = visit.geofenceId,
             title = displayDelegate.getGeofenceName(visit),
             durationText = displayDelegate.getDurationText(visit),
+            dateTimeText = dateTimeFormatter.formatDateTime(visit.arrival.value),
             routeToText = displayDelegate.getRouteToText(visit),
             integrationName = visit.metadata?.integration?.name,
             addressText = visit.address

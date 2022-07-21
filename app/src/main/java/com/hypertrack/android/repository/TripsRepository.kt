@@ -67,6 +67,7 @@ class TripsRepositoryImpl(
 
     override suspend fun refreshTrips() {
         try {
+            crashReportsProvider.log("Refresh trips")
             val remoteTrips = apiClient.getTrips()
             val newTrips = mapTripsFromRemote(remoteTrips)
             trips.postValue(newTrips)

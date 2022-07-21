@@ -69,6 +69,16 @@
             tools:text="Text"
             tools:visibility="visible" />
 
+        <TextView
+            android:id="@+id/tvDateTime"
+            style="@style/Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            tools:text="Text"
+            tools:visibility="visible" />
+
     </LinearLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout

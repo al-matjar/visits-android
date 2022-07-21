@@ -29,9 +29,6 @@ sealed class OutageReason(@StringRes val stringRes: Int) {
                 "tracking_service_terminated" -> {
                     TrackingServiceTerminated
                 }
-                "unexpected" -> {
-                    Unexpected
-                }
                 else -> {
                     Unknown(reason)
                 }
@@ -60,7 +57,5 @@ object TrackingStopped :
 
 object TrackingServiceTerminated :
     OutageReason(R.string.timeline_inactive_reason_tracking_service_terminated)
-
-object Unexpected : OutageReason(R.string.timeline_inactive_reason_unexpected)
 
 class Unknown(val reason: String) : OutageReason(R.string.timeline_inactive_reason_unexpected)
