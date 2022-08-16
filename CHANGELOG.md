@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.19.5] - 2022-08-16
+
+### Fixed
+
+- Out of memory exception on logging large trips
+
 ## [0.19.4] - 2022-08-16
 
 ### Added
