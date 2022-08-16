@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.19.4] - 2022-08-16
+
+### Added
+
+- Notification on app update available
+- Refresh history button
+- Icons to order action buttons
+- Geofence visit time to Visits tab
+
+### Changed
+
+- Map views optimized to significantly reduce lags and ANRs
+
+### Fixed
+
+- My location button on Select destination screen
+- Deeplink login issue on Branch.io timeout
+- Disabled bottom sheet on empty history
+- Fixed Timeline visual design issues
+
 ## [0.19.3] - 2022-07-19
 
 ### Changed
