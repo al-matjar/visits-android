@@ -16,19 +16,13 @@ import com.hypertrack.android.api.models.RemoteEstimate
 import com.hypertrack.android.api.models.RemoteGeofence
 import com.hypertrack.android.api.models.RemoteLocation
 import com.hypertrack.android.api.models.RemoteOrder
-import com.hypertrack.android.di.Injector
-import com.hypertrack.android.models.*
+import com.hypertrack.android.api.models.RemoteTrip
 import com.hypertrack.android.models.local.DeviceId
-import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
-import com.hypertrack.android.utils.Constants
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.ui.common.util.copy
 import com.hypertrack.android.utils.createAnyMapAdapter
-import com.hypertrack.android.utils.createStringMapAdapter
 import com.hypertrack.android.utils.datetime.toIso
-import com.hypertrack.logistics.android.github.R
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -171,8 +165,8 @@ object TestMockData {
             createOrder(status = OrderStatus.CANCELED),
             createOrder(status = OrderStatus.COMPLETED),
         )
-    ): Trip {
-        return Trip(
+    ): RemoteTrip {
+        return RemoteTrip(
             id ?: "tripId " + Math.random(),
             null,
             TripStatus.ACTIVE.value,

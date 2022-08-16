@@ -213,6 +213,7 @@ class SelectDestinationViewModelReducer(
                     }
                     ShowMyLocationAction,
                     ConfirmClicked,
+                    is MapCameraMoved,
                     is GeofencesOnMapUpdatedAction -> {
                         // ignore
                         state.withEffects()
@@ -220,8 +221,7 @@ class SelectDestinationViewModelReducer(
                     is AutocompleteError,
                     is SearchQueryChanged,
                     is MapClicked,
-                    is PlaceSelectedAction,
-                    is MapCameraMoved -> {
+                    is PlaceSelectedAction -> {
                         illegalAction(action, state)
                     }
                 }

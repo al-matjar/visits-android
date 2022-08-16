@@ -9,7 +9,7 @@ import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.ui.common.map_state.MapUiState
 import com.hypertrack.android.ui.common.map_state.TriggerLoadingGeofencesForMapPositionEffect
@@ -76,7 +76,7 @@ class CurrentTripReducer(
         appState: AppInitialized,
         userState: UserLoggedIn,
         userScope: UserScope,
-        trip: LocalTrip?,
+        trip: Trip?,
         userLocation: LatLng?,
         isLoading: Boolean
     ): ReducerResult<out State, Effect> {
@@ -657,7 +657,7 @@ class CurrentTripReducer(
     private fun reduce(
         action: OnShareTripClickAction,
         state: State,
-        trip: LocalTrip?
+        trip: Trip?
     ): ReducerResult<State, Effect> {
         return state.withEffects(
             trip?.views?.shareUrl?.let {

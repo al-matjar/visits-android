@@ -4,7 +4,7 @@ import androidx.lifecycle.*
 import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.interactors.trip.TripsUpdateTimerInteractor
 import com.hypertrack.android.models.local.Order
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
@@ -25,7 +25,7 @@ class OrdersListViewModel(
     private val addressDelegate: OrderAddressDelegate,
 ) : BaseViewModel(baseDependencies) {
 
-    val trip: LiveData<LocalTrip?> = tripsInteractor.currentTrip
+    val trip: LiveData<Trip?> = tripsInteractor.currentTrip
 
     val metadata: LiveData<List<KeyValueItem>> =
         Transformations.map(tripsInteractor.currentTrip) { trip ->

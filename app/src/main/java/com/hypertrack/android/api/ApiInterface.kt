@@ -4,14 +4,20 @@ import android.graphics.Bitmap
 import android.net.Uri
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.models.RemoteGeofence
-import com.hypertrack.android.api.models.RemoteEstimate
-import com.hypertrack.android.api.models.RemoteOrder
-import com.hypertrack.android.models.*
+import com.hypertrack.android.api.models.RemoteTrip
+import com.hypertrack.android.models.GeofenceMetadata
+import com.hypertrack.android.models.Integration
 import com.hypertrack.android.utils.toBase64
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import retrofit2.Response
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.PATCH
+import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 //todo move api entities elsewhere
 interface ApiInterface {
@@ -76,7 +82,7 @@ interface ApiInterface {
     ): Response<TripResponse>
 
     @POST("client/trips/")
-    suspend fun createTrip(@Body params: TripParams): Response<Trip>
+    suspend fun createTrip(@Body params: TripParams): Response<RemoteTrip>
 
     @POST("client/trips/{trip_id}/complete")
     suspend fun completeTrip(@Path("trip_id") tripId: String): Response<Unit>
@@ -85,7 +91,7 @@ interface ApiInterface {
     suspend fun addOrderToTrip(
         @Path("trip_id") tripId: String,
         @Body addOrderBody: AddOrderBody,
-    ): Response<Trip>
+    ): Response<RemoteTrip>
 
     @POST("client/trips/{trip_id}/orders/{order_id}/complete")
     suspend fun completeOrder(
@@ -116,7 +122,7 @@ interface ApiInterface {
         @Path("trip_id") tripId: String,
         @Path("order_id") orderId: String,
         @Body order: OrderBody
-    ): Response<Trip>
+    ): Response<RemoteTrip>
 
     /**
      * client/devices/A24BA1B4-1234-36F7-8DD7-15D97C3FD912/history/2021-02-05?timezone=Europe%2FZaporozhye
@@ -190,8 +196,8 @@ data class EncodedImage(
 
 @JsonClass(generateAdapter = true)
 data class TripResponse(
-        @field:Json(name = "data") val trips: List<Trip>,
-        @field:Json(name = "pagination_token") val paginationToken: String?
+    @field:Json(name = "data") val trips: List<RemoteTrip>,
+    @field:Json(name = "pagination_token") val paginationToken: String?
 )
 
 @JsonClass(generateAdapter = true)
@@ -234,18 +240,6 @@ class PaginationTokenLinks(
 @JsonClass(generateAdapter = true)
 data class ImageResponse(
     @field:Json(name = "name") val name: String
-)
-
-@JsonClass(generateAdapter = true)
-data class Trip(
-    @field:Json(name = "trip_id") val id: String?,
-    @field:Json(name = "views") val views: Views?,
-    @field:Json(name = "status") val status: String,
-    @field:Json(name = "started_at") val createdAt: String,
-    @field:Json(name = "metadata") val metadata: Map<String, Any>?,
-    @field:Json(name = "destination") val destination: TripDestination?,
-    @field:Json(name = "estimate") val estimate: RemoteEstimate?,
-    @field:Json(name = "orders") val orders: List<RemoteOrder>?,
 )
 
 @JsonClass(generateAdapter = true)

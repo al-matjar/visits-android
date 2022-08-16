@@ -8,15 +8,14 @@ import com.hypertrack.android.createBaseOrder
 import com.hypertrack.android.createBaseTrip
 import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.api.models.RemoteOrder
+import com.hypertrack.android.api.models.RemoteTrip
 import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.interactors.trip.TripsInteractorImpl
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.observeAndGetValue
 import com.hypertrack.android.repository.*
-import com.hypertrack.android.utils.CrashReportsProvider
-import com.hypertrack.android.utils.FirebaseCrashReportsProviderTest
 import com.hypertrack.android.utils.FirebaseCrashReportsProviderTest.Companion.crashReportsProvider
 import com.hypertrack.android.utils.HyperTrackService
 import com.hypertrack.android.utils.JustSuccess
@@ -84,7 +83,7 @@ class TripInteractorTest {
             val completed = tripsInteractor.completedTrips.observeAndGetValue()
             assertEquals(2, completed.size)
             assertTrue(completed.all { it.orders.size == 1 })
-            val slot = slot<List<LocalTrip>>()
+            val slot = slot<List<Trip>>()
             coVerify {
                 tripStorage.saveTrips(capture(slot))
             }
@@ -352,20 +351,20 @@ class TripInteractorTest {
     companion object {
         fun createTripsStorage(): TripsStorage {
             return object : TripsStorage {
-                var trips: List<LocalTrip> = listOf()
+                var trips: List<Trip> = listOf()
 
-                override suspend fun saveTrips(trips: List<LocalTrip>) {
+                override suspend fun saveTrips(trips: List<Trip>) {
                     this.trips = trips
                 }
 
-                override suspend fun getTrips(): List<LocalTrip> {
+                override suspend fun getTrips(): List<Trip> {
                     return trips
                 }
             }
         }
 
         fun createMockApiClient(
-            backendTrips: List<Trip> = listOf(),
+            backendTrips: List<RemoteTrip> = listOf(),
             additionalConfig: (ApiClient) -> Unit = {}
         ): ApiClient {
             return mockk {
@@ -396,7 +395,7 @@ class TripInteractorTest {
                 coEvery { getTrips() } returns listOf()
                 coEvery { saveTrips(any()) } returns Unit
             },
-            backendTrips: List<Trip> = listOf(),
+            backendTrips: List<RemoteTrip> = listOf(),
             apiClient: ApiClient = createMockApiClient(backendTrips),
             hyperTrackService: HyperTrackService = mockk(),
             queueInteractor: PhotoUploadQueueInteractor = mockk(relaxed = true) {},

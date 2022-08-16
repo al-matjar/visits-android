@@ -5,6 +5,7 @@ import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.models.RemoteGeofence
 import com.hypertrack.android.api.models.RemoteOrder
+import com.hypertrack.android.api.models.RemoteTrip
 import com.hypertrack.android.models.GeofenceMetadata
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.models.Metadata
@@ -91,7 +92,7 @@ class ApiClient(
         )
     }
 
-    suspend fun getTrips(page: String = ""): List<Trip> {
+    suspend fun getTrips(page: String = ""): List<RemoteTrip> {
         return try {
             val response = api.getTrips(
                 deviceId = deviceId.value,
@@ -113,7 +114,7 @@ class ApiClient(
         orderId: String,
         tripId: String,
         metadata: Metadata
-    ): Response<Trip> {
+    ): Response<RemoteTrip> {
         try {
             return api.updateOrder(
                 orderId = orderId,
@@ -142,7 +143,7 @@ class ApiClient(
         }
     }
 
-    suspend fun createTrip(latLng: LatLng, address: String?): Trip {
+    suspend fun createTrip(latLng: LatLng, address: String?): RemoteTrip {
         try {
             val res = api.createTrip(
                 TripParams(
@@ -176,7 +177,7 @@ class ApiClient(
     suspend fun addOrderToTrip(
         tripId: String,
         orderCreationParams: OrderCreationParams
-    ): Trip {
+    ): RemoteTrip {
         try {
             with(
                 api.addOrderToTrip(

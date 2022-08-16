@@ -1,12 +1,10 @@
 package com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state
 
-import com.hypertrack.android.models.local.LocalTrip
-import com.hypertrack.android.ui.common.map_state.MapUiState
-import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.models.local.Trip
 
 sealed class TripState
 data class ActiveTrip(
-    val trip: LocalTrip
+    val trip: Trip
 ) : TripState()
 
 object NoActiveTrip : TripState()

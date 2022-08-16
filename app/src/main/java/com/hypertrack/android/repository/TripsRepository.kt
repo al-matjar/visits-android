@@ -5,13 +5,13 @@ import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.api.ApiClient
 import com.hypertrack.android.api.OrderCreationParams
-import com.hypertrack.android.api.Trip
+import com.hypertrack.android.api.models.RemoteTrip
 import com.hypertrack.android.interactors.PhotoForUpload
 import com.hypertrack.android.interactors.PhotoUploadingState
 import com.hypertrack.android.models.Metadata
 import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.local.Order
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.ui.base.Consumable
 import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
@@ -25,13 +25,13 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
 interface TripsRepository {
-    val trips: LiveData<List<LocalTrip>>
+    val trips: LiveData<List<Trip>>
     val errorFlow: MutableSharedFlow<Consumable<Exception>>
     suspend fun refreshTrips()
     suspend fun createTrip(latLng: LatLng, address: String?): TripCreationResult
     suspend fun updateLocalOrder(orderId: String, updateFun: (Order) -> Unit)
     suspend fun completeTrip(tripId: String): SimpleResult
-    suspend fun addOrderToTrip(tripId: String, orderParams: OrderCreationParams): Trip
+    suspend fun addOrderToTrip(tripId: String, orderParams: OrderCreationParams): RemoteTrip
 }
 
 class TripsRepositoryImpl(
@@ -42,7 +42,7 @@ class TripsRepositoryImpl(
     private val orderAddressDelegate: OrderAddressDelegate
 ) : TripsRepository {
 
-    override val trips = MutableLiveData<List<LocalTrip>>()
+    override val trips = MutableLiveData<List<Trip>>()
 
     private var tripsInitialized = false
 
@@ -105,13 +105,16 @@ class TripsRepositoryImpl(
         })
     }
 
-    override suspend fun addOrderToTrip(tripId: String, orderParams: OrderCreationParams): Trip {
+    override suspend fun addOrderToTrip(
+        tripId: String,
+        orderParams: OrderCreationParams
+    ): RemoteTrip {
         val trip = apiClient.addOrderToTrip(tripId, orderParams)
         updateTrip(trip)
         return trip
     }
 
-    private suspend fun updateTrip(remoteTrip: Trip) {
+    private suspend fun updateTrip(remoteTrip: RemoteTrip) {
         trips.postValue(trips.value!!.map {
             if (it.id == remoteTrip.id) {
                 localTripFromRemote(
@@ -127,7 +130,7 @@ class TripsRepositoryImpl(
         })
     }
 
-    private suspend fun onTripCreated(trip: Trip) {
+    private suspend fun onTripCreated(trip: RemoteTrip) {
         trips.postValue(
             (trips.value ?: listOf()).toMutableList()
                 .apply {
@@ -142,7 +145,7 @@ class TripsRepositoryImpl(
                 })
     }
 
-    private suspend fun mapTripsFromRemote(remoteTrips: List<Trip>): List<LocalTrip> {
+    private suspend fun mapTripsFromRemote(remoteTrips: List<RemoteTrip>): List<Trip> {
         val legacyTrip = remoteTrips.firstOrNull {
             it.orders.isNullOrEmpty() && it.status == TripStatus.ACTIVE.value
         }
@@ -175,8 +178,8 @@ class TripsRepositoryImpl(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun localTripFromRemote(remoteTrip: Trip, newLocalOrders: List<Order>): LocalTrip {
-        return LocalTrip(
+    private fun localTripFromRemote(remoteTrip: RemoteTrip, newLocalOrders: List<Order>): Trip {
+        return Trip(
             remoteTrip.id!!,
             TripStatus.fromString(remoteTrip.status),
             ((remoteTrip.metadata ?: mapOf<String, String>())

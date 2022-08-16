@@ -9,7 +9,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.hypertrack.android.models.local.Geofence
 import com.hypertrack.android.models.local.Order
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.ui.common.map.entities.HypertrackMapEntity
 import com.hypertrack.android.ui.common.map.entities.MapCircle
@@ -169,7 +169,7 @@ class HypertrackMapWrapper(
         )
     }
 
-    fun addTrip(trip: LocalTrip) {
+    fun addTrip(trip: Trip) {
         val map = googleMap
         val tripStart =
             trip.orders.firstOrNull()?.estimate?.route?.firstOrNull()
@@ -244,7 +244,7 @@ class HypertrackMapWrapper(
         }
     }
 
-    fun animateCameraToTrip(trip: LocalTrip, userLocation: LatLng? = null) {
+    fun animateCameraToTrip(trip: Trip, userLocation: LatLng? = null) {
         try {
             val tripStart =
                 trip.orders.firstOrNull()?.estimate?.route?.firstOrNull()

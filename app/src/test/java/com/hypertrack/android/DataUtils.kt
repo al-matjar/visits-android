@@ -1,7 +1,7 @@
 package com.hypertrack.android
 
 import com.hypertrack.android.api.Point
-import com.hypertrack.android.api.Trip
+import com.hypertrack.android.api.models.RemoteTrip
 import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.api.Views
 import com.hypertrack.android.mock.TestMockData
@@ -28,8 +28,8 @@ fun createBaseOrder(
 }
 
 //todo replace with MockData
-fun createBaseTrip(id: String? = null): Trip {
-    return Trip(
+fun createBaseTrip(id: String? = null): RemoteTrip {
+    return RemoteTrip(
         id = id ?: "tripId " + Math.random(),
         status = TripStatus.ACTIVE.value,
         orders = null,

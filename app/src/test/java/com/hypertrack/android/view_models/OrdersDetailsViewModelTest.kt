@@ -16,7 +16,7 @@ import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.interactors.TripInteractorTest.Companion.createTripInteractorImpl
 import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.models.local.Order
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
 import com.hypertrack.android.observeAndGetValue
@@ -355,7 +355,7 @@ class OrdersDetailsViewModelTest {
             apiClient = apiClient,
             tripStorage = mockk() {
                 coEvery { getTrips() } returns listOf(
-                    LocalTrip(
+                    Trip(
                         "1", TripStatus.ACTIVE, mapOf(), mutableListOf(
                             mapOrder(order, note = "Note_local", Metadata.empty().apply {
                                 visitsAppMetadata.apply {
@@ -398,7 +398,7 @@ class OrdersDetailsViewModelTest {
             apiClient = apiClient,
             tripStorage = mockk() {
                 coEvery { getTrips() } returns listOf(
-                    LocalTrip(
+                    Trip(
                         "1", TripStatus.ACTIVE, mapOf(), mutableListOf(
                             mapOrder(order, metadata = Metadata.empty().apply {
                                 visitsAppMetadata.apply {
@@ -608,7 +608,7 @@ class OrdersDetailsViewModelTest {
             return mockk(relaxed = true) {
                 orderSet.invoke(this)
                 every { errorFlow } returns MutableSharedFlow()
-                every { currentTrip } returns MutableLiveData<LocalTrip>()
+                every { currentTrip } returns MutableLiveData<Trip>()
             }
         }
 

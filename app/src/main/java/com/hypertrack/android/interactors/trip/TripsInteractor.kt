@@ -15,7 +15,7 @@ import com.hypertrack.android.interactors.PhotoUploadQueueInteractor
 import com.hypertrack.android.interactors.PhotoUploadingState
 import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.models.Metadata
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.OrderStatus
 import com.hypertrack.android.models.local.TripStatus
@@ -43,8 +43,8 @@ import java.util.*
 //todo separate
 interface TripsInteractor {
     val errorFlow: MutableSharedFlow<Consumable<Exception>>
-    val currentTrip: LiveData<LocalTrip?>
-    val completedTrips: LiveData<List<LocalTrip>>
+    val currentTrip: LiveData<Trip?>
+    val completedTrips: LiveData<List<Trip>>
     fun getOrderLiveData(orderId: String): LiveData<Order>
     suspend fun refreshTrips()
     suspend fun cancelOrder(orderId: String): OrderCompletionResponse
@@ -315,7 +315,7 @@ open class TripsInteractorImpl(
         }
     }
 
-    private fun getCurrentTrip(trips: List<LocalTrip>): LocalTrip? {
+    private fun getCurrentTrip(trips: List<Trip>): Trip? {
         return trips.firstOrNull {
             it.status == TripStatus.ACTIVE
         }

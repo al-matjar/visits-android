@@ -2,12 +2,11 @@ package com.hypertrack.android.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import com.hypertrack.android.data.AccountDataStorage
 import com.hypertrack.android.interactors.PhotoForUpload
 import com.hypertrack.android.interactors.PhotoUploadQueueStorage
 import com.hypertrack.android.interactors.PhotoUploadingState
-import com.hypertrack.android.models.local.LocalTrip
+import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -16,8 +15,8 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 
 interface TripsStorage {
-    suspend fun saveTrips(trips: List<LocalTrip>)
-    suspend fun getTrips(): List<LocalTrip>
+    suspend fun saveTrips(trips: List<Trip>)
+    suspend fun getTrips(): List<Trip>
 }
 
 @Deprecated("use PreferencesRepository")
@@ -52,12 +51,12 @@ class MyPreferences(
             ?.apply()
     }
 
-    override suspend fun saveTrips(trips: List<LocalTrip>) {
+    override suspend fun saveTrips(trips: List<Trip>) {
         sharedPreferences.edit().putString(TRIPS_KEY, tripsListAdapter.toJson(trips))?.apply()
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    override suspend fun getTrips(): List<LocalTrip> {
+    override suspend fun getTrips(): List<Trip> {
         return withContext(Dispatchers.IO) {
             try {
                 tripsListAdapter
@@ -70,10 +69,10 @@ class MyPreferences(
     }
 
     private val tripsListAdapter by lazy {
-        moshi.adapter<List<LocalTrip>>(
+        moshi.adapter<List<Trip>>(
             Types.newParameterizedType(
                 List::class.java,
-                LocalTrip::class.java
+                Trip::class.java
             )
         )
     }
