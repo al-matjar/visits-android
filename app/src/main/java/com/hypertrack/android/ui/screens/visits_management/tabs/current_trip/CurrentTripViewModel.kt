@@ -9,10 +9,6 @@ import com.hypertrack.android.interactors.app.DestroyTripCreationScopeAction
 import com.hypertrack.android.interactors.app.GeofencesForMapUpdatedEvent
 import com.hypertrack.android.interactors.app.TrackingStateChangedEvent
 import com.hypertrack.android.interactors.app.noAction
-import com.hypertrack.android.interactors.app.state.AppInitialized
-import com.hypertrack.android.interactors.app.state.AppNotInitialized
-import com.hypertrack.android.interactors.app.state.UserLoggedIn
-import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.repository.TripCreationError
 import com.hypertrack.android.repository.TripCreationSuccess
 import com.hypertrack.android.ui.base.*
@@ -21,7 +17,6 @@ import com.hypertrack.android.ui.common.map_state.MapUiEffectHandler
 import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.ui.common.map_state.OnMapMovedMapUiAction
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
-import com.hypertrack.android.ui.common.map.HypertrackMapWrapper.Companion.DEFAULT_ZOOM
 import com.hypertrack.android.ui.common.map.MapParams
 import com.hypertrack.android.ui.common.select_destination.DestinationData
 import com.hypertrack.android.ui.common.util.*
@@ -36,7 +31,6 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.sta
 import com.hypertrack.android.ui.screens.visits_management.tabs.orders.OrdersAdapter
 import com.hypertrack.android.utils.JustFailure
 import com.hypertrack.android.utils.JustSuccess
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.catchException
 import com.hypertrack.logistics.android.github.R
@@ -99,7 +93,7 @@ class CurrentTripViewModel(
             appInteractor.appEvent.collect {
                 when (it) {
                     is GeofencesForMapUpdatedEvent -> {
-                        handleAction(GeofencesOnMapUpdatedAction(it.geofences))
+                        handleAction(GeofencesForMapUpdatedAction(it.geofences))
                     }
                     is TrackingStateChangedEvent -> {
                         handleAction(TrackingStateChangedAction(it.trackingState.isTracking()))
@@ -228,6 +222,10 @@ class CurrentTripViewModel(
             is MapUiEffect -> {
                 mapUiEffectHandler.getEffectFlow(effect.effect).map { it?.let { MapUiAction(it) } }
             }
+            is SetMapPaddingEffect -> {
+                { effect.map.setPadding(bottom = effect.bottomPadding) }.asFlow()
+                    .flowOn(Dispatchers.Main).noAction()
+            }
         }
     }
 
@@ -298,6 +296,9 @@ class CurrentTripViewModel(
             ).let { res ->
                 when (res) {
                     is TripCreationSuccess -> {
+                        // trip polyline is created with some delay, so we need to update the trip
+                        // to get the polyline
+                        userScope.tripsInteractor.refreshTrips()
                     }
                     is TripCreationError -> {
                         showExceptionMessageAndReport(res.exception)

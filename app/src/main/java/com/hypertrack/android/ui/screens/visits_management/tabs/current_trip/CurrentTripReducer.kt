@@ -28,10 +28,14 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.sta
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.NotTracking
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.State
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.Tracking
+import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.TripState
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.ViewState
 import com.hypertrack.android.ui.screens.visits_management.tabs.current_trip.state.withEffects
+import com.hypertrack.android.utils.asSet
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.state_machine.ReducerResult
+import com.hypertrack.android.utils.state_machine.effectIf
+import com.hypertrack.android.utils.state_machine.effectIfNotNull
 
 class CurrentTripReducer(
     private val appState: LiveData<AppState>,
@@ -84,13 +88,14 @@ class CurrentTripReducer(
             is NotInitializedState -> {
                 when (action) {
                     OnViewCreatedAction -> {
+                        val newTripState = trip?.let {
+                            ActiveTrip(it)
+                        } ?: NoActiveTrip
                         val newTrackingState = if (appState.isSdkTracking()) {
                             Tracking(
                                 mapUiState = null,
                                 userLocation = userLocation,
-                                tripState = trip?.let {
-                                    ActiveTrip(it)
-                                } ?: NoActiveTrip
+                                tripState = newTripState
                             )
                         } else {
                             // todo show geofences in this state?
@@ -135,7 +140,7 @@ class CurrentTripReducer(
                     }
                     OnPauseAction,
                     OnResumeAction,
-                    is GeofencesOnMapUpdatedAction,
+                    is GeofencesForMapUpdatedAction,
                     is TripUpdatedAction -> {
                         // do nothing
                         state.withEffects()
@@ -202,8 +207,14 @@ class CurrentTripReducer(
                                         StopTripUpdateTimer(userScope)
                                     )
                                     val mapEffects = if (map != null) {
-                                        mutableSetOf<Effect>(
-                                            SetMapActiveStateEffect(map, active = false)
+                                        mutableSetOf(
+                                            SetMapActiveStateEffect(map, active = false),
+                                            SetMapPaddingEffect(
+                                                map,
+                                                getMapPadding(
+                                                    state.trackingState.tripState
+                                                )
+                                            )
                                         ).apply {
                                             if (userLocation != null) {
                                                 add(
@@ -257,23 +268,25 @@ class CurrentTripReducer(
                                     val mapActiveStateEffect = setOf(
                                         SetMapActiveStateEffect(newMap, active = true)
                                     )
+                                    val tripState = state.trackingState.tripState
+                                    val paddingEffect = SetMapPaddingEffect(
+                                        action.map,
+                                        getMapPadding(tripState)
+                                    )
                                     val mapEffects =
-                                        when (val tripState = state.trackingState.tripState) {
+                                        when (tripState) {
                                             is ActiveTrip -> {
-                                                setOf(
-                                                    AnimateMapToTripEffect(
-                                                        newMap,
-                                                        tripState.trip,
-                                                        userLocation
-                                                    )
-                                                )
+                                                AnimateMapToTripEffect(
+                                                    newMap,
+                                                    tripState.trip,
+                                                    userLocation
+                                                ).asSet()
                                             }
                                             is NoActiveTrip -> {
-                                                val userLocationEffect = if (userLocation != null) {
-                                                    setOf(
-                                                        MoveMapEffect(newMap, userLocation)
-                                                    )
-                                                } else setOf()
+                                                val userLocationEffect =
+                                                    effectIfNotNull(userLocation) {
+                                                        MoveMapEffect(newMap, it)
+                                                    }
 
                                                 val geofencesOnMapEffect = MapUiEffect(
                                                     TriggerLoadingGeofencesForMapPositionEffect(
@@ -283,7 +296,7 @@ class CurrentTripReducer(
                                                 userLocationEffect + geofencesOnMapEffect
                                             }
                                         }
-                                    mapActiveStateEffect + mapEffects + mapUiEffects
+                                    mapActiveStateEffect + mapEffects + mapUiEffects + paddingEffect
                                 }
                             }
                             OnMyLocationClickAction -> {
@@ -364,35 +377,35 @@ class CurrentTripReducer(
                                             )
                                         )
                                     }.withEffects {
+                                        val paddingEffect = SetMapPaddingEffect(
+                                            map,
+                                            getMapPadding(newTripState)
+                                        )
                                         val mapUiEffects =
                                             it.effects.map { MapUiEffect(it) }.toSet()
 
-                                        val mapEffects = when (newTripState) {
+                                        val mapMovementEffects = when (newTripState) {
                                             is ActiveTrip -> {
                                                 // if new trip added or new order added
                                                 val oldTripState = state.trackingState.tripState
-                                                if (
+                                                effectIf(
                                                     oldTripState is NoActiveTrip ||
-                                                    (oldTripState is ActiveTrip &&
-                                                            oldTripState.trip.orders != newTripState.trip.orders)
+                                                            (oldTripState is ActiveTrip &&
+                                                                    oldTripState.trip.orders != newTripState.trip.orders)
                                                 ) {
-                                                    setOf(
-                                                        AnimateMapToTripEffect(
-                                                            map,
-                                                            newTripState.trip,
-                                                            userLocation
-                                                        )
+                                                    AnimateMapToTripEffect(
+                                                        map,
+                                                        newTripState.trip,
+                                                        userLocation
                                                     )
-                                                } else setOf()
+                                                }
                                             }
                                             // tracking started, and there is no trip
                                             is NoActiveTrip -> {
                                                 val userLocationEffects =
-                                                    if (userLocation != null) {
-                                                        setOf(
-                                                            MoveMapEffect(map, userLocation)
-                                                        )
-                                                    } else setOf()
+                                                    effectIfNotNull(userLocation) { userLocation ->
+                                                        MoveMapEffect(map, userLocation)
+                                                    }
                                                 val geofencesOnMapEffects = MapUiEffect(
                                                     TriggerLoadingGeofencesForMapPositionEffect(
                                                         map
@@ -401,7 +414,7 @@ class CurrentTripReducer(
                                                 userLocationEffects + geofencesOnMapEffects
                                             }
                                         }
-                                        mapUiEffects + mapEffects
+                                        mapUiEffects + mapMovementEffects + paddingEffect
                                     }
                                 } else {
                                     state.copy(
@@ -442,7 +455,7 @@ class CurrentTripReducer(
                                     )
                                 )
                             }
-                            is GeofencesOnMapUpdatedAction -> {
+                            is GeofencesForMapUpdatedAction -> {
                                 when (state.trackingState.tripState) {
                                     is ActiveTrip -> {
                                         state.withEffects()
@@ -543,6 +556,10 @@ class CurrentTripReducer(
                                                             map,
                                                             newTripState.trip,
                                                             userLocation
+                                                        ),
+                                                        SetMapPaddingEffect(
+                                                            map,
+                                                            getMapPadding(newTripState)
                                                         )
                                                     )
                                                 }
@@ -584,7 +601,7 @@ class CurrentTripReducer(
                             OnPauseAction,
                             is MapUiAction,
                             is TripUpdatedAction,
-                            is GeofencesOnMapUpdatedAction,
+                            is GeofencesForMapUpdatedAction,
                             is UserLocationChangedAction -> {
                                 //do nothing
                                 state.withEffects()
@@ -688,4 +705,15 @@ class CurrentTripReducer(
         }
     }
 
+    private fun getMapPadding(tripState: TripState): Int {
+        return when (tripState) {
+            is ActiveTrip -> MAP_PADDING_TRIP
+            NoActiveTrip -> MAP_PADDING_DEFAULT
+        }
+    }
+
+    companion object {
+        const val MAP_PADDING_TRIP = 400
+        const val MAP_PADDING_DEFAULT = 0
+    }
 }

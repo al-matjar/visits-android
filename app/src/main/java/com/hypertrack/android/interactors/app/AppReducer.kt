@@ -6,7 +6,11 @@ import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.di.AppScope
+import com.hypertrack.android.di.Injector.crashReportsProvider
 import com.hypertrack.android.di.TripCreationScope
+import com.hypertrack.android.interactors.app.action.ClearGeofencesForMapAction
+import com.hypertrack.android.interactors.app.action.GeofencesForMapLoadedAction
+import com.hypertrack.android.interactors.app.action.LoadGeofencesForMapAction
 import com.hypertrack.android.interactors.app.optics.AppStateOptics
 import com.hypertrack.android.interactors.app.optics.GeofencesForMapOptic
 import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
@@ -22,9 +26,12 @@ import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.interactors.app.state.UserState
 import com.hypertrack.android.interactors.app.state.allGeofences
+import com.hypertrack.android.models.local.GeofenceForMap
+import com.hypertrack.android.repository.access_token.AccountSuspendedException
 import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.asSet
 import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.state_machine.effectIf
 import com.hypertrack.android.utils.withEffects
@@ -115,6 +122,7 @@ class AppReducer(
                         // do nothing
                         state.withEffects()
                     }
+                    OnAccountSuspendedAction,
                     is GeofencesForMapAppAction,
                     is CreateTripCreationScopeAction,
                     DestroyTripCreationScopeAction,
@@ -370,16 +378,22 @@ class AppReducer(
                                     action.action,
                                     state.userState.geofencesForMap.tiles,
                                     state.userState.useCases
-                                ).withEffects {
-                                    val geofencesForMapEffects = it.effects
-                                    val appEventEffect = setOf(
-                                        it.newState.let { geofencesForMapState ->
+                                ).withEffects { result ->
+                                    val geofencesForMapEffects = result.effects
+                                    val appEventEffect = when (action.action) {
+                                        ClearGeofencesForMapAction, is GeofencesForMapLoadedAction -> {
                                             AppEventEffect(
                                                 GeofencesForMapUpdatedEvent(
-                                                    geofencesForMapState.allGeofences()
+                                                    result.newState.allGeofences().map {
+                                                        GeofenceForMap.fromGeofence(it)
+                                                    }
                                                 )
-                                            )
-                                        })
+                                            ).asSet()
+                                        }
+                                        is LoadGeofencesForMapAction -> {
+                                            geofencesForMapEffects
+                                        }
+                                    }
                                     geofencesForMapEffects + appEventEffect
                                 }.withState { newGeofencesState ->
                                     GeofencesForMapOptic.set(
@@ -391,6 +405,19 @@ class AppReducer(
                             }
                             UserNotLoggedIn -> {
                                 state.withEffects()
+                            }
+                        }
+                    }
+                    OnAccountSuspendedAction -> {
+                        when (state.userState) {
+                            is UserLoggedIn -> {
+                                state.copy(userState = UserNotLoggedIn).withEffects(
+                                    ShowAndReportAppErrorEffect(AccountSuspendedException()),
+                                    DestroyUserScopeEffect(state.userState.userScope)
+                                )
+                            }
+                            UserNotLoggedIn -> {
+                                illegalAction(action, state)
                             }
                         }
                     }

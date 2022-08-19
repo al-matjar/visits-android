@@ -59,9 +59,9 @@ class PlacesRepositoryImpl(
             val res = apiClient.getGeofences(pageToken, gh.string())
             val localGeofences =
                 res.geofences.map {
-                    Geofence.fromGeofence(
-                        deviceId,
+                    Geofence.fromRemoteGeofence(
                         it,
+                        deviceId,
                         moshi,
                         osUtilsProvider,
                         crashReportsProvider
@@ -97,9 +97,9 @@ class PlacesRepositoryImpl(
             )
             if (res.isSuccessful) {
                 return CreateGeofenceSuccess(
-                    Geofence.fromGeofence(
-                        deviceId,
+                    Geofence.fromRemoteGeofence(
                         res.body()!!.first(),
+                        deviceId,
                         moshi,
                         osUtilsProvider,
                         crashReportsProvider
@@ -116,9 +116,9 @@ class PlacesRepositoryImpl(
     override suspend fun getGeofence(geofenceId: String): GeofenceResult {
         return try {
             apiClient.getGeofence(geofenceId).let {
-                Geofence.fromGeofence(
-                    deviceId,
+                Geofence.fromRemoteGeofence(
                     it,
+                    deviceId,
                     moshi,
                     osUtilsProvider,
                     crashReportsProvider

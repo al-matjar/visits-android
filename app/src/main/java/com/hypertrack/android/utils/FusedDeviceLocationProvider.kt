@@ -12,6 +12,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.tasks.Task
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.UserLocationChangedAction
 import com.hypertrack.android.ui.common.util.toLatLng
@@ -21,6 +22,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.Exception
+import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 interface DeviceLocationProvider {
@@ -71,16 +73,18 @@ class FusedDeviceLocationProvider(
         }
     }
 
+    @Suppress("UNNECESSARY_SAFE_CALL")
     private suspend fun getCurrentLocationFromFusedProvider(): LatLng? {
         return if (ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            locationClient.lastLocation.toSuspendCoroutine().let {
+            // lastLocation can be null
+            getLastLocation(locationClient.lastLocation).let {
                 when (it) {
                     is Success -> {
-                        it.data.toLatLng()
+                        it.data?.toLatLng()
                     }
                     is Failure -> {
                         crashReportsProvider.logException(it.exception)
@@ -98,8 +102,20 @@ class FusedDeviceLocationProvider(
         }
     }
 
+    private suspend fun getLastLocation(lastLocationTask: Task<Location?>): Result<Location?> =
+        suspendCoroutine { continuation ->
+            lastLocationTask.addOnSuccessListener {
+                continuation.resume(it.asSuccess())
+            }
+            lastLocationTask.addOnFailureListener {
+                continuation.resume(it.asFailure())
+            }
+        }
+
+    @Suppress("UNNECESSARY_SAFE_CALL")
     override fun onLocationResult(result: LocationResult) {
-        result.lastLocation.toLatLng().let {
+        // lastLocation can be null
+        result.lastLocation?.toLatLng().let {
             appInteractor.handleAction(UserLocationChangedAction(it))
             deviceLocation.postValue(it)
         }

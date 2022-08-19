@@ -4,16 +4,9 @@ import com.hypertrack.android.models.local.DeviceStatusMarker
 import com.hypertrack.android.models.local.DeviceStatusMarkerActive
 import com.hypertrack.android.models.local.DeviceStatusMarkerInactive
 import com.hypertrack.android.models.local.Drive
-import com.hypertrack.android.models.local.LocationPermissionsDenied
-import com.hypertrack.android.models.local.LocationServicesDisabled
 import com.hypertrack.android.models.local.MarkerEnded
 import com.hypertrack.android.models.local.MarkerOngoing
-import com.hypertrack.android.models.local.MotionActivityPermissionsDenied
-import com.hypertrack.android.models.local.MotionActivityServicesDisabled
-import com.hypertrack.android.models.local.MotionActivityServicesUnavailable
 import com.hypertrack.android.models.local.Stop
-import com.hypertrack.android.models.local.TrackingServiceTerminated
-import com.hypertrack.android.models.local.TrackingStopped
 import com.hypertrack.android.models.local.Unknown
 import com.hypertrack.android.models.local.UnknownActivity
 import com.hypertrack.android.models.local.Walk

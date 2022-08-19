@@ -14,6 +14,7 @@ import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.RegisterScreenAction
 import com.hypertrack.android.ui.base.ProgressDialogFragment
 import com.hypertrack.android.ui.base.navigate
+import com.hypertrack.android.ui.common.delegates.map_view.GoogleMapViewDelegate
 import com.hypertrack.android.ui.common.util.*
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.stringFromResource
@@ -25,21 +26,27 @@ import kotlinx.coroutines.FlowPreview
 
 class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_trip) {
 
-    private lateinit var bottomHolderSheetBehavior: BottomSheetBehavior<*>
+    override val delegates = listOf(
+        GoogleMapViewDelegate(
+            R.id.map,
+            this,
+            Injector.provideAppInteractor()
+        ) {
+            vm.handleAction(InitMapAction(requireContext(), it))
+        }
+    )
 
     private val vm: CurrentTripViewModel by viewModels {
         Injector.provideViewModelFactory()
     }
+
+    private lateinit var bottomHolderSheetBehavior: BottomSheetBehavior<*>
 
     private val ordersAdapter by lazy { vm.createOrdersAdapter() }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         vm.handleAction(OnViewCreatedAction)
-
-        (childFragmentManager.findFragmentById(R.id.googleMap) as SupportMapFragment).getMapAsync {
-            vm.handleAction(InitMapAction(requireContext(), it))
-        }
 
         bottomHolderSheetBehavior = BottomSheetBehavior.from(bottom_holder)
         bottom_holder.show()
@@ -66,13 +73,6 @@ class CurrentTripFragment : ProgressDialogFragment(R.layout.fragment_current_tri
             viewState.tripData.let { tripData ->
                 lTrip.setGoneState(tripData == null)
                 tripData?.let { displayTrip(it) }
-                googleMap.setPadding(
-                    0, 0, 0,
-                    if (tripData != null) {
-                        requireContext().resources
-                            .getDimension(R.dimen.current_trip_bottom_bar_start_height).toInt()
-                    } else 0
-                )
             }
         }
 

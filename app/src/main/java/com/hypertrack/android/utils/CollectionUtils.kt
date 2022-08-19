@@ -37,3 +37,7 @@ object NaturalOrderComparator : Comparator<Comparable<Any>> {
 fun <T, E> Set<T>.map(mapper: (T) -> E): Set<E> {
     return mapKotlin(mapper).toSet()
 }
+
+fun <T> T.asSet(): Set<T> {
+    return setOf(this)
+}

@@ -263,6 +263,7 @@ class CreateUserScopeUseCase(
                         AccessTokenAuthenticator(
                             deviceId,
                             publishableKey,
+                            appInteractor,
                             accessTokenRepository,
                             crashReportsProvider
                         )

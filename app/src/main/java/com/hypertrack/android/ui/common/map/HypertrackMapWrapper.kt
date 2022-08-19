@@ -8,6 +8,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.*
 import com.hypertrack.android.models.local.Geofence
+import com.hypertrack.android.models.local.GeofenceForMap
 import com.hypertrack.android.models.local.Order
 import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.models.local.OrderStatus
@@ -107,7 +108,7 @@ class HypertrackMapWrapper(
             geofence.radius.let { radius ->
                 googleMap.addCircle(
                     CircleOptions()
-                        .center(geofence.latLng)
+                        .center(geofence.location)
                         .fillColor(colorGeofenceFill)
                         .strokeColor(colorGeofence)
                         .strokeWidth(3f)
@@ -117,7 +118,7 @@ class HypertrackMapWrapper(
             }
             googleMap.addCircle(
                 CircleOptions()
-                    .center(geofence.latLng)
+                    .center(geofence.location)
                     .fillColor(colorGeofence)
                     .strokeColor(Color.TRANSPARENT)
                     .radius(30.0)
@@ -127,6 +128,10 @@ class HypertrackMapWrapper(
     }
 
     fun addGeofence(geofence: Geofence) {
+        addGeofence(GeofenceForMap.fromGeofence(geofence))
+    }
+
+    fun addGeofence(geofence: GeofenceForMap) {
         val it = geofence
         if (geofence.isPolygon) {
             googleMap.addPolygon(
@@ -142,7 +147,7 @@ class HypertrackMapWrapper(
                 googleMap.addCircle(
                     CircleOptions()
                         .radius(radius.toDouble())
-                        .center(it.latLng)
+                        .center(it.location)
                         .fillColor(colorGeofenceFill)
                         .strokeColor(colorHyperTrackGreenSemitransparent)
                 )
@@ -152,8 +157,8 @@ class HypertrackMapWrapper(
         googleMap.addMarker(
             MarkerOptions()
                 .icon(geofenceMarkerIcon)
-                .snippet(it.id)
-                .position(it.latLng)
+                .snippet(it.id.value)
+                .position(it.location)
                 .anchor(0.5f, 0.5f)
         )
     }

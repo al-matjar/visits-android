@@ -82,7 +82,10 @@ open class SelectDestinationViewModel(
     protected lateinit var state: State
 
     private val addressDelegate = GooglePlaceAddressDelegate(osUtilsProvider)
-    private val placesDelegate = GooglePlacesSearchDelegate(googlePlacesInteractor)
+    private val placesDelegate = GooglePlacesSearchDelegate(
+        crashReportsProvider,
+        googlePlacesInteractor
+    )
 
     private var isMapMovingToPlace: Boolean = false
     private var isMapMovingToUserLocation: Boolean = false

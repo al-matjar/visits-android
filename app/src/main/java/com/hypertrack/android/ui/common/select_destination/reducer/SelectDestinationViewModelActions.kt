@@ -2,6 +2,7 @@ package com.hypertrack.android.ui.common.select_destination.reducer
 
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.models.local.Geofence
+import com.hypertrack.android.models.local.GeofenceForMap
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.select_destination.GooglePlaceModel
 import com.hypertrack.android.utils.NonEmptyList
@@ -52,4 +53,4 @@ data class PlaceSelectedAction(
 
 object ShowMyLocationAction : Action()
 
-data class GeofencesOnMapUpdatedAction(val geofences: List<Geofence>) : Action()
+data class GeofencesOnMapUpdatedAction(val geofences: List<GeofenceForMap>) : Action()

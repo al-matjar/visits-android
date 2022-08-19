@@ -40,7 +40,7 @@ object Injector {
 
     fun appOnCreate(application: Application) {
         crashReportsProvider = DoubleCrashReportsProvider(
-            SentryCrashReportsProvider(),
+            SentryCrashReportsProvider(application),
             FirebaseCrashReportsProvider(application)
         )
         resourceProvider = OsUtilsProvider(application, crashReportsProvider)

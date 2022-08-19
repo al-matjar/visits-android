@@ -128,6 +128,12 @@
     <string name="timeline_inactive_reason_motion_activity_services_unavailable">Activity service unavailable</string>
     <string name="timeline_inactive_reason_tracking_stopped">Tracking stopped</string>
     <string name="timeline_inactive_reason_tracking_service_terminated">Tracking service terminated</string>
+    <string name="timeline_inactive_reason_tracking_service_terminated_by_reboot">Tracking service terminated by OS reboot</string>
+    <string name="timeline_inactive_reason_location_unavailable">GPS signal lost</string>
+    <string name="timeline_inactive_reason_disconnected">Device disconnected</string>
+    <string name="timeline_inactive_reason_sdk_killed_by_user">Tracking service terminated by user</string>
+    <string name="timeline_inactive_reason_sdk_killed_crashed">Tracking service terminated by app crash</string>
+    <string name="timeline_inactive_reason_location_permission_when_in_use_background">Background location permissions denied</string>
     <string name="timeline_inactive_reason_unexpected">Unknown outage</string>
 
     <string name="timeline_geotag_dialog_id">Geotag ID</string>
@@ -293,6 +299,8 @@
     <string name="map_is_not_ready_yet">Failed to perform action: Map is not loaded yet</string>
     <string name="dontkillmyapp_url">https://dontkillmyapp.com</string>
     <string name="today">Today</string>
+    <string name="account_suspended">Account suspended</string>
+
 
     <plurals name="time">
         <item quantity="one">time</item>

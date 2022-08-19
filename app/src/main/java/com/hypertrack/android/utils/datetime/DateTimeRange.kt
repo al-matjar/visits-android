@@ -1,14 +1,13 @@
 package com.hypertrack.android.utils.datetime
 
-import com.hypertrack.android.utils.TypeWrapper
 import java.time.ZonedDateTime
 
 interface RangedDateTime {
     val value: ZonedDateTime
 }
 
-class StartDateTime(value: ZonedDateTime) : TypeWrapper<ZonedDateTime>(value), RangedDateTime
-class EndDateTime(value: ZonedDateTime) : TypeWrapper<ZonedDateTime>(value), RangedDateTime
+data class StartDateTime(override val value: ZonedDateTime) : RangedDateTime
+data class EndDateTime(override val value: ZonedDateTime) : RangedDateTime
 
 sealed class DateTimeRange(
     val start: StartDateTime,

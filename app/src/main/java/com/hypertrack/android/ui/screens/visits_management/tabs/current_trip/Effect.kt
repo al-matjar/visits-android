@@ -17,6 +17,7 @@ sealed class Effect {
 }
 
 data class UpdateViewStateEffect(val viewState: ViewState) : Effect()
+data class SetMapPaddingEffect(val map: HypertrackMapWrapper, val bottomPadding: Int) : Effect()
 data class ErrorEffect(val exception: Exception) : Effect()
 
 data class ClearAndMoveMapEffect(val map: HypertrackMapWrapper, val position: LatLng) : Effect()

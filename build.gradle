@@ -62,7 +62,6 @@ buildscript {
 
     repositories {
         google()
-        maven { url 'https://s3.us-west-2.amazonaws.com/m2.hypertrack.com/' }
         mavenCentral()
     }
     dependencies {

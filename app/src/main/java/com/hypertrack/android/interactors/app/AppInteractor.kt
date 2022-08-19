@@ -26,6 +26,7 @@ import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.toFlow
+import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -240,6 +241,11 @@ class AppInteractor(
                         )
                     }
             }
+            is DestroyUserScopeEffect -> {
+                useCases.destroyUserScopeUseCase.execute(effect.userScope).flatMapConcat {
+                    getEffectFlow(NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()))
+                }
+            }
         }
     }
 
@@ -270,4 +276,6 @@ fun <T> Flow<Unit>.noAction(): Flow<T?> {
     return map { null }
 }
 
-
+fun AppInteractor.onError(exception: Exception) {
+    handleAction(AppErrorAction(exception))
+}

@@ -14,20 +14,18 @@ import java.time.ZonedDateTime
 
 @JsonClass(generateAdapter = true)
 data class Geofence(
-    val geofence: RemoteGeofence,
+    val id: GeofenceId,
     val name: String?,
     val address: String?,
     val radius: Int,
-    // todo rename to location
-    val latLng: LatLng,
+    val location: LatLng,
+    val createdAt: ZonedDateTime,
     val isPolygon: Boolean,
     val polygon: List<LatLng>?,
     val integration: Integration?,
     val metadata: Map<String, String>,
     val visits: List<LocalGeofenceVisit>
 ) {
-
-    val id = geofence.geofence_id
 
     val visitsCount: Int by lazy {
         visits.count()
@@ -37,21 +35,19 @@ data class Geofence(
         visits.firstOrNull()
     }
 
-    val createdAt: ZonedDateTime = dateTimeFromString(geofence.created_at)
-
     companion object {
-        fun fromGeofence(
+        fun fromRemoteGeofence(
+            remoteGeofence: RemoteGeofence,
             currentDeviceId: DeviceId,
-            geofence: RemoteGeofence,
             moshi: Moshi,
             osUtilsProvider: OsUtilsProvider,
             crashReportsProvider: CrashReportsProvider
         ): Geofence {
             //all parsed metadata fields should be removed to avoid duplication
-            val metadata = geofence.metadata?.toMutableMap() ?: mutableMapOf()
+            val metadata = remoteGeofence.metadata?.toMutableMap() ?: mutableMapOf()
 
             val metadataAddress = metadata.remove(GeofenceMetadata.KEY_ADDRESS) as String?
-            val address = geofence.address.nullIfBlank()
+            val address = remoteGeofence.address.nullIfBlank()
                 ?: metadataAddress.nullIfBlank()
 
             val integration = metadata.remove(GeofenceMetadata.KEY_INTEGRATION)?.let {
@@ -64,32 +60,33 @@ data class Geofence(
                 }
             }
 
-            val latLng = LatLng(geofence.latitude, geofence.longitude)
-            val isPolygon = geofence.geometry is Polygon
-            val polygon: List<LatLng>? = if (geofence.geometry is Polygon) {
-                geofence.geometry.coordinates.first().map {
+            val latLng = LatLng(remoteGeofence.latitude, remoteGeofence.longitude)
+            val isPolygon = remoteGeofence.geometry is Polygon
+            val polygon: List<LatLng>? = if (remoteGeofence.geometry is Polygon) {
+                remoteGeofence.geometry.coordinates.first().map {
                     LatLng(it[1], it[0])
                 }
             } else null
 
 
             return Geofence(
-                geofence = geofence,
+                id = GeofenceId(remoteGeofence.id),
                 name = metadata.remove(GeofenceMetadata.KEY_NAME) as String?,
                 address = address,
-                latLng = latLng,
+                location = latLng,
+                createdAt = dateTimeFromString(remoteGeofence.created_at),
                 isPolygon = isPolygon,
                 polygon = polygon,
                 radius = if (!isPolygon) {
-                    geofence.radius!!
+                    remoteGeofence.radius!!
                 } else {
                     calcRadius(latLng, polygon!!, osUtilsProvider)
                 },
                 integration = integration,
                 metadata = metadata.filter { it.value is String } as Map<String, String>,
-                visits = (geofence.marker?.visits
+                visits = (remoteGeofence.marker?.visits
                     ?.filter { it.deviceId == currentDeviceId.value }
-                    ?.sortedByDescending { it.arrival!!.recordedAt }
+                    ?.sortedByDescending { it.arrival.recordedAt }
                     ?: listOf())
                     .map {
                         LocalGeofenceVisit.fromVisit(it)

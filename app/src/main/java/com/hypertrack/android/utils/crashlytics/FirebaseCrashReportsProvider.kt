@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.hypertrack.android.repository.access_token.AccountSuspendedException
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.format

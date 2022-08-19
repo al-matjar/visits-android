@@ -62,7 +62,7 @@ class PlacesViewModel(
     fun onPlaceClick(placeItem: PlaceItem) {
         destination.postValue(
             VisitsManagementFragmentDirections.actionVisitManagementFragmentToPlaceDetailsFragment(
-                placeItem.geofenceId
+                placeItem.geofenceId.value
             )
         )
     }

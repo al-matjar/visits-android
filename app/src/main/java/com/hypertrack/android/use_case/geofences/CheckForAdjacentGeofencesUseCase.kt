@@ -98,13 +98,13 @@ class CheckForAdjacentGeofencesUseCase(
         ): Boolean {
             val gh = center.getGeoHash(GEOHASH_LETTERS_NUMBER)
             allGeofences.filter {
-                val checkGh = it.latLng.getGeoHash(GEOHASH_LETTERS_NUMBER)
+                val checkGh = it.location.getGeoHash(GEOHASH_LETTERS_NUMBER)
                 gh == checkGh || checkGh in gh.adjacent
             }.forEach {
                 val intersects = if (it.isPolygon) {
                     intersect.areCircleAndPolygonIntersects(center, radius, it.polygon!!)
                 } else {
-                    intersect.areTwoCirclesIntersects(center, radius, it.latLng, it.radius)
+                    intersect.areTwoCirclesIntersects(center, radius, it.location, it.radius)
                 }
                 if (intersects) return true
             }

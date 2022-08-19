@@ -182,7 +182,7 @@ class PlacesInteractorImpl(
     private fun addGeofencesToCache(newPack: List<Geofence>) {
         globalScope.launch(Dispatchers.Main) {
             newPack.forEach {
-                _geofences.put(it.id, it)
+                _geofences.put(it.id.value, it)
             }
             geofences.postValue(_geofences)
         }

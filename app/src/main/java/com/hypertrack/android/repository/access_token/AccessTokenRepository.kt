@@ -57,7 +57,7 @@ class AccessTokenRepository(
                         }
                         is Error -> Failure(result.exception)
                         InvalidCredentials -> Failure(SimpleException(result.toString()))
-                        Suspended -> Failure(SimpleException(result.toString()))
+                        Suspended -> Failure(AccountSuspendedException())
                     }
                 }
         } catch (e: Exception) {

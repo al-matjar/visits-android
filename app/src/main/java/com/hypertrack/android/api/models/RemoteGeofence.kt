@@ -7,7 +7,7 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class RemoteGeofence(
-    @field:Json(name = "geofence_id") val geofence_id: String,
+    @field:Json(name = "geofence_id") val id: String,
     @field:Json(name = "device_id") val deviceId: String?,
     @field:Json(name = "created_at") val created_at: String,
     @field:Json(name = "metadata") val metadata: Map<String, Any>?,

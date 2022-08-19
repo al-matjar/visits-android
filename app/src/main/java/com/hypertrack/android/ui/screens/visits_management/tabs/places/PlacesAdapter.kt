@@ -103,5 +103,5 @@ class PlaceItem(
     val geofenceId = geofence.id
     val visitsCount = geofence.visitsCount
     val lastVisit = geofence.lastVisit
-    val location = geofence.latLng
+    val location = geofence.location
 }

@@ -1,10 +1,13 @@
 package com.hypertrack.android.api
 
+import com.hypertrack.android.interactors.app.AppInteractor
+import com.hypertrack.android.interactors.app.OnAccountSuspendedAction
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.PublishableKey
 import com.hypertrack.android.repository.access_token.AccessTokenRepository
 import com.hypertrack.android.repository.access_token.AccessTokenRepository.Companion.AUTH_HEADER_KEY
 import com.hypertrack.android.repository.access_token.AccessTokenRepository.Companion.formatTokenHeader
+import com.hypertrack.android.repository.access_token.AccountSuspendedException
 import com.hypertrack.android.repository.access_token.UserAccessToken
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.Failure
@@ -21,6 +24,7 @@ import okhttp3.Route
 class AccessTokenAuthenticator(
     private val deviceId: DeviceId,
     private val publishableKey: PublishableKey,
+    private val appInteractor: AppInteractor,
     private val accessTokenRepository: AccessTokenRepository,
     private val crashReportsProvider: CrashReportsProvider
 ) : Authenticator {
@@ -60,7 +64,11 @@ class AccessTokenAuthenticator(
                             }
                         }
                         is Failure -> {
-                            crashReportsProvider.logException(accessTokenResult.exception)
+                            if (accessTokenResult.exception is AccountSuspendedException) {
+                                appInteractor.handleAction(OnAccountSuspendedAction)
+                            } else {
+                                crashReportsProvider.logException(accessTokenResult.exception)
+                            }
                             null
                         }
                     }

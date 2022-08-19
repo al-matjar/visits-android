@@ -59,3 +59,11 @@ fun <T> effectIf(condition: Boolean, effects: () -> T): Set<T> {
         setOf()
     }
 }
+
+fun <T, E> effectIfNotNull(value: E?, effects: (value: E) -> T): Set<T> {
+    return if (value != null) {
+        setOf(effects.invoke(value))
+    } else {
+        setOf()
+    }
+}

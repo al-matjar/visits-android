@@ -13,14 +13,12 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_location_live" />
 
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/googleMap"
+    <com.google.android.gms.maps.MapView
+        android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        tools:context=".ui.MainActivity"
-        tools:layout="@layout/activity_main" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
     <TextView
         android:id="@+id/trackingStatus"
@@ -55,7 +53,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -83,18 +81,6 @@
                 android:id="@+id/offline"
                 style="@style/OfflineViewStyle"
                 android:visibility="gone"
-                app:layout_constraintBottom_toTopOf="@id/where_are_you"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent" />
-
-            <include
-                android:id="@+id/where_are_you"
-                layout="@layout/inflate_where_are_you_going"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="16dp"
-                android:visibility="invisible"
-                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent" />
 

@@ -4,13 +4,13 @@ import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import com.google.android.gms.maps.SupportMapFragment
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.RegisterScreenAction
 import com.hypertrack.android.interactors.app.state.AddGeotagScreen
 import com.hypertrack.android.ui.MainActivity
 import com.hypertrack.android.ui.base.BaseFragment
 import com.hypertrack.android.ui.common.adapters.EditableKeyValueAdapter
+import com.hypertrack.android.ui.common.delegates.map_view.GoogleMapViewDelegate
 import com.hypertrack.android.ui.common.util.SnackBarUtil
 import com.hypertrack.android.ui.common.util.observeWithErrorHandling
 import com.hypertrack.android.ui.common.util.setGoneState
@@ -29,6 +29,16 @@ import kotlinx.coroutines.FlowPreview
 @FlowPreview
 class AddGeotagFragment : BaseFragment<MainActivity>(R.layout.fragment_add_geotag) {
 
+    override val delegates = listOf(
+        GoogleMapViewDelegate(
+            R.id.map,
+            this,
+            Injector.provideAppInteractor()
+        ) {
+            vm.onMapReady(it)
+        }
+    )
+
     private val vm: AddGeotagViewModel by viewModels {
         Injector.provideUserScopeViewModelFactory()
     }
@@ -38,10 +48,6 @@ class AddGeotagFragment : BaseFragment<MainActivity>(R.layout.fragment_add_geota
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         Injector.provideAppInteractor().handleAction(RegisterScreenAction(AddGeotagScreen))
-
-        (childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment).getMapAsync {
-            vm.onMapReady(it)
-        }
 
         toolbar.title = getString(R.string.add_geotag)
         mainActivity().setSupportActionBar(toolbar)

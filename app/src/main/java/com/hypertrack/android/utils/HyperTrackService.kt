@@ -11,7 +11,6 @@ import com.hypertrack.android.ui.common.util.toLatLng
 import com.hypertrack.sdk.GeotagResult
 import com.hypertrack.sdk.HyperTrack
 import com.hypertrack.sdk.OutageReason
-import com.hypertrack.sdk.Result
 import com.hypertrack.sdk.TrackingError
 import com.hypertrack.sdk.TrackingStateObserver
 
@@ -83,9 +82,11 @@ class HyperTrackService(
         sdk.backgroundTrackingRequirement(false).requestPermissionsIfNecessary()
     }
 
-    fun createGeotag(metadata: Map<String, String>): GeotagResult {
+    fun createGeotag(metadata: Map<String, String>): Result<GeotagResult> {
         crashReportsProvider.log("createGeotag $metadata")
-        return sdk.addGeotag(metadata)
+        return tryAsResult {
+            sdk.addGeotag(metadata)
+        }
     }
 
     companion object {

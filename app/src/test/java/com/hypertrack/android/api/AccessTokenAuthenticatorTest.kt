@@ -97,6 +97,7 @@ class AccessTokenAuthenticatorTest {
             return AccessTokenAuthenticator(
                 TEST_DEVICE_ID,
                 TEST_PUBLISHABLE_KEY,
+                appInteractor = mockk(),
                 accessTokenRepository = accessTokenRepository,
                 crashReportsProvider = crashReportsProvider(),
             )

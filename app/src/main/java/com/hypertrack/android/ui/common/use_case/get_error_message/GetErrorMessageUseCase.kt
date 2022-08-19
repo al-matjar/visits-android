@@ -3,6 +3,7 @@ package com.hypertrack.android.ui.common.use_case.get_error_message
 import com.hypertrack.android.api.BackendException
 import com.hypertrack.android.deeplink.BranchErrorException
 import com.hypertrack.android.interactors.trip.NotClockedInException
+import com.hypertrack.android.repository.access_token.AccountSuspendedException
 import com.hypertrack.android.ui.screens.sign_in.use_case.InvalidDeeplinkFormat
 import com.hypertrack.android.use_case.deeplink.InvalidDeeplinkException
 import com.hypertrack.android.use_case.geofences.AdjacentGeofencesCheckTimeoutException
@@ -76,6 +77,9 @@ class GetErrorMessageUseCase(
                 }
                 exception is AdjacentGeofencesCheckTimeoutException -> {
                     getTextErrorString(TextError(R.string.add_place_timeout))
+                }
+                exception is AccountSuspendedException -> {
+                    getTextErrorString(TextError(R.string.account_suspended))
                 }
                 exception.isNetworkError() -> {
                     getTextErrorString(NetworkError)

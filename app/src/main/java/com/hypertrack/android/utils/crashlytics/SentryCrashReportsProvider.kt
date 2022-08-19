@@ -1,10 +1,19 @@
 package com.hypertrack.android.utils.crashlytics
 
+import android.content.Context
 import com.hypertrack.android.utils.CrashReportsProvider
+import io.sentry.android.core.SentryAndroid
+import io.sentry.android.core.SentryAndroidOptions
 import io.sentry.core.Scope
 import io.sentry.core.Sentry
+import io.sentry.core.Sentry.OptionsConfiguration
+import io.sentry.core.SentryEvent
+import io.sentry.core.SentryOptions.BeforeSendCallback
+import io.sentry.core.protocol.User
+import java.util.*
 
-class SentryCrashReportsProvider : CrashReportsProvider {
+
+class SentryCrashReportsProvider(private val appContext: Context) : CrashReportsProvider {
     override fun logException(exception: Throwable, metadata: Map<String, String>) {
         Sentry.addBreadcrumb(metadata.toString())
         Sentry.captureException(exception)
@@ -22,11 +31,9 @@ class SentryCrashReportsProvider : CrashReportsProvider {
 
     override fun setUserIdentifier(id: String) {
         Sentry.configureScope { scope: Scope ->
-            scope.setContexts(USER_ID_KEY, id)
+            scope.user = User().apply {
+                setId(id)
+            }
         }
-    }
-
-    companion object {
-        const val USER_ID_KEY = "hypertrack_user_id"
     }
 }

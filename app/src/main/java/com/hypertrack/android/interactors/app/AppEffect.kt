@@ -76,6 +76,8 @@ data class HistoryViewEffect(val effect: Effect) : AppEffect()
 
 data class AppActionEffect(val action: AppAction) : AppEffect()
 
+data class DestroyUserScopeEffect(val userScope: UserScope) : AppEffect()
+
 data class LoadGeofencesForMapEffect(
     val geoHash: GeoHash,
     val pageToken: String?,

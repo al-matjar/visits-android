@@ -22,6 +22,7 @@ import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.use_case.geofences.CheckForAdjacentGeofencesUseCase
 import com.hypertrack.android.use_case.geofences.LoadGeofencesForMapUseCase
 import com.hypertrack.android.use_case.login.DeleteUserScopeDataUseCase
+import com.hypertrack.android.use_case.login.DeleteUserScopeUseCase
 import com.hypertrack.android.use_case.login.LoadUserDataUseCase
 import com.hypertrack.android.use_case.login.VerifyByOtpCodeUseCase
 import com.hypertrack.android.use_case.sdk.GetConfiguredHypertrackSdkInstanceUseCase
@@ -128,6 +129,8 @@ class UseCases(
         logMessageToCrashlyticsUseCase,
         appScope.moshi
     )
+
+    val destroyUserScopeUseCase = DeleteUserScopeUseCase(deleteUserScopeDataUseCase)
 
     override fun toString(): String = javaClass.simpleName
 }

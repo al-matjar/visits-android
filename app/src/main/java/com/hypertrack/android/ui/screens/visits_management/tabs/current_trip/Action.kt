@@ -4,9 +4,11 @@ import android.content.Context
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.LatLng
 import com.hypertrack.android.models.local.Geofence
+import com.hypertrack.android.models.local.GeofenceForMap
 import com.hypertrack.android.models.local.Trip
 import com.hypertrack.android.ui.common.map_state.MapUiAction
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
+import com.hypertrack.android.utils.MyApplication
 import java.lang.Exception
 
 sealed class Action {
@@ -30,5 +32,5 @@ data class ErrorAction(val exception: Exception) : Action()
 data class UserLocationChangedAction(val location: LatLng?) : Action()
 data class TripUpdatedAction(val trip: Trip?) : Action()
 data class TrackingStateChangedAction(val isTracking: Boolean) : Action()
-data class GeofencesOnMapUpdatedAction(val geofences: List<Geofence>) : Action()
+data class GeofencesForMapUpdatedAction(val geofences: List<GeofenceForMap>) : Action()
 data class MapUiAction(val action: MapUiAction) : Action()

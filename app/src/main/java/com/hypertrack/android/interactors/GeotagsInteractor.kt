@@ -20,7 +20,7 @@ class GeotagsInteractor(
     }
 
     fun createGeotag(metadata: Map<String, String>): Result<GeotagCreationResult> {
-        return hyperTrackService.createGeotag(metadata).let {
+        return hyperTrackService.createGeotag(metadata).flatMap {
             when (it) {
                 is GeotagResult.Success, is GeotagResult.SuccessWithDeviation -> GeotagCreationSuccess.asSuccess()
                 is GeotagResult.Error -> GeotagCreationError(it.reason).asSuccess()

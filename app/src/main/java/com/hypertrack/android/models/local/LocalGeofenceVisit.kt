@@ -32,6 +32,19 @@ class LocalGeofenceVisit(
         }
     }
 
+    override fun toString(): String {
+        val fields = listOf(
+            "id=$id",
+            "geofenceId=$geofenceId",
+            "deviceId=$deviceId",
+            "arrival=$arrival",
+            "exit=$exit",
+            "durationSeconds=$durationSeconds",
+        ).joinToString(",")
+        return "${javaClass.simpleName}($fields)"
+
+    }
+
     companion object {
         fun fromVisit(visit: GeofenceVisit): LocalGeofenceVisit {
             return LocalGeofenceVisit(

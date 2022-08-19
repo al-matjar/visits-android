@@ -5,7 +5,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import com.google.android.play.core.tasks.Task as PlayTask
 
-suspend fun <T> Task<T>?.toSuspendCoroutine(): Result<T> = suspendCoroutine { continuation ->
+suspend fun <T : Any> Task<T>?.toSuspendCoroutine(): Result<T> = suspendCoroutine { continuation ->
     if (this != null) {
         addOnSuccessListener {
             continuation.resume(it.asSuccess())

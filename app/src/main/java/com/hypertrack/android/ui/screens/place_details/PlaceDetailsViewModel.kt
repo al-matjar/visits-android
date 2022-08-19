@@ -71,7 +71,7 @@ class PlaceDetailsViewModel(
         geofence.metadata.toMutableMap().apply {
             put(
                 "Geofence ID",
-                geofence.id
+                geofence.id.value
             )
             if (geofence.name != null) {
                 put(
@@ -85,7 +85,7 @@ class PlaceDetailsViewModel(
             )
             put(
                 osUtilsProvider.stringFromResource(R.string.coordinates),
-                geofence.latLng.format()
+                geofence.location.format()
             )
             put(
                 osUtilsProvider.stringFromResource(R.string.place_visits_count),
@@ -130,13 +130,15 @@ class PlaceDetailsViewModel(
 
     private fun displayGeofenceLocation(geofence: Geofence, mapWrapper: HypertrackMapWrapper) {
         mapWrapper.addGeofenceShape(geofence)
-        mapWrapper.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(geofence.latLng, 14.0f))
+        mapWrapper.googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(geofence.location, 14.0f))
     }
 
     fun onDirectionsClick() {
-        val intent = osUtilsProvider.getMapsIntent(geofence.value!!.latLng)
-        intent?.let {
-            externalMapsIntent.postValue(Consumable(it))
+        geofence.value?.let {
+            val intent = osUtilsProvider.getMapsIntent(it.location)
+            intent?.let {
+                externalMapsIntent.postValue(Consumable(it))
+            }
         }
     }
 
