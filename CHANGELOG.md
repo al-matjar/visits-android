@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.19.6] - 2022-08-23
+
+### Fixed
+
+- Out of memory exception on logging large geofences
+- Internal crashes in Google map
+- Crash on null location from Google services
+- Crash on Place details screen
+- Crash when searching place on map
+- Added missing outages for history
+
 ## [0.19.5] - 2022-08-16
 
 ### Fixed
