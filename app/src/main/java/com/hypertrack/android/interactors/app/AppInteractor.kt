@@ -54,12 +54,17 @@ class AppInteractor(
         pendingDeeplinkResult = null,
         pendingPushNotification = null
     )
+
+    // todo di
     private val appReducer = AppReducer(
         useCases,
         appScope,
         HistoryReducer(appScope, HistoryViewReducer(appScope)),
         HistoryViewReducer(appScope),
-        ScreensReducer(HistoryViewReducer(appScope)),
+        ScreensReducer(
+            HistoryReducer(appScope, HistoryViewReducer(appScope)),
+            HistoryViewReducer(appScope)
+        ),
         GeofencesForMapReducer()
     )
     private val appStateMachine = object : StateMachine<AppAction, AppState, AppEffect>(

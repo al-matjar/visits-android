@@ -11,7 +11,12 @@ import com.hypertrack.android.ui.common.map.entities.MapShape
 sealed class MapUiAction
 data class UpdateUserLocationMapUiAction(val userLocation: LatLng?) : MapUiAction()
 data class UpdateTripMapUiAction(val trip: Trip?) : MapUiAction()
-data class AddGeofencesMapUiAction(val geofences: List<GeofenceForMap>) : MapUiAction()
+data class AddGeofencesMapUiAction(val geofences: List<GeofenceForMap>) : MapUiAction() {
+    override fun toString(): String {
+        return "${javaClass.simpleName}(geofences=${geofences.size})"
+    }
+}
+
 data class OnMapMovedMapUiAction(val target: LatLng) : MapUiAction()
 data class UpdateMapViewMapUiAction(val map: HypertrackMapWrapper) : MapUiAction()
 data class UpdateGeofenceForDetailsMapUiAction(val geofenceShapeOptions: GeofenceForDetailsOptions?) :

@@ -1,5 +1,6 @@
 package com.hypertrack.android.utils
 
+import com.google.android.gms.common.api.ApiException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -27,6 +28,9 @@ fun Exception.isNetworkError(): Boolean {
         is UnknownHostException,
         is ConnectException,
         -> true
+        is ApiException -> {
+            statusCode == 15 || message?.contains("Timeout") == true
+        }
         else -> false
     }
 }

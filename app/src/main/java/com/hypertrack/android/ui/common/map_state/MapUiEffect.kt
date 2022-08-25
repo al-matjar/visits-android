@@ -15,7 +15,11 @@ sealed class MapUiEffect
 data class AddGeofencesOnMapEffect(
     val map: HypertrackMapWrapper,
     val geofences: List<GeofenceForMap>
-) : MapUiEffect()
+) : MapUiEffect() {
+    override fun toString(): String {
+        return "${javaClass.simpleName}(map=$map, geofences=${geofences.size})"
+    }
+}
 
 data class UpdateMapStateEffect(
     val map: HypertrackMapWrapper,

@@ -9,6 +9,14 @@ import com.hypertrack.android.utils.LoadingState
 import java.time.LocalDate
 
 sealed class HistoryScreenState {
+    val selectedDay: LocalDate
+        get() {
+            return when (this) {
+                is Initial -> date
+                is MapReadyState -> date
+            }
+        }
+
     override fun toString(): String = javaClass.simpleName
 }
 

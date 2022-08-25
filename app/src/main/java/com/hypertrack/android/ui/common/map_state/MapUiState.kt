@@ -13,6 +13,17 @@ data class MapUiState(
     val userLocation: LatLng? = null,
     val geofences: Set<GeofenceForMap> = setOf(),
     val geofenceForDetails: List<MapShape<*>>? = null
-)
+) {
+    override fun toString(): String {
+        val fieldsString = listOf(
+            "map=$map",
+            "trip=$trip",
+            "userLocation=$userLocation",
+            "geofences=${geofences.size}",
+            "geofenceForDetails=$geofenceForDetails",
+        )
+        return "${javaClass.simpleName}($fieldsString)"
+    }
+}
 
 

@@ -3,6 +3,7 @@ package com.hypertrack.android.interactors.app.reducer
 import com.fonfon.kgeohash.GeoHash
 import com.hypertrack.android.interactors.app.AppEffect
 import com.hypertrack.android.interactors.app.LoadGeofencesForMapEffect
+import com.hypertrack.android.interactors.app.ReportAppErrorEffect
 import com.hypertrack.android.interactors.app.ShowAndReportAppErrorEffect
 import com.hypertrack.android.interactors.app.action.ClearGeofencesForMapAction
 import com.hypertrack.android.interactors.app.action.GeofencesForMapAction
@@ -54,7 +55,9 @@ class GeofencesForMapReducer {
                             }.withEffects(result.effects)
                         }
                 } ?: state.withEffects(
-                    ShowAndReportAppErrorEffect(IllegalActionException(action, state))
+                    // can happen if user clears cache before all data is loaded
+                    // todo cancel loading on clearing cache
+                    ReportAppErrorEffect(IllegalActionException(action, state))
                 )
             }
             ClearGeofencesForMapAction -> {
@@ -158,7 +161,6 @@ class GeofencesForMapReducer {
             }
             is Loaded -> {
                 // impossible state
-                // for some
                 oldItem.status.withEffects(
                     ShowAndReportAppErrorEffect(IllegalActionException(action, state))
                 )

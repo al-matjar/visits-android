@@ -138,10 +138,35 @@ class GoogleMapViewDelegate(
                     is MapReady -> Initial(state.map, state.mapView).withEffects()
                 }
             }
+            is OnCreateAction -> {
+                when (val state = state) {
+                    is Initial -> {
+                        state.mapView?.let { reduce(action, state, it) }
+                            ?: illegalAction(action, state)
+                    }
+                    is Attached -> {
+                        state.mapView?.let { reduce(action, state, it) }
+                            ?: illegalAction(action, state)
+                    }
+                    is MapReady -> {
+                        reduce(action, state, state.mapView)
+                    }
+                }
+            }
         }.also { result ->
             result.effects.forEach { applyEffect(it) }
             state = result.newState
         }
+    }
+
+    private fun reduce(
+        action: OnCreateAction,
+        state: State,
+        mapView: MapView
+    ): ReducerResult<State, Flow<Unit>> {
+        return state.withEffects({
+            mapView.onCreate(action.savedInstanceState)
+        }.asFlow())
     }
 
     private fun reduce(
@@ -227,7 +252,7 @@ class GoogleMapViewDelegate(
         view.findViewById<MapView?>(mapViewId).also {
             handleAction(MapViewCreatedAction(it))
         }?.apply {
-            onCreate(savedInstanceState)
+            handleAction(OnCreateAction(savedInstanceState))
             getMapAsync {
                 handleAction(MapReadyAction(it))
             }

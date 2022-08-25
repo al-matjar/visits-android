@@ -9,4 +9,8 @@ import com.hypertrack.android.use_case.sdk.TrackingState
 sealed class AppEvent
 data class UpdateUserLocationEvent(val userLocation: LatLng?) : AppEvent()
 data class TrackingStateChangedEvent(val trackingState: TrackingState) : AppEvent()
-data class GeofencesForMapUpdatedEvent(val geofences: List<GeofenceForMap>) : AppEvent()
+data class GeofencesForMapUpdatedEvent(val geofences: List<GeofenceForMap>) : AppEvent() {
+    override fun toString(): String {
+        return "${javaClass.simpleName}(geofences=${geofences.size})"
+    }
+}

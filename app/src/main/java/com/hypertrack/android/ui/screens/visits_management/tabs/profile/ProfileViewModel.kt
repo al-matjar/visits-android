@@ -11,6 +11,8 @@ import com.hypertrack.android.models.Metric
 import com.hypertrack.android.models.Unspecified
 import com.hypertrack.android.repository.MeasurementUnitsRepository
 import com.hypertrack.android.repository.PublishableKeyRepository
+import com.hypertrack.android.repository.access_token.AccessTokenRepository
+import com.hypertrack.android.repository.access_token.UserAccessToken
 import com.hypertrack.android.repository.user.UserRepository
 import com.hypertrack.android.ui.base.BaseViewModel
 import com.hypertrack.android.ui.base.BaseViewModelDependencies
@@ -28,6 +30,7 @@ class ProfileViewModel(
     private val userRepository: UserRepository,
     private val publishableKeyRepository: PublishableKeyRepository,
     private val hyperTrackService: HyperTrackService,
+    private val accessTokenRepository: AccessTokenRepository
 ) : BaseViewModel(baseDependencies) {
 
     private val measurementUnitsOptions = mapOf(
@@ -154,6 +157,10 @@ class ProfileViewModel(
             activity,
             "https://dashboard.hypertrack.com/tracking/$deviceId?view=devices&publishable_key=$publishableKey&on_demand=l1"
         )
+    }
+
+    fun onInvalidateAccessTokenClick() {
+        accessTokenRepository.accessToken = UserAccessToken("invalid_access_token")
     }
 
 }

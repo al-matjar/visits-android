@@ -61,6 +61,7 @@ class HistoryReducer(
         historySubState: HistorySubState
     ): ReducerResult<HistorySubState, out AppEffect> {
         return if (historySubState.historyScreenState == null) {
+            // not on History screen
             return historySubState.withEffects(
                 when (historyViewAction.historyViewAction) {
                     is ViewReadyAction,
@@ -81,6 +82,7 @@ class HistoryReducer(
                 }
             )
         } else {
+            // on History screen
             historyViewReducer.reduce(
                 historyViewAction.historyViewAction,
                 historySubState.historyScreenState,

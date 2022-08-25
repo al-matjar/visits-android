@@ -1,11 +1,11 @@
 package com.hypertrack.android.interactors.app.reducer
 
-import com.hypertrack.android.interactors.app.AppActionEffect
 import com.hypertrack.android.interactors.app.AppEffect
 import com.hypertrack.android.interactors.app.HistoryAppAction
 import com.hypertrack.android.interactors.app.RegisterScreenAction
 import com.hypertrack.android.interactors.app.ShowAndReportAppErrorEffect
 import com.hypertrack.android.interactors.app.action.StartDayHistoryLoadingAction
+import com.hypertrack.android.interactors.app.optics.AppStateOptics
 import com.hypertrack.android.interactors.app.state.AddGeotagScreen
 import com.hypertrack.android.interactors.app.state.AddGeotagScreenView
 import com.hypertrack.android.interactors.app.state.AddIntegrationScreen
@@ -51,6 +51,7 @@ import com.hypertrack.android.interactors.app.state.TabsScreen
 import com.hypertrack.android.interactors.app.state.TabsView
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
+import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryScreenState
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.Initial
 import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.exception.IllegalActionException
@@ -58,6 +59,7 @@ import com.hypertrack.android.utils.withEffects
 import java.time.LocalDate
 
 class ScreensReducer(
+    private val historyReducer: HistoryReducer,
     private val historyViewReducer: HistoryViewReducer
 ) {
 
@@ -81,81 +83,84 @@ class ScreensReducer(
         action: RegisterScreenAction,
         state: AppInitialized
     ): ReducerResult<AppState, out AppEffect> {
-        // todo avoid loading state (check the same screen in other way)
-        val viewState = getInitialViewState(state, action.screen)
-        return if (state.viewState::class != viewState::class) {
-            viewState.withState {
-                state.copy(viewState = it)
-            }
-        } else {
+        return if (state.viewState.isForScreen(action.screen)) {
             // preserve old state if the opened screen is the same
             state.withEffects()
+        } else {
+            initViewState(state, action.screen)
         }
     }
 
-    private fun getInitialViewState(
+    private fun initViewState(
         state: AppInitialized,
         screen: Screen
-    ): ReducerResult<AppViewState, out AppEffect> {
+    ): ReducerResult<AppState, out AppEffect> {
         return when (screen) {
-            AddGeotagScreen -> AddGeotagScreenView.withEffects()
-            AddIntegrationScreen -> AddIntegrationScreenView.withEffects()
-            AddOrderInfoScreen -> AddOrderInfoScreenView.withEffects()
-            AddPlaceInfoScreen -> AddPlaceInfoScreenView.withEffects()
-            AddPlaceScreen -> AddPlaceScreenView.withEffects()
-            BackgroundPermissionsScreen -> BackgroundPermissionsScreenView.withEffects()
-            ConfirmEmailScreen -> ConfirmEmailScreenView.withEffects()
-            TabsScreen -> {
-                val historyTabResult = getHistoryTabInitialState(screen, state)
-                TabsView(
-                    currentTripTab = CurrentTripTab,
-                    historyTab = historyTabResult.newState,
-                    ordersTab = OrdersTab,
-                    placesTab = PlacesTab,
-                    summaryTab = SummaryTab,
-                    profileTab = ProfileTab
-                ).withEffects(historyTabResult.effects)
-            }
-            OrderDetailsScreen -> OrderDetailsScreenView.withEffects()
-            OutageScreen -> OutageScreenView.withEffects()
-            PermissionsScreen -> PermissionsScreenView.withEffects()
-            PlaceDetailsScreen -> PlaceDetailsScreenView.withEffects()
-            SelectDestinationScreen -> SelectDestinationScreenView.withEffects()
-            SendFeedbackScreen -> SendFeedbackScreenView.withEffects()
-            SignInScreen -> SignInScreenView.withEffects()
-            SplashScreen -> SplashScreenView.withEffects()
+            AddGeotagScreen -> AddGeotagScreenView.toAppState(state).withEffects()
+            AddIntegrationScreen -> AddIntegrationScreenView.toAppState(state).withEffects()
+            AddOrderInfoScreen -> AddOrderInfoScreenView.toAppState(state).withEffects()
+            AddPlaceInfoScreen -> AddPlaceInfoScreenView.toAppState(state).withEffects()
+            AddPlaceScreen -> AddPlaceScreenView.toAppState(state).withEffects()
+            BackgroundPermissionsScreen -> BackgroundPermissionsScreenView.toAppState(state)
+                .withEffects()
+            ConfirmEmailScreen -> ConfirmEmailScreenView.toAppState(state).withEffects()
+            TabsScreen -> initTabsViewState(screen, state)
+            OrderDetailsScreen -> OrderDetailsScreenView.toAppState(state).withEffects()
+            OutageScreen -> OutageScreenView.toAppState(state).withEffects()
+            PermissionsScreen -> PermissionsScreenView.toAppState(state).withEffects()
+            PlaceDetailsScreen -> PlaceDetailsScreenView.toAppState(state).withEffects()
+            SelectDestinationScreen -> SelectDestinationScreenView.toAppState(state).withEffects()
+            SendFeedbackScreen -> SendFeedbackScreenView.toAppState(state).withEffects()
+            SignInScreen -> SignInScreenView.toAppState(state).withEffects()
+            SplashScreen -> SplashScreenView.toAppState(state).withEffects()
         }
     }
 
-    private fun getHistoryTabInitialState(
+    private fun AppViewState.toAppState(oldState: AppInitialized): AppInitialized {
+        return oldState.copy(viewState = this)
+    }
+
+    private fun initTabsViewState(
         screen: Screen,
-        state: AppInitialized
-    ): ReducerResult<HistoryTab, out AppEffect> {
-        val initial = Initial(LocalDate.now())
+        appState: AppInitialized
+    ): ReducerResult<AppState, out AppEffect> {
         return withLoggedIn(
-            state,
+            appState,
             notLoggedIn = {
-                initial.withEffects(
-                    ShowAndReportAppErrorEffect(IllegalActionException(screen, state))
+                appState.withEffects(
+                    ShowAndReportAppErrorEffect(IllegalActionException(screen, appState))
                 )
             }
         ) { userLoggedIn ->
-            historyViewReducer.map(userLoggedIn, userLoggedIn.history, initial).withEffects {
-                val historyEffects = it.effects
-                val startLoadingEffect = setOf(
-                    AppActionEffect(
-                        HistoryAppAction(
-                            StartDayHistoryLoadingAction(
-                                initial.date,
-                                forceReloadIfLoading = true
-                            )
-                        )
+            // start loading history if needed
+            historyReducer.reduce(
+                HistoryAppAction(StartDayHistoryLoadingAction(LocalDate.now())),
+                userLoggedIn,
+                AppStateOptics.getHistorySubState(userLoggedIn, appState.viewState)
+            ).let {
+                @Suppress("UNCHECKED_CAST")
+                it as ReducerResult<HistorySubState, AppEffect>
+            }.mergeResult(
+                otherReducer = { historySubState ->
+                    historyViewReducer.map(
+                        userLoggedIn,
+                        historySubState.history,
+                        Initial(LocalDate.now())
+                    )
+                }
+            ) { historySubState, historyViewState ->
+                historySubState.history to historyViewState
+            }.withState {
+                AppStateOptics.putHistorySubState(
+                    appState,
+                    userLoggedIn,
+                    HistorySubState(it.first, it.second)
+                ).copy(
+                    viewState = TabsView(
+                        historyTab = HistoryTab(it.second),
                     )
                 )
-                historyEffects + startLoadingEffect
             }
-        }.withState {
-            HistoryTab(it)
         }
     }
 

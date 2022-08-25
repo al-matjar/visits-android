@@ -54,8 +54,10 @@ class AccessTokenAuthenticator(
                              * we need to stop refreshing to avoid infinite loop
                              */
                             if (accessTokenResult.data == oldAccessToken) {
+                                crashReportsProvider.log("Backend returned the same token")
                                 null
                             } else {
+                                crashReportsProvider.log("Access token updated successfully")
                                 accessTokenRepository.accessToken = accessTokenResult.data
                                 response.request.withOverwrittenHeader(
                                     AUTH_HEADER_KEY,

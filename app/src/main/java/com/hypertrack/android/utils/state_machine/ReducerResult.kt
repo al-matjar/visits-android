@@ -1,40 +1,41 @@
 package com.hypertrack.android.utils.state_machine
 
-open class ReducerResult<S, E>(val newState: S, val effects: Set<E>) {
-    constructor(newState: S) : this(newState, setOf())
+open class ReducerResult<State1, Effect>(val newState: State1, val effects: Set<Effect>) {
+    constructor(newState: State1) : this(newState, setOf())
 
-    fun withAdditionalEffects(vararg effects: E): ReducerResult<S, E> {
+    fun withAdditionalEffects(vararg effects: Effect): ReducerResult<State1, Effect> {
         return ReducerResult(newState, this.effects + effects.toSet())
     }
 
-    fun withAdditionalEffects(effects: Set<E>): ReducerResult<S, E> {
+    fun withAdditionalEffects(effects: Set<Effect>): ReducerResult<State1, Effect> {
         return ReducerResult(newState, this.effects + effects)
     }
 
-    fun withAdditionalEffects(effects: (S) -> Set<E>): ReducerResult<S, E> {
+    fun withAdditionalEffects(effects: (State1) -> Set<Effect>): ReducerResult<State1, Effect> {
         return ReducerResult(newState, this.effects + effects.invoke(this.newState))
     }
 
-    fun <N> withState(state: (S) -> N): ReducerResult<N, out E> {
+    fun <N> withState(state: (State1) -> N): ReducerResult<N, out Effect> {
         return ReducerResult(state.invoke(this.newState), this.effects)
     }
 
-    fun <NE> withEffects(state: (ReducerResult<S, E>) -> Set<NE>): ReducerResult<S, NE> {
+    fun <NE> withEffects(state: (ReducerResult<State1, Effect>) -> Set<NE>): ReducerResult<State1, NE> {
         return ReducerResult(this.newState, state.invoke(this))
     }
 
-    fun toNullable(): ReducerResult<S?, out E> {
-        return this.withState { it as S? }
+    fun toNullable(): ReducerResult<State1?, out Effect> {
+        return this.withState { it as State1? }
     }
 
     // merge two results with different states into one
-    fun <OS, NS> mergeResult(
-        resultFunction: (S) -> ReducerResult<OS, out E>,
-        merge: (state1: S, state2: OS) -> NS
-    ): ReducerResult<NS, E> {
-        val result = resultFunction.invoke(newState)
+    fun <State2, MergedState> mergeResult(
+        // get other result to merge
+        otherReducer: (State1) -> ReducerResult<State2, out Effect>,
+        mergeFunction: (state1: State1, state2: State2) -> MergedState
+    ): ReducerResult<MergedState, out Effect> {
+        val result = otherReducer.invoke(newState)
         return ReducerResult(
-            merge.invoke(newState, result.newState),
+            mergeFunction.invoke(newState, result.newState),
             effects + result.effects
         )
     }

@@ -70,6 +70,11 @@ class ProfileFragment : BaseFragment<MainActivity>(R.layout.fragment_profile) {
             bShowInDashboard.setOnClickListener {
                 vm.onShowOnDashboardClick(requireActivity())
             }
+
+            bInvalidateAccessToken.show()
+            bInvalidateAccessToken.setOnClickListener {
+                vm.onInvalidateAccessTokenClick()
+            }
         }
     }
 

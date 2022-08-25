@@ -3,6 +3,7 @@ package com.hypertrack.android.api.graphql
 import com.hypertrack.android.api.graphql.models.DayQueryKey
 import com.hypertrack.android.api.graphql.models.GraphQlDayVisitsStats
 import com.hypertrack.android.api.graphql.models.GraphQlHistory
+import com.hypertrack.android.api.graphql.queries.GraphQlQuery
 import com.hypertrack.android.api.graphql.queries.HistoryQuery
 import com.hypertrack.android.api.graphql.queries.PlacesVisitsQuery
 import com.hypertrack.android.api.graphql.queries.QueryBody
@@ -10,7 +11,6 @@ import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.PublishableKey
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.exception.SimpleException
-import com.squareup.moshi.Moshi
 import retrofit2.HttpException
 import retrofit2.Response
 import java.time.LocalDate
@@ -22,20 +22,16 @@ class GraphQlApiClient(
     private val api: GraphQlApi,
     private val publishableKey: PublishableKey,
     private val deviceId: DeviceId,
-    private val moshi: Moshi,
     private val crashReportsProvider: CrashReportsProvider,
 ) {
 
     suspend fun getPlaceVisitsStats(days: List<DayRange>): Result<Map<DayRange, GraphQlDayVisitsStats>> {
         return try {
-            val daysMap = days.map { it.getQueryKey() to it }.toMap()
+            val daysMap = days.associateBy { it.getQueryKey() }
+            val query = PlacesVisitsQuery(deviceId, publishableKey, days)
 
-            api.getPlacesVisits(
-                QueryBody(
-                    PlacesVisitsQuery(deviceId, publishableKey, days)
-                )
-            ).let {
-                handleGraphQlResponse(it).map { result ->
+            api.getPlacesVisits(QueryBody(query)).let {
+                handleGraphQlResponse(query, it).map { result ->
                     result.mapKeys { (dayQueryKey, _) -> daysMap.getValue(dayQueryKey) }
                 }
             }
@@ -47,8 +43,9 @@ class GraphQlApiClient(
 
     suspend fun getHistoryForDay(day: DayRange): Result<GraphQlHistory> {
         return try {
-            api.getHistory(QueryBody(HistoryQuery(deviceId, publishableKey, day))).let { response ->
-                handleGraphQlResponse(response).map {
+            val query = HistoryQuery(deviceId, publishableKey, day)
+            api.getHistory(QueryBody(query)).let { response ->
+                handleGraphQlResponse(query, response).map {
                     it.result
                 }
             }
@@ -61,13 +58,16 @@ class GraphQlApiClient(
         }
     }
 
-    private fun <T> handleGraphQlResponse(response: Response<GraphQlApi.GraphQlResponse<T>>): Result<T> {
+    private fun <T> handleGraphQlResponse(
+        query: GraphQlQuery,
+        response: Response<GraphQlApi.GraphQlResponse<T>>
+    ): Result<T> {
         return if (response.isSuccessful) {
             response.body()?.let { body ->
                 if (body.data != null) {
                     Success(body.data)
                 } else {
-                    Failure(SimpleException("GraphQlErrors:\n\n${body.errors?.joinToString(",\n\n")}"))
+                    Failure(GraphQlException(query, body.errors))
                 }
             } ?: Failure(SimpleException("GraphQL response has null body"))
         } else {

@@ -32,5 +32,10 @@ data class ErrorAction(val exception: Exception) : Action()
 data class UserLocationChangedAction(val location: LatLng?) : Action()
 data class TripUpdatedAction(val trip: Trip?) : Action()
 data class TrackingStateChangedAction(val isTracking: Boolean) : Action()
-data class GeofencesForMapUpdatedAction(val geofences: List<GeofenceForMap>) : Action()
+data class GeofencesForMapUpdatedAction(val geofences: List<GeofenceForMap>) : Action() {
+    override fun toString(): String {
+        return "${javaClass.simpleName}(geofences=${geofences.size})"
+    }
+}
+
 data class MapUiAction(val action: MapUiAction) : Action()

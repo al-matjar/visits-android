@@ -315,17 +315,13 @@ class HistoryViewReducer(
             LoadingState<History, ErrorMessage>
         ) -> ReducerResult<HistoryScreenState, out AppEffect>
     ): ReducerResult<HistoryScreenState, out AppEffect> {
-        val selectedDay = when (state) {
-            is Initial -> state.date
-            is MapReadyState -> state.date
-        }
-        val historyState = appHistoryState.days[selectedDay]
-        return if (historyState != null) {
-            block.invoke(historyState)
+        val historyStateForThisDay = appHistoryState.days[state.selectedDay]
+        return if (historyStateForThisDay != null) {
+            block.invoke(historyStateForThisDay)
         } else {
             // todo error state?
             state.withEffects(
-                ShowAndReportAppErrorEffect(NullPointerException(selectedDay.toString()))
+                ShowAndReportAppErrorEffect(NullPointerException(state.selectedDay.toString()))
             )
         }
     }

@@ -61,7 +61,7 @@ object AppStateOptics {
         state: AppInitialized,
         userState: UserLoggedIn,
         newHistoryState: HistorySubState
-    ): AppState {
+    ): AppInitialized {
         return state.copy(
             userState = userState.copy(
                 history = newHistoryState.history

@@ -173,7 +173,6 @@ class CreateUserScopeUseCase(
             graphQlApi,
             publishableKey,
             deviceId,
-            moshi,
             crashReportsProvider
         )
 

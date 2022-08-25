@@ -9,7 +9,10 @@ import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.Result
 import kotlinx.coroutines.Job
 
-sealed class GeofencesForMapAction
+sealed class GeofencesForMapAction {
+    override fun toString(): String = javaClass.simpleName
+}
+
 data class GeofencesForMapLoadedAction(
     val geoHash: GeoHash,
     val result: GeofencesPageResult

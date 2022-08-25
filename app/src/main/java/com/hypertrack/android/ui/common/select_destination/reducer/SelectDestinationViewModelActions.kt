@@ -53,4 +53,8 @@ data class PlaceSelectedAction(
 
 object ShowMyLocationAction : Action()
 
-data class GeofencesOnMapUpdatedAction(val geofences: List<GeofenceForMap>) : Action()
+data class GeofencesOnMapUpdatedAction(val geofences: List<GeofenceForMap>) : Action() {
+    override fun toString(): String {
+        return "${javaClass.simpleName}(geofences=${geofences.size})"
+    }
+}

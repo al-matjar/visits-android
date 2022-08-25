@@ -2,6 +2,28 @@ package com.hypertrack.android.interactors.app.state
 
 sealed class AppViewState {
     override fun toString(): String = javaClass.simpleName
+
+    fun isForScreen(screen: Screen): Boolean {
+        return when (this) {
+            AddGeotagScreenView -> screen is AddGeotagScreen
+            AddIntegrationScreenView -> screen is AddIntegrationScreen
+            AddOrderInfoScreenView -> screen is AddOrderInfoScreen
+            AddPlaceInfoScreenView -> screen is AddPlaceInfoScreen
+            AddPlaceScreenView -> screen is AddPlaceScreen
+            BackgroundPermissionsScreenView -> screen is BackgroundPermissionsScreen
+            ConfirmEmailScreenView -> screen is ConfirmEmailScreen
+            NoneScreenView -> true
+            OrderDetailsScreenView -> screen is OrderDetailsScreen
+            OutageScreenView -> screen is OutageScreen
+            PermissionsScreenView -> screen is PermissionsScreen
+            PlaceDetailsScreenView -> screen is PlaceDetailsScreen
+            SelectDestinationScreenView -> screen is SelectDestinationScreen
+            SendFeedbackScreenView -> screen is SendFeedbackScreen
+            SignInScreenView -> screen is SignInScreen
+            SplashScreenView -> screen is SplashScreen
+            is TabsView -> screen is TabsScreen
+        }
+    }
 }
 
 object NoneScreenView : AppViewState()
@@ -21,10 +43,10 @@ object ConfirmEmailScreenView : AppViewState()
 object OutageScreenView : AppViewState()
 object SendFeedbackScreenView : AppViewState()
 data class TabsView(
-    val currentTripTab: CurrentTripTab?,
     val historyTab: HistoryTab?,
-    val ordersTab: OrdersTab?,
-    val summaryTab: SummaryTab?,
-    val placesTab: PlacesTab?,
-    val profileTab: ProfileTab?
+    val currentTripTab: CurrentTripTab = CurrentTripTab,
+    val ordersTab: OrdersTab = OrdersTab,
+    val placesTab: PlacesTab = PlacesTab,
+    val summaryTab: SummaryTab = SummaryTab,
+    val profileTab: ProfileTab = ProfileTab,
 ) : AppViewState()

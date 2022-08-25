@@ -1,6 +1,7 @@
 package com.hypertrack.android.ui.common.use_case.get_error_message
 
 import com.hypertrack.android.api.BackendException
+import com.hypertrack.android.api.graphql.GraphQlException
 import com.hypertrack.android.deeplink.BranchErrorException
 import com.hypertrack.android.interactors.trip.NotClockedInException
 import com.hypertrack.android.repository.access_token.AccountSuspendedException
@@ -80,6 +81,9 @@ class GetErrorMessageUseCase(
                 }
                 exception is AccountSuspendedException -> {
                     getTextErrorString(TextError(R.string.account_suspended))
+                }
+                exception is GraphQlException -> {
+                    getTextErrorString(ServerError)
                 }
                 exception.isNetworkError() -> {
                     getTextErrorString(NetworkError)

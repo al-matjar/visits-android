@@ -101,6 +101,7 @@ class UserScopeViewModelFactory(
                 appScope.userRepository,
                 appScope.publishableKeyRepository,
                 userScope.hyperTrackService,
+                appScope.accessTokenRepository
             ) as T
             SelectTripDestinationViewModel::class.java -> SelectTripDestinationViewModel(
                 baseDependencies,

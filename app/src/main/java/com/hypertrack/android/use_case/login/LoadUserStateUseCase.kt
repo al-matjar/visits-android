@@ -72,7 +72,7 @@ class LoadUserStateUseCase(
                                         Instant.EPOCH,
                                         ZoneId.systemDefault()
                                     ),
-                                    days = mapOf(LocalDate.now() to Loading())
+                                    days = mapOf()
                                 ),
                                 useCases = UserScopeUseCases(
                                     userScope.appInteractor,

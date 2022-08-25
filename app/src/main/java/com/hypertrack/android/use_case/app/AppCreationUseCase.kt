@@ -170,6 +170,8 @@ class AppCreationUseCase {
             geocodingInteractor,
             osUtilsProvider
         )
+        val appCoroutineScope = CoroutineScope(SupervisorJob())
+        val stateMachineContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
         return AppScope(
             MyApplication.context,
@@ -225,8 +227,8 @@ class AppCreationUseCase {
             NotificationUtil,
             moshi,
             trackingStateListener,
-            CoroutineScope(SupervisorJob()),
-            Executors.newSingleThreadExecutor().asCoroutineDispatcher(),
+            appCoroutineScope,
+            stateMachineContext
         )
     }
 

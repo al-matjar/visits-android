@@ -47,6 +47,12 @@ sealed class OutageReason(@StringRes val stringRes: Int) {
                 OUTAGE_MARKER_SDK_KILLED_BY_USER -> {
                     SdkKilledByUser
                 }
+                OUTAGE_MARKER_SDK_LOW_MEMORY -> {
+                    SdkKilledLowMemory
+                }
+                OUTAGE_MARKER_SDK_KILLED_BY_PERMISSIONS_LOCATION -> {
+                    SdkKilledPermissionsChange
+                }
                 OUTAGE_MARKER_DISCONNECTED -> {
                     Disconnected
                 }
@@ -75,6 +81,9 @@ sealed class OutageReason(@StringRes val stringRes: Int) {
         private const val OUTAGE_MARKER_SDK_KILLED_EXCESSIVE_RESOURCE_USAGE =
             "sdk_killed_excessive_resource_usage"
         private const val OUTAGE_MARKER_SDK_KILLED_BY_USER = "sdk_killed_by_user"
+        private const val OUTAGE_MARKER_SDK_LOW_MEMORY = "sdk_killed_low_memory"
+        private const val OUTAGE_MARKER_SDK_KILLED_BY_PERMISSIONS_LOCATION =
+            "sdk_killed_by_permissions_location"
         private const val OUTAGE_MARKER_DISCONNECTED = "disconnected"
     }
 }
@@ -114,7 +123,13 @@ object SdkKilledByReboot :
     OutageReason(R.string.timeline_inactive_reason_tracking_service_terminated_by_reboot)
 
 object SdkKilledExcessiveResourcesUsage :
-    OutageReason(R.string.timeline_inactive_reason_tracking_service_terminated)
+    OutageReason(R.string.timeline_inactive_reason_tracking_service_terminated_excessive_resource_usage)
+
+object SdkKilledLowMemory :
+    OutageReason(R.string.timeline_inactive_reason_tracking_service_terminated_excessive_resource_usage)
+
+object SdkKilledPermissionsChange :
+    OutageReason(R.string.timeline_inactive_reason_sdk_killed_by_permissions)
 
 object SdkKilledByUser :
     OutageReason(R.string.timeline_inactive_reason_sdk_killed_by_user)

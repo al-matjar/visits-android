@@ -5,7 +5,7 @@ buildscript {
     versions.target_sdk = 31
     versions.min_sdk = 23
 
-    versions.hypertrack_sdk = "6.2.0"
+    versions.hypertrack_sdk = "6.2.2"
 
     versions.build_gradle = "7.0.3"
     versions.firebase_crashlytics_gradle = "2.6.1"
@@ -25,7 +25,7 @@ buildscript {
     versions.firebase_appindexing = "20.0.0"
     versions.google_places = "2.5.0"
     versions.kotlinx_coroutines = "1.5.2"
-    versions.kotlin_version = "1.6.10"
+    versions.kotlin_version = "1.6.21"
     versions.lifecycle_livedata_ktx = "2.4.0"
     versions.lifecycle_viewmodel_ktx = "2.4.0"
     versions.lifecycle_extensions = "2.2.0"
