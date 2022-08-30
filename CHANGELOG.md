@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.19.7] - 2022-08-30
+
+### Changed
+
+- Update Hypertrack SDK to 6.2.2
+
+### Fixed
+
+- Out of memory exception on adding geofences to map
+- Internal crashes in Google map
+- Add missing outages to the timeline
+- Minor fixes
+- Handle Unknown error when selecting place on map as network error.
+
 ## [0.19.6] - 2022-08-23
 
 ### Fixed
@@ -42,6 +56,10 @@
 ### Changed
 
 - Hypertrack SDK updated to 6.2.0
+
+### Fixed
+
+- Build issue in 0.19.2
 
 ## [0.19.1] - 2022-07-19
 
