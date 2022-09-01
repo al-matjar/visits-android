@@ -1,7 +1,6 @@
 package com.hypertrack.android.di
 
 import android.app.Application
-import android.util.Log
 import com.hypertrack.android.interactors.app.InitAppAction
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
@@ -17,6 +16,7 @@ import com.hypertrack.android.ui.common.ViewModelFactory
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.use_case.app.AppCreationUseCase
 import com.hypertrack.android.use_case.sdk.TrackingState
+import com.hypertrack.android.utils.crashlytics.BaseCrashReportsProvider
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.crashlytics.FirebaseCrashReportsProvider
 import com.hypertrack.android.utils.OsUtilsProvider
@@ -28,7 +28,7 @@ import com.hypertrack.android.utils.crashlytics.SentryCrashReportsProvider
 object Injector {
 
     //should be static to enable reliable exception reporting in all places in the code
-    lateinit var crashReportsProvider: CrashReportsProvider
+    lateinit var crashReportsProvider: BaseCrashReportsProvider
     private lateinit var resourceProvider: ResourceProvider
 
     private val trackingStateListener = { trackingState: TrackingState ->
@@ -39,9 +39,11 @@ object Injector {
     private lateinit var appInteractor: AppInteractor
 
     fun appOnCreate(application: Application) {
-        crashReportsProvider = DoubleCrashReportsProvider(
-            SentryCrashReportsProvider(application),
-            FirebaseCrashReportsProvider(application)
+        crashReportsProvider = BaseCrashReportsProvider(
+            DoubleCrashReportsProvider(
+                SentryCrashReportsProvider(),
+                FirebaseCrashReportsProvider(application)
+            )
         )
         resourceProvider = OsUtilsProvider(application, crashReportsProvider)
         val appScope = AppCreationUseCase().execute(

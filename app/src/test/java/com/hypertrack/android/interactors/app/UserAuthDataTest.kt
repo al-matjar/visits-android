@@ -1,9 +1,8 @@
 package com.hypertrack.android.interactors.app
 
 import com.hypertrack.android.TestInjector
-import com.hypertrack.android.models.local.PublishableKey
+import com.hypertrack.android.models.local.Email
 import com.hypertrack.android.models.local.RealPublishableKey
-import junit.framework.TestCase
 
 class UserAuthDataTest {
     companion object {

@@ -1,46 +1,30 @@
 package com.hypertrack.android.ui.screens.add_integration
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
+import android.view.WindowManager
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.RegisterScreenAction
 import com.hypertrack.android.interactors.app.state.AddIntegrationScreen
-import com.hypertrack.android.models.Integration
 import com.hypertrack.android.ui.MainActivity
-import com.hypertrack.android.ui.base.BaseAdapter
 import com.hypertrack.android.ui.base.BaseFragment
+import com.hypertrack.android.ui.common.EndlessScrollListener
 import com.hypertrack.android.ui.common.util.*
 import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoFragment
 import com.hypertrack.logistics.android.github.R
 import kotlinx.android.synthetic.main.fragment_add_integration.*
 import kotlinx.android.synthetic.main.fragment_add_place_info.toolbar
-import kotlinx.android.synthetic.main.item_integration.view.*
+import kotlinx.android.synthetic.main.fragment_places.rvPlaces
+import kotlinx.android.synthetic.main.fragment_select_destination.search
 import kotlinx.coroutines.FlowPreview
 
 @FlowPreview
 class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_integration) {
-
-    private val adapter = object : BaseAdapter<Integration, BaseAdapter.BaseVh<Integration>>() {
-        override val itemLayoutResource = R.layout.item_integration
-
-        override fun createViewHolder(
-            view: View,
-            baseClickListener: (Int) -> Unit
-        ): BaseVh<Integration> {
-            return object : BaseContainerVh<Integration>(view, baseClickListener) {
-                override fun bind(item: Integration) {
-                    item.name?.toView(containerView.tvName)
-                    item.id.toView(containerView.tvDescription)
-                }
-            }
-        }
-    }.apply {
-        onItemClickListener = {
-            vm.onIntegrationClicked(it)
-        }
-    }
 
     private val vm: AddIntegrationViewModel by viewModels {
         Injector.provideUserScopeViewModelFactory()
@@ -58,17 +42,21 @@ class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_
         }
 
         rvIntegrations.setLinearLayoutManager(requireContext())
-        rvIntegrations.adapter = adapter
+        rvIntegrations.adapter = vm.adapter
+//        rvIntegrations.addOnScrollListener(object : EndlessScrollListener(object : OnLoadMoreListener {
+//            override fun onLoadMore(page: Int, totalItemsCount: Int) {
+//                vm.handleAction(OnLoadMoreAction)
+//            }
+//        }) {
+//            override val visibleThreshold = 1
+//        })
 
-        vm.integrations.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-            adapter.updateItems(it)
-            lIntegrationsPlaceholder.setGoneState(it.isNotEmpty())
-        }
-
-        vm.loadingState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
-            srlIntegrations.isRefreshing = it
-            rvIntegrations.setGoneState(it)
-            if (it) lIntegrationsPlaceholder.hide()
+        vm.viewState.observeWithErrorHandling(viewLifecycleOwner, vm::onError) { viewState ->
+            lIntegrationsPlaceholder.setGoneState(!viewState.showPlaceholder)
+            srlIntegrations.isRefreshing = viewState.showProgressbar
+            rvIntegrations.setGoneState(!viewState.showList)
+            bSearch.setGoneState(!viewState.showSearchButton)
+            etSearch.setGoneState(!viewState.showSearchField)
         }
 
         vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
@@ -92,15 +80,26 @@ class AddIntegrationFragment : BaseFragment<MainActivity>(R.layout.fragment_add_
             }
         }
 
-        srlIntegrations.setOnRefreshListener {
-            vm.onRefresh(etSearch.textString())
+        etSearch.addTextChangedListener {
+            vm.handleAction(OnQueryChangedAction(it.toString()))
         }
 
-        etSearch.addTextChangedListener(object : SimpleTextWatcher() {
-            override fun afterChanged(text: String) {
-                vm.onQueryChanged(text)
-            }
-        })
+        etSearch.setOnEditorActionListener { v, actionId, event ->
+            if (Utils.isDoneAction(actionId, event)) {
+                vm.handleAction(OnInitSearchAction)
+                true
+            } else false
+        }
+
+        srlIntegrations.setOnRefreshListener {
+            vm.handleAction(OnRefreshAction)
+        }
+
+        bSearch.setOnClickListener {
+            vm.handleAction(OnInitSearchAction)
+        }
+
+        vm.handleAction(InitAction)
 
         /**
          * showing and hiding the keyboard is disabled because of issues on some devices

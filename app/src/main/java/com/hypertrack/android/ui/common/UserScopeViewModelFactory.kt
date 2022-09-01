@@ -68,6 +68,9 @@ class UserScopeViewModelFactory(
             ) as T
             AddIntegrationViewModel::class.java -> AddIntegrationViewModel(
                 baseDependencies,
+                appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+                    AppStateOptics.getUserLoggedIn(it)
+                },
                 userScope.integrationsRepository
             ) as T
             AddPlaceViewModel::class.java -> AddPlaceViewModel(

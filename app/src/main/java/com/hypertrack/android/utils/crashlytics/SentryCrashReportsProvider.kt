@@ -13,7 +13,7 @@ import io.sentry.core.protocol.User
 import java.util.*
 
 
-class SentryCrashReportsProvider(private val appContext: Context) : CrashReportsProvider {
+class SentryCrashReportsProvider : CrashReportsProvider {
     override fun logException(exception: Throwable, metadata: Map<String, String>) {
         Sentry.addBreadcrumb(metadata.toString())
         Sentry.captureException(exception)
@@ -32,7 +32,7 @@ class SentryCrashReportsProvider(private val appContext: Context) : CrashReports
     override fun setUserIdentifier(id: String) {
         Sentry.configureScope { scope: Scope ->
             scope.user = User().apply {
-                setId(id)
+                username = id
             }
         }
     }

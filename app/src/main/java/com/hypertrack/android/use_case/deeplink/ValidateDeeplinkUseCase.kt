@@ -1,10 +1,10 @@
 package com.hypertrack.android.use_case.deeplink
 
 import com.hypertrack.android.deeplink.DeeplinkParams
-import com.hypertrack.android.interactors.app.Email
+import com.hypertrack.android.models.local.Email
 import com.hypertrack.android.interactors.app.EmailAndPhoneAuthData
 import com.hypertrack.android.interactors.app.EmailAuthData
-import com.hypertrack.android.interactors.app.Phone
+import com.hypertrack.android.models.local.Phone
 import com.hypertrack.android.interactors.app.PhoneAuthData
 import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.utils.createAnyMapAdapter

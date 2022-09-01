@@ -1,8 +1,7 @@
 package com.hypertrack.android.repository.preferences
 
-import android.os.Build.VERSION_CODES.P
-import com.hypertrack.android.interactors.app.Email
-import com.hypertrack.android.interactors.app.Phone
+import com.hypertrack.android.models.local.Email
+import com.hypertrack.android.models.local.Phone
 import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.models.auth.BasicAuthAccessTokenConfig
 import com.hypertrack.android.repository.MyPreferences

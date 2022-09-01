@@ -6,10 +6,16 @@ import androidx.lifecycle.MutableLiveData
 import com.hypertrack.android.api.ApiClient
 import com.hypertrack.android.models.Integration
 import com.hypertrack.android.ui.base.Consumable
+import com.hypertrack.android.ui.common.DataPage
+import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.MyApplication
+import com.hypertrack.android.utils.Result
 import com.hypertrack.android.utils.ResultError
 import com.hypertrack.android.utils.ResultSuccess
 import com.hypertrack.android.utils.ResultValue
+import com.hypertrack.android.utils.Success
+import com.hypertrack.android.utils.asFailure
+import com.hypertrack.android.utils.asSuccess
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -19,9 +25,8 @@ import java.lang.RuntimeException
 import kotlin.coroutines.coroutineContext
 
 interface IntegrationsRepository {
-    val errorFlow: Flow<Consumable<Exception>>
-    suspend fun hasIntegrations(): ResultValue<Boolean>
-    suspend fun getIntegrations(query: String): List<Integration>
+    suspend fun hasIntegrations(): Result<Boolean>
+    suspend fun getIntegrations(query: String): Result<DataPage<Integration>>
     fun invalidateCache()
 }
 
@@ -31,38 +36,33 @@ class IntegrationsRepositoryImpl(
 
     private var firstPage: List<Integration>? = null
 
-    override val errorFlow = MutableSharedFlow<Consumable<Exception>>(
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-
-    override suspend fun hasIntegrations(): ResultValue<Boolean> {
+    override suspend fun hasIntegrations(): Result<Boolean> {
         if (firstPage == null) {
             try {
                 firstPage = apiClient.getIntegrations(limit = 100)
-                return ResultSuccess(firstPage!!.isNotEmpty())
+                return Success(firstPage!!.isNotEmpty())
             } catch (e: Exception) {
-                errorFlow.emit(Consumable(e))
-                return ResultError(e)
+                return Failure(e)
             }
         } else {
-            return ResultSuccess(firstPage!!.isNotEmpty())
+            return Success(firstPage!!.isNotEmpty())
         }
     }
 
-    override suspend fun getIntegrations(query: String): List<Integration> {
+    override suspend fun getIntegrations(query: String): Result<DataPage<Integration>> {
         //todo pagination
         if (query.isBlank() && firstPage != null) {
-            return firstPage!!
+            return DataPage(firstPage!!, null).asSuccess()
         }
 
-        try {
-            return apiClient.getIntegrations(query, limit = 100).filter {
+        return try {
+            apiClient.getIntegrations(query, limit = 100).filter {
                 it.name != null
+            }.let {
+                DataPage(it, null).asSuccess()
             }
         } catch (e: Exception) {
-            errorFlow.emit(Consumable(e))
-            return listOf()
+            e.asFailure()
         }
     }
 

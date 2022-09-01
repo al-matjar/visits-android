@@ -44,6 +44,7 @@ data class PushReceivedAction(
 data class CreateTripCreationScopeAction(val destinationData: DestinationData) : AppAction()
 object DestroyTripCreationScopeAction : AppAction()
 data class AppErrorAction(val exception: Exception) : AppAction()
+data class AppEffectAction(val appEffect: AppEffect) : AppAction()
 data class ActivityOnNewIntent(val intent: Intent?) : AppAction()
 data class HistoryAppAction(val historyAction: HistoryAction) : AppAction()
 data class HistoryViewAppAction(val historyViewAction: HistoryViewAction) : AppAction()

@@ -1,8 +1,8 @@
 package com.hypertrack.android.interactors.app
 
-import com.hypertrack.android.models.local.PublishableKey
+import com.hypertrack.android.models.local.Email
+import com.hypertrack.android.models.local.Phone
 import com.hypertrack.android.models.local.RealPublishableKey
-import com.squareup.moshi.JsonClass
 
 
 sealed class UserAuthData(
@@ -41,8 +41,3 @@ class EmailAndPhoneAuthData(
     override val username: String = phone.value
 }
 
-@JsonClass(generateAdapter = true)
-data class Email(val value: String)
-
-@JsonClass(generateAdapter = true)
-data class Phone(val value: String)

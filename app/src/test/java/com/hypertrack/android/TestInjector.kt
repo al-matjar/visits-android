@@ -1,6 +1,6 @@
 package com.hypertrack.android
 
-import com.hypertrack.android.interactors.app.Email
+import com.hypertrack.android.models.local.Email
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.repository.access_token.UserAccessToken

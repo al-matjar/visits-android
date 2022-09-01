@@ -5,7 +5,7 @@ buildscript {
     versions.target_sdk = 31
     versions.min_sdk = 23
 
-    versions.hypertrack_sdk = "6.2.2"
+    versions.hypertrack_sdk = "6.3.0-rc.1"
 
     versions.build_gradle = "7.0.3"
     versions.firebase_crashlytics_gradle = "2.6.1"

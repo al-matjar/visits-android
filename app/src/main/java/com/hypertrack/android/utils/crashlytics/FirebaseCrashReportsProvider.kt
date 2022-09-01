@@ -18,37 +18,13 @@ class FirebaseCrashReportsProvider(appContext: Context) : CrashReportsProvider {
     }
 
     override fun logException(exception: Throwable, metadata: Map<String, String>) {
-        if (MyApplication.DEBUG_MODE && exception is Exception) {
-            Log.v(javaClass.simpleName + "_logged", exception.format())
+        metadata.forEach {
+            FirebaseCrashlytics.getInstance().setCustomKey(it.key, it.value)
         }
-        if (exception.shouldBeReported()) {
-            if (MyApplication.DEBUG_MODE) {
-                Log.v(
-                    javaClass.simpleName + "_exception",
-                    mapOf(
-                        "exception" to (exception as Exception).format(),
-                        "metadata" to metadata
-                    ).toString()
-                )
-                exception.printStackTrace()
-            }
-            when (exception) {
-                is HttpException -> {
-                    // to make sure that the response data is logged to crashlytics
-                    log(exception.format())
-                    log("Headers: ${exception.response()?.raw()?.request?.headers.toString()}")
-                }
-                else -> {}
-            }
-            metadata.forEach {
-                FirebaseCrashlytics.getInstance().setCustomKey(it.key, it.value)
-            }
-            FirebaseCrashlytics.getInstance().recordException(exception)
-        }
+        FirebaseCrashlytics.getInstance().recordException(exception)
     }
 
     override fun setUserIdentifier(id: String) {
-        log("User identifier set: $id")
         FirebaseCrashlytics.getInstance().setUserId(id)
     }
 
@@ -59,21 +35,7 @@ class FirebaseCrashReportsProvider(appContext: Context) : CrashReportsProvider {
 
     //todo keys to enum
     override fun log(txt: String) {
-        if (MyApplication.DEBUG_MODE) {
-            Log.v(javaClass.simpleName + "_log", txt)
-        }
         FirebaseCrashlytics.getInstance().log(txt)
-    }
-
-    private fun Throwable.shouldBeReported(): Boolean {
-        return if (this is Exception) {
-            when {
-                this.isNetworkError() -> false
-                // todo catch and fix all cases
-                this is CancellationException -> false
-                else -> true
-            }
-        } else true
     }
 
 }

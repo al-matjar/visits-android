@@ -221,6 +221,7 @@
     <string name="place_integration_search_hint">Enter company name</string>
     <string name="place_integration_empty_placeholder">No entities found</string>
     <string name="place_integration_submit_button">Add company</string>
+    <string name="place_integration_search">Search</string>
     <string name="place_integration_integration_type">Integration type</string>
 
     <string name="add_geotag">Add geotag</string>

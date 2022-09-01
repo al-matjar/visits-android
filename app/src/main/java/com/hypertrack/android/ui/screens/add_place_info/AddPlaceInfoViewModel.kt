@@ -177,18 +177,18 @@ class AddPlaceInfoViewModel(
     private suspend fun init(map: HypertrackMapWrapper) {
         suspend { integrationsRepository.hasIntegrations() }.asFlow().flatMapConcat { res ->
             when (res) {
-                is ResultSuccess -> {
+                is Success -> {
                     suspend { loadAddress() }.asFlow().map { address ->
                         InitFinishedAction(
                             map = map,
-                            hasIntegrations = res.value,
+                            hasIntegrations = res.data,
                             address = address,
                             geofenceName = _name,
                             location = location
                         )
                     }
                 }
-                is ResultError -> {
+                is Failure -> {
                     handleErrorFlow(res.exception)
                 }
             }

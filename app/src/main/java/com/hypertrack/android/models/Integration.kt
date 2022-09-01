@@ -6,7 +6,7 @@ import kotlinx.android.parcel.Parcelize
 
 @JsonClass(generateAdapter = true)
 @Parcelize
-class Integration(
+data class Integration(
     val id: String,
     val name: String?,
 ) : Parcelable {

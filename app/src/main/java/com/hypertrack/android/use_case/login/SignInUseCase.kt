@@ -1,6 +1,6 @@
 package com.hypertrack.android.use_case.login
 
-import com.hypertrack.android.interactors.app.Email
+import com.hypertrack.android.models.local.Email
 import com.hypertrack.android.interactors.app.EmailAuthData
 import com.hypertrack.android.repository.user.UserData
 import com.hypertrack.android.use_case.sdk.GetConfiguredHypertrackSdkInstanceUseCase

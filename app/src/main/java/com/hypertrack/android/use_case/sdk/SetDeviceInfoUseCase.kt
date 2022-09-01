@@ -1,7 +1,7 @@
 package com.hypertrack.android.use_case.sdk
 
-import com.hypertrack.android.interactors.app.Email
-import com.hypertrack.android.interactors.app.Phone
+import com.hypertrack.android.models.local.Email
+import com.hypertrack.android.models.local.Phone
 import com.hypertrack.android.repository.user.UserData
 import com.hypertrack.android.ui.common.util.nullIfBlank
 import com.hypertrack.android.utils.JustFailure

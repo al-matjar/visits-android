@@ -132,6 +132,9 @@ class AppReducer(
                     is SignedInAction -> {
                         illegalAction(action, state)
                     }
+                    is AppEffectAction -> {
+                        state.withEffects(action.appEffect)
+                    }
                 }
             }
             is AppInitialized -> {
@@ -420,6 +423,9 @@ class AppReducer(
                                 illegalAction(action, state)
                             }
                         }
+                    }
+                    is AppEffectAction -> {
+                        state.withEffects(action.appEffect)
                     }
                 }
             }
