@@ -1,10 +1,20 @@
 # Changelog
 
+## [0.19.8] - 2022-09-07
+
+### Changed
+
+- Updated Hypertrack SDK to 6.3.0-rc.1
+
+### Removed
+
+- Incremental search for Add integration screen
+
 ## [0.19.7] - 2022-08-30
 
 ### Changed
 
-- Update Hypertrack SDK to 6.2.2
+- Updated Hypertrack SDK to 6.2.2
 
 ### Fixed
 
