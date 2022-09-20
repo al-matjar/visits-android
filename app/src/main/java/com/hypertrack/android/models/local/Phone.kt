@@ -5,11 +5,5 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class Phone(val value: String) {
-    override fun toString(): String {
-        return if (MyApplication.DEBUG_MODE) {
-            super.toString()
-        } else {
-            javaClass.simpleName
-        }
-    }
+    override fun toString(): String = javaClass.simpleName
 }

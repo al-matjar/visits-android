@@ -31,7 +31,7 @@ class GeofencesForMapReducer {
         action: GeofencesForMapAction,
         state: Map<GeoHash, GeoCacheItem>,
         useCases: UserScopeUseCases
-    ): ReducerResult<Map<GeoHash, GeoCacheItem>, out AppEffect> {
+    ): ReducerResult<out Map<GeoHash, GeoCacheItem>, out AppEffect> {
         return when (action) {
             is LoadGeofencesForMapAction -> {
                 val geoHash = action.location.getGeoHash(GEOHASH_LETTERS_NUMBER)
@@ -100,7 +100,7 @@ class GeofencesForMapReducer {
         geoHash: GeoHash,
         itemState: GeoCacheItem?,
         useCases: UserScopeUseCases
-    ): ReducerResult<GeoCacheItem, LoadGeofencesForMapEffect> {
+    ): ReducerResult<out GeoCacheItem, out LoadGeofencesForMapEffect> {
         return when (val data = itemState?.status) {
             // no item (there wasn't loading attempts for this GeoHash before)
             null -> {
@@ -127,7 +127,7 @@ class GeofencesForMapReducer {
         oldItem: GeoCacheItem,
         // used only for impossible state exception
         state: Map<GeoHash, GeoCacheItem>
-    ): ReducerResult<GeoCacheItemStatus, AppEffect> {
+    ): ReducerResult<out GeoCacheItemStatus, out AppEffect> {
         return when (val oldStatus = oldItem.status) {
             // if was loading before
             is Loading -> {
@@ -172,14 +172,14 @@ class GeofencesForMapReducer {
         result: PageSuccess,
         geoHash: GeoHash,
         oldGeofences: List<Geofence>
-    ): ReducerResult<GeoCacheItemStatus, AppEffect> {
+    ): ReducerResult<out GeoCacheItemStatus, out AppEffect> {
         return Loaded(oldGeofences + result.geofences).withEffects()
     }
 
     private fun reduce(
         result: PageFailure,
         oldGeofences: List<Geofence>
-    ): ReducerResult<GeoCacheItemStatus, AppEffect> {
+    ): ReducerResult<out GeoCacheItemStatus, out AppEffect> {
         // don't retry (it will be triggered by next map move)
         return LoadingError(
             result.exception,

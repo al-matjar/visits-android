@@ -2,16 +2,10 @@ package com.hypertrack.android.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.navigation.NavDestination
 import com.hypertrack.android.di.Injector
 import com.hypertrack.android.ui.activity.ActivityViewModel
-import androidx.navigation.findNavController
-import com.google.android.play.core.appupdate.AppUpdateManagerFactory
-import com.google.android.play.core.install.model.AppUpdateType
-import com.google.android.play.core.install.model.UpdateAvailability
 import com.hypertrack.android.ui.base.NavActivity
 import com.hypertrack.android.ui.base.navigate
 import com.hypertrack.android.ui.base.withErrorHandling
@@ -24,7 +18,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : NavActivity() {
 
     private val crashReportsProvider = Injector.crashReportsProvider
-    private val activityViewModel: ActivityViewModel by viewModels {
+    private val vm: ActivityViewModel by viewModels {
         MyApplication.newInjector.provideActivityViewModelFactory()
     }
 
@@ -37,53 +31,60 @@ class MainActivity : NavActivity() {
         // fragments in wrong app state
         super.onCreate(null)
 
-        withErrorHandling(activityViewModel::onError) {
-            activityViewModel.navigationEvent.observeWithErrorHandling(
+        withErrorHandling(vm::onError) {
+            vm.navigationEvent.observeWithErrorHandling(
                 this,
-                activityViewModel::onError,
+                vm::onError,
             ) {
                 navController.navigate(it)
             }
 
-            activityViewModel.showErrorMessageEvent.observeWithErrorHandling(
+            vm.showErrorMessageEvent.observeWithErrorHandling(
                 this,
-                activityViewModel::onError,
+                vm::onError,
             ) {
                 SnackBarUtil.showErrorSnackBar(root, it)
             }
 
+            vm.showAppMessageEvent.observeWithErrorHandling(
+                this,
+                vm::onError,
+            ) {
+                SnackBarUtil.showSnackBar(root, it)
+            }
+
             // todo test current fragment null
-            activityViewModel.onCreate(intent, getCurrentFragment())
+            vm.onCreate(intent, getCurrentFragment())
         }
     }
 
     override fun onStart() {
         super.onStart()
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             crashReportsProvider.log("activity start")
-            activityViewModel.onStart(this, intent)
+            vm.onStart(this, intent)
         }
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             // from branch tutorial, do we need this?
             setIntent(intent)
-            activityViewModel.onNewIntent(intent, this, getCurrentFragment())
+            vm.onNewIntent(intent, this, getCurrentFragment())
         }
     }
 
     override fun onResume() {
         super.onResume()
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             inForeground = true
             crashReportsProvider.log("activity resume")
         }
     }
 
     override fun onPause() {
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             inForeground = false
             crashReportsProvider.log("activity pause")
             super.onPause()
@@ -92,13 +93,13 @@ class MainActivity : NavActivity() {
 
     override fun onStop() {
         super.onStop()
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             crashReportsProvider.log("activity stop")
         }
     }
 
     override fun onDestinationChanged(destination: NavDestination) {
-        activityViewModel.onNavDestinationChanged(destination)
+        vm.onNavDestinationChanged(destination)
     }
 
     override fun onRequestPermissionsResult(
@@ -107,7 +108,7 @@ class MainActivity : NavActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             getCurrentFragment().onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
     }
@@ -115,7 +116,7 @@ class MainActivity : NavActivity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             getCurrentFragment().onActivityResult(requestCode, resultCode, data)
             // todo to use case
             if (requestCode == REQUEST_CODE_UPDATE) {
@@ -131,7 +132,7 @@ class MainActivity : NavActivity() {
     }
 
     override fun onBackPressed() {
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             if (getCurrentBaseFragment()?.onBackPressed() == false) {
                 super.onBackPressed()
             }
@@ -139,7 +140,7 @@ class MainActivity : NavActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        withErrorHandling(activityViewModel::onError) {
+        withErrorHandling(vm::onError) {
             onBackPressed()
         }
         return true

@@ -3,7 +3,9 @@ package com.hypertrack.android.ui.screens.sign_in.use_case
 import android.app.Activity
 import com.hypertrack.android.TestInjector
 import com.hypertrack.android.TestInjector.TEST_PUBLISHABLE_KEY
+import com.hypertrack.android.TestInjector.TEST_USER_DATA
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.validDeeplinkParams
+import com.hypertrack.android.interactors.app.action.InitiateLoginAction
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCaseTest.Companion.logExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.app.LogExceptionToCrashlyticsUseCaseTest.Companion.stubLogExceptionToCrashlyticsUseCase
@@ -39,20 +41,18 @@ class HandlePastedDeeplinkOrTokenUseCaseTest {
         )
 
         runBlocking {
-            val sdk = mockk<HyperTrack>()
             val logExceptionToCrashlyticsUseCase = stubLogExceptionToCrashlyticsUseCase()
 
             handlePastedDeeplinkOrTokenUseCase(
-                sdk = sdk,
                 logExceptionToCrashlyticsUseCase = logExceptionToCrashlyticsUseCase
             ).execute(
                 text = pseudoToBase64(map)
             ).collect {
                 assertEquals(
-                    AbstractSuccess<LoggedIn, DeeplinkValidationError>(
-                        LoggedIn(
-                            sdk,
-                            TEST_PUBLISHABLE_KEY
+                    AbstractSuccess<InitiateLoginAction, DeeplinkValidationError>(
+                        InitiateLoginAction(
+                            TEST_PUBLISHABLE_KEY,
+                            TEST_USER_DATA
                         )
                     ), it
                 )
@@ -69,16 +69,15 @@ class HandlePastedDeeplinkOrTokenUseCaseTest {
             val logExceptionToCrashlyticsUseCase = stubLogExceptionToCrashlyticsUseCase()
 
             handlePastedDeeplinkOrTokenUseCase(
-                sdk = sdk,
                 logExceptionToCrashlyticsUseCase = logExceptionToCrashlyticsUseCase
             ).execute(
                 text = TEST_DEEPLINK
             ).collect {
                 assertEquals(
-                    AbstractSuccess<LoggedIn, DeeplinkValidationError>(
-                        LoggedIn(
-                            sdk,
-                            TEST_PUBLISHABLE_KEY
+                    AbstractSuccess<InitiateLoginAction, DeeplinkValidationError>(
+                        InitiateLoginAction(
+                            TEST_PUBLISHABLE_KEY,
+                            TEST_USER_DATA
                         )
                     ), it
                 )
@@ -119,13 +118,12 @@ class HandlePastedDeeplinkOrTokenUseCaseTest {
         private const val TEST_DEEPLINK = "https://hypertrack-logistics.app.link/1oF0VcDvYgb"
 
         fun handlePastedDeeplinkOrTokenUseCase(
-            sdk: HyperTrack,
             logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase? = null
         ): HandlePastedDeeplinkOrTokenUseCase {
             return HandlePastedDeeplinkOrTokenUseCase(
                 loginWithDeeplinkParamsUseCase = mockk {
-                    every { execute(any()) } returns AbstractSuccess<LoggedIn, DeeplinkValidationError>(
-                        LoggedIn(sdk, TEST_PUBLISHABLE_KEY)
+                    every { execute(any()) } returns AbstractSuccess<InitiateLoginAction, DeeplinkValidationError>(
+                        InitiateLoginAction(TEST_PUBLISHABLE_KEY, TEST_USER_DATA)
                     ).toFlow()
                 },
                 logExceptionToCrashlyticsUseCase = logExceptionToCrashlyticsUseCase
@@ -137,7 +135,6 @@ class HandlePastedDeeplinkOrTokenUseCaseTest {
                         pseudoFromBase64(firstArg())
                     }
                 },
-                branchWrapper = mockk(),
                 moshi = TestInjector.getMoshi(),
                 getBranchDataFromAppBackendUseCase = mockk {
                     every { execute(any()) } returns validDeeplinkParams().toFlow()

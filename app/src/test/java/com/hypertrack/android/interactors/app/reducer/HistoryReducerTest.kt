@@ -193,7 +193,7 @@ class HistoryReducerTest {
     private fun reduce(
         initialState: HistoryState,
         loadingDay: LocalDate
-    ): ReducerResult<HistorySubState, out AppEffect> {
+    ): ReducerResult<out HistorySubState, out AppEffect> {
         return historyReducer().reduce(
             HistoryAppAction(StartDayHistoryLoadingAction(loadingDay)),
             userLoggedIn(),
@@ -205,7 +205,7 @@ class HistoryReducerTest {
     }
 
     private fun assertStateAndEffects(
-        result: ReducerResult<HistorySubState, out AppEffect>,
+        result: ReducerResult<out HistorySubState, out AppEffect>,
         expectedState: Map<LocalDate, LoadingState<History, ErrorMessage>>,
         expectedLastTodayReload: ZonedDateTime? = null,
         loadingDay: LocalDate?

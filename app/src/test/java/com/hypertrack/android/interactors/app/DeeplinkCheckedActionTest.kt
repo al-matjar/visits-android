@@ -1,62 +1,81 @@
 package com.hypertrack.android.interactors.app
 
+import com.hypertrack.android.assertEffect
+import com.hypertrack.android.assertWithChecks
+import com.hypertrack.android.createEffectCheck
 import com.hypertrack.android.deeplink.BranchErrorException
 import com.hypertrack.android.deeplink.DeeplinkError
+import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.interactors.app.AppEffectTest.Companion.assertNavToSignIn
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appReducer
-import com.hypertrack.android.interactors.app.AppReducerTest.Companion.createdState
-import com.hypertrack.android.interactors.app.AppReducerTest.Companion.initializedState
+import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appNotInitialized
+import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appInitialized
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.validDeeplinkParams
+import com.hypertrack.android.interactors.app.reducer.DeeplinkReducerTest.Companion.anyDeeplinkResult
 import io.mockk.mockk
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.AppViewStateTest.Companion.tabsView
-import com.hypertrack.android.interactors.app.state.CurrentTripTab
 import com.hypertrack.android.interactors.app.state.SignInScreenView
 import com.hypertrack.android.interactors.app.state.SplashScreenView
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
-import com.hypertrack.logistics.android.github.NavGraphDirections
+import com.hypertrack.android.utils.map
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.junit.Test
 import kotlin.Exception
 
+// todo replace appReducer with deeplinkReducer
 class DeeplinkCheckedActionTest {
 
+    // DeeplinkCheckedAction
+    // DeeplinkCheckedAction(valid deeplink)
+    // DeeplinkCheckedAction(no deeplink)
+    // DeeplinkCheckedAction(error)
+    // + (branch connection error)
+    // AppNotInitialized
+    // AppNotInitialized(pending deeplink)
+    // AppInitialized(view, user)
+    // view = SplashScreenView, SignInView, CurrentTripScreenView
+    // user = UserLoggedIn, UserNotLoggedIn
+
     @Test
-    fun `Created - DeeplinkCheckedAction`() {
-        val state = createdState()
-        val deeplinkParams = validDeeplinkParams()
-        val action = DeeplinkCheckedAction(deeplinkParams)
-        appReducer().reduce(state, action).let { result ->
-            (result.newState as AppNotInitialized).let {
-                println(result.effects)
-                assertEquals(deeplinkParams, it.pendingDeeplinkResult)
-                assertTrue(result.effects.isEmpty())
+    fun `DeeplinkCheckedAction - AppNotInitialized`() {
+        anyDeeplinkResult().forEach { deeplinkResult ->
+            val state = appNotInitialized()
+            val action = DeeplinkCheckedAction(deeplinkResult)
+            appReducer().reduce(state, action).let { result ->
+                (result.newState as AppNotInitialized).let {
+                    assertEquals(deeplinkResult, it.pendingDeeplinkResult)
+                    result.effects.assertWithChecks(
+                        createStopDeeplinkTimeoutTimerCheck(),
+                    )
+                }
             }
         }
     }
 
     @Test
-    fun `Created (pending deeplink) - DeeplinkCheckedAction`() {
-        val state = createdState(pendingDeeplinkResult = validDeeplinkParams())
-        val deeplinkParams = validDeeplinkParams(email = "test@mail.com")
-        val action = DeeplinkCheckedAction(deeplinkParams)
+    fun `DeeplinkCheckedAction(valid deeplink) - AppNotInitialized(pending deeplink)`() {
+        val state = appNotInitialized(pendingDeeplinkResult = validDeeplinkParams())
+        val actionDeeplinkParams = validDeeplinkParams(email = "test@mail.com")
+        val action = DeeplinkCheckedAction(actionDeeplinkParams)
         appReducer().reduce(state, action).let { result ->
             (result.newState as AppNotInitialized).let {
-                println(result.effects)
-                assertEquals(deeplinkParams, it.pendingDeeplinkResult)
-                assertTrue(result.effects.isEmpty())
+                assertEquals(actionDeeplinkParams, it.pendingDeeplinkResult)
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                )
             }
         }
     }
 
     @Test
-    fun `Initialized (SplashScreenState, UserNotLoggedIn) - DeeplinkCheckedAction (valid deeplink)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(valid deeplink) - AppInitialized(SplashScreenView, UserNotLoggedIn)`() {
+        val state = appInitialized(
             userState = UserNotLoggedIn,
             viewState = SplashScreenView,
             // by DeeplinkCheckStartedAction
@@ -66,16 +85,17 @@ class DeeplinkCheckedActionTest {
         val action = DeeplinkCheckedAction(deeplinkParams)
         appReducer().reduce(state, action).let { result ->
             (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertTrue(result.effects.size == 1)
-                result.effects.filterIsInstance<LoginWithDeeplinkEffect>().first()
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    { it.assertEffect(LoginWithDeeplinkEffect::class) }
+                )
             }
         }
     }
 
     @Test
-    fun `Initialized (SplashScreenView, UserNotLoggedIn) - DeeplinkCheckedAction (error)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(error) - AppInitialized(SplashScreenView, UserNotLoggedIn)`() {
+        val state = appInitialized(
             userState = UserNotLoggedIn,
             viewState = SplashScreenView,
             // by DeeplinkCheckStartedAction
@@ -83,22 +103,20 @@ class DeeplinkCheckedActionTest {
         )
         val action = deeplinkCheckedErrorAction()
         appReducer().reduce(state, action).let { result ->
-            (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertTrue(result.effects.size == 2)
-                assertNavToSignIn(result.effects)
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<ShowAndReportAppErrorEffect>()
-                        .isNotEmpty()
+            (result.newState as AppInitialized).let { newState ->
+                assertFalse(newState.showProgressbar)
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    createNavigateToSignInCheck(),
+                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
     }
 
     @Test
-    fun `Initialized (SplashScreenView, UserNotLoggedIn) - DeeplinkCheckedAction (no deeplink)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(no deeplink) - AppInitialized(SplashScreenView, UserNotLoggedIn)`() {
+        val state = appInitialized(
             userState = UserNotLoggedIn,
             viewState = SplashScreenView,
             // by DeeplinkCheckStartedAction
@@ -107,16 +125,17 @@ class DeeplinkCheckedActionTest {
         val action = DeeplinkCheckedAction(NoDeeplink)
         appReducer().reduce(state, action).let { result ->
             (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertTrue(result.effects.size == 1)
-                assertNavToSignIn(result.effects)
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    createNavigateToSignInCheck(),
+                )
             }
         }
     }
 
     @Test
-    fun `Initialized (SplashScreenView, UserLoggedIn) - DeeplinkCheckedAction (error)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(error) - AppInitialized(SplashScreenView, UserLoggedIn)`() {
+        val state = appInitialized(
             userState = userLoggedIn(),
             viewState = SplashScreenView,
             // by DeeplinkCheckStartedAction
@@ -125,25 +144,18 @@ class DeeplinkCheckedActionTest {
         val action = deeplinkCheckedErrorAction()
         appReducer().reduce(state, action).let { result ->
             (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertTrue(result.effects.size == 2)
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<NavigateToUserScopeScreensEffect>()
-                        .isNotEmpty()
-                )
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<ShowAndReportAppErrorEffect>()
-                        .isNotEmpty()
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    { it.assertEffect(ShowAndReportAppErrorEffect::class) },
+                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) }
                 )
             }
         }
     }
 
     @Test
-    fun `Initialized (SplashScreenView, UserLoggedIn) - DeeplinkCheckedAction (no deeplink)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(no deeplink) - AppInitialized(SplashScreenView, UserLoggedIn)`() {
+        val state = appInitialized(
             userState = userLoggedIn(),
             viewState = SplashScreenView,
             // by DeeplinkCheckStartedAction
@@ -152,57 +164,56 @@ class DeeplinkCheckedActionTest {
         val action = DeeplinkCheckedAction(NoDeeplink)
         appReducer().reduce(state, action).let { result ->
             (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertTrue(result.effects.size == 1)
-                assertTrue(result.effects.first() is NavigateToUserScopeScreensEffect)
-            }
-        }
-    }
-
-    @Test
-    fun `Initialized (SignInState, UserNotLoggedIn) - DeeplinkCheckedAction (error)`() {
-        val state = initializedState(
-            userState = UserNotLoggedIn,
-            viewState = tabsView(),
-            // by DeeplinkCheckStartedAction
-            showProgressbar = true
-        )
-        val action = deeplinkCheckedErrorAction()
-        appReducer().reduce(state, action).let { result ->
-            (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertFalse(it.showProgressbar)
-                assertTrue(result.effects.size == 1)
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<ShowAndReportAppErrorEffect>()
-                        .isNotEmpty()
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) }
                 )
             }
         }
     }
 
     @Test
-    fun `Initialized (SignInState, UserNotLoggedIn) - DeeplinkCheckedAction (no deeplink)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(error) - AppInitialized(SignInView, UserNotLoggedIn)`() {
+        val state = appInitialized(
             userState = UserNotLoggedIn,
-            viewState = tabsView(),
+            viewState = SignInScreenView,
+            // by DeeplinkCheckStartedAction
+            showProgressbar = true
+        )
+        val action = deeplinkCheckedErrorAction()
+        appReducer().reduce(state, action).let { result ->
+            (result.newState as AppInitialized).let { newState ->
+                assertFalse(newState.showProgressbar)
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `DeeplinkCheckedAction(no deeplink) - AppInitialized(SignInView, UserNotLoggedIn)`() {
+        val state = appInitialized(
+            userState = UserNotLoggedIn,
+            viewState = SignInScreenView,
             // by DeeplinkCheckStartedAction
             showProgressbar = true
         )
         val action = DeeplinkCheckedAction(NoDeeplink)
         appReducer().reduce(state, action).let { result ->
             (result.newState as AppInitialized).let {
-                println(result.effects)
                 assertFalse(it.showProgressbar)
-                assertTrue(result.effects.isEmpty())
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                )
             }
         }
     }
 
     @Test
-    fun `Initialized (CurrentTripScreenView, UserLoggedIn) - DeeplinkCheckedAction (valid deeplink)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(valid deeplink) - AppInitialized(CurrentTripScreenView, UserLoggedIn)`() {
+        val state = appInitialized(
             userState = userLoggedIn(),
             viewState = tabsView(),
             // by DeeplinkCheckStartedAction
@@ -213,15 +224,17 @@ class DeeplinkCheckedActionTest {
         appReducer().reduce(state, action).let { result ->
             (result.newState as AppInitialized).let {
                 assertTrue(it.showProgressbar)
-                assertTrue(result.effects.size == 1)
-                result.effects.filterIsInstance<LoginWithDeeplinkEffect>().first()
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    { it.assertEffect(LoginWithDeeplinkEffect::class) }
+                )
             }
         }
     }
 
     @Test
-    fun `Initialized (CurrentTripScreenView, UserLoggedIn) - DeeplinkCheckedAction (error)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(error) - AppInitialized(CurrentTripScreenView, UserLoggedIn)`() {
+        val state = appInitialized(
             userState = userLoggedIn(),
             viewState = tabsView(),
             // by DeeplinkCheckStartedAction
@@ -229,22 +242,19 @@ class DeeplinkCheckedActionTest {
         )
         val action = deeplinkCheckedErrorAction()
         appReducer().reduce(state, action).let { result ->
-            (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertFalse(it.showProgressbar)
-                assertTrue(result.effects.size == 1)
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<ShowAndReportAppErrorEffect>()
-                        .isNotEmpty()
+            (result.newState as AppInitialized).let { newState ->
+                assertFalse(newState.showProgressbar)
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
     }
 
     @Test
-    fun `Initialized (SplashScreenView, UserLoggedIn) - DeeplinkCheckedAction (branch connection error)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(branch connection error) - AppInitialized(SplashScreenView, UserLoggedIn)`() {
+        val state = appInitialized(
             userState = userLoggedIn(),
             viewState = SplashScreenView,
             // by DeeplinkCheckStartedAction
@@ -252,27 +262,20 @@ class DeeplinkCheckedActionTest {
         )
         val action = deeplinkCheckedErrorAction(BranchErrorException(-113, ""))
         appReducer().reduce(state, action).let { result ->
-            (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertFalse(it.showProgressbar)
-                assertTrue(result.effects.size == 2)
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<ReportAppErrorEffect>()
-                        .isNotEmpty()
-                )
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<NavigateToUserScopeScreensEffect>()
-                        .isNotEmpty()
+            (result.newState as AppInitialized).let { newState ->
+                assertFalse(newState.showProgressbar)
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    { it.assertEffect(ReportAppErrorEffect::class) },
+                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) }
                 )
             }
         }
     }
 
     @Test
-    fun `Initialized (UserLoggedIn, CurrentTripScreenView) - DeeplinkCheckedAction (branch connection error)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(branch connection error) - AppInitialized(CurrentTripScreenView, UserLoggedIn)`() {
+        val state = appInitialized(
             userState = userLoggedIn(),
             viewState = tabsView(),
             // by DeeplinkCheckStartedAction
@@ -280,22 +283,19 @@ class DeeplinkCheckedActionTest {
         )
         val action = deeplinkCheckedErrorAction(BranchErrorException(-113, ""))
         appReducer().reduce(state, action).let { result ->
-            (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertFalse(it.showProgressbar)
-                assertTrue(result.effects.size == 1)
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<ShowAndReportAppErrorEffect>()
-                        .isNotEmpty()
+            (result.newState as AppInitialized).let { newState ->
+                assertFalse(newState.showProgressbar)
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
     }
 
     @Test
-    fun `Initialized (SplashScreenView, UserNotLoggedIn) - DeeplinkCheckedAction (branch connection error)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(branch connection error) - AppInitialized(SplashScreenView, UserNotLoggedIn)`() {
+        val state = appInitialized(
             userState = UserNotLoggedIn,
             viewState = SplashScreenView,
             // by DeeplinkCheckStartedAction
@@ -303,23 +303,20 @@ class DeeplinkCheckedActionTest {
         )
         val action = deeplinkCheckedErrorAction(BranchErrorException(-113, ""))
         appReducer().reduce(state, action).let { result ->
-            (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertFalse(it.showProgressbar)
-                assertTrue(result.effects.size == 2)
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<ReportAppErrorEffect>()
-                        .isNotEmpty()
+            (result.newState as AppInitialized).let { newState ->
+                assertFalse(newState.showProgressbar)
+                result.effects.assertWithChecks(
+                    createStopDeeplinkTimeoutTimerCheck(),
+                    createNavigateToSignInCheck(),
+                    { it.assertEffect(ReportAppErrorEffect::class) }
                 )
-                assertNavToSignIn(result.effects)
             }
         }
     }
 
     @Test
-    fun `Initialized (UserNotLoggedIn, SignInState) - DeeplinkCheckedAction (branch connection error)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(branch connection error) - AppInitialized(SignInView, UserNotLoggedIn)`() {
+        val state = appInitialized(
             userState = UserNotLoggedIn,
             viewState = SignInScreenView,
             // by DeeplinkCheckStartedAction
@@ -327,22 +324,19 @@ class DeeplinkCheckedActionTest {
         )
         val action = deeplinkCheckedErrorAction(BranchErrorException(-113, ""))
         appReducer().reduce(state, action).let { result ->
-            (result.newState as AppInitialized).let {
-                println(result.effects)
-                assertFalse(it.showProgressbar)
-                assertTrue(result.effects.size == 1)
-                assertTrue(
-                    result.effects
-                        .filterIsInstance<ShowAndReportAppErrorEffect>()
-                        .isNotEmpty()
+            (result.newState as AppInitialized).let { newState ->
+                assertFalse(newState.showProgressbar)
+                result.effects.assertWithChecks(
+                    createEffectCheck<StopTimer> { it.timer is DeeplinkCheckTimeoutTimer },
+                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
     }
 
     @Test
-    fun `Initialized (CurrentTripScreenView, UserLoggedIn) - DeeplinkCheckedAction (no deeplink)`() {
-        val state = initializedState(
+    fun `DeeplinkCheckedAction(no deeplink) - AppInitialized(CurrentTripScreenView, UserLoggedIn)`() {
+        val state = appInitialized(
             userState = userLoggedIn(),
             viewState = tabsView(),
             // by DeeplinkCheckStartedAction
@@ -350,19 +344,32 @@ class DeeplinkCheckedActionTest {
         )
         val action = DeeplinkCheckedAction(NoDeeplink)
         appReducer().reduce(state, action).let { result ->
-            (result.newState as AppInitialized).let {
-                assertFalse(it.showProgressbar)
-                println(result.effects)
-                assertTrue(result.effects.isEmpty())
+            (result.newState as AppInitialized).let { newState ->
+                assertFalse(newState.showProgressbar)
+                result.effects.assertWithChecks(
+                    createEffectCheck<StopTimer> { it.timer is DeeplinkCheckTimeoutTimer }
+                )
             }
         }
     }
 
     companion object {
+        fun deeplinkCheckedAction(deeplinkResult: DeeplinkResult): DeeplinkCheckedAction {
+            return DeeplinkCheckedAction(deeplinkResult)
+        }
+
         fun deeplinkCheckedErrorAction(
             exception: Exception = Exception()
         ): DeeplinkCheckedAction {
             return DeeplinkCheckedAction(DeeplinkError(exception, mockk()))
+        }
+
+        fun createStopDeeplinkTimeoutTimerCheck(): (Set<Any>) -> Unit {
+            return createEffectCheck<StopTimer> { it.timer is DeeplinkCheckTimeoutTimer }
+        }
+
+        fun createNavigateToSignInCheck(): (Set<Any>) -> Unit {
+            return { effects -> assertNavToSignIn(effects.map { it as AppEffect }) }
         }
     }
 

@@ -78,7 +78,15 @@ fun <T> Result<T>.toNullableWithErrorReporting(
 }
 
 //todo rename
-sealed class AbstractResult<S, F>
+sealed class AbstractResult<S, F> {
+    fun <N> map(mapFunction: (S) -> N): AbstractResult<N, F> {
+        return when (this) {
+            is AbstractSuccess -> AbstractSuccess(mapFunction(this.success))
+            is AbstractFailure -> AbstractFailure(this.failure)
+        }
+    }
+}
+
 data class AbstractSuccess<S, F>(val success: S) : AbstractResult<S, F>()
 data class AbstractFailure<S, F>(val failure: F) : AbstractResult<S, F>()
 

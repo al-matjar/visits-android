@@ -1,10 +1,9 @@
 package com.hypertrack.android.ui.screens.sign_in.use_case
 
-import com.hypertrack.android.use_case.login.CognitoLoginError
-import com.hypertrack.android.use_case.login.LoggedIn
+import com.hypertrack.android.interactors.app.action.InitiateLoginAction
 
 sealed class SignInResult
 object SignInInvalidLoginOrPassword : SignInResult()
 object SignInNoSuchUser : SignInResult()
 object ConfirmationRequired : SignInResult()
-data class SignInSuccess(val loggedIn: LoggedIn) : SignInResult()
+data class SignInSuccess(val loginAction: InitiateLoginAction) : SignInResult()

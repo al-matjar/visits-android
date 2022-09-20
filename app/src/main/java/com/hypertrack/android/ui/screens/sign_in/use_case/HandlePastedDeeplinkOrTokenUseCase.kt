@@ -1,18 +1,17 @@
 package com.hypertrack.android.ui.screens.sign_in.use_case
 
 import android.net.Uri
-import com.hypertrack.android.deeplink.BranchWrapper
 import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.deeplink.NoDeeplink
+import com.hypertrack.android.interactors.app.action.InitiateLoginAction
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.use_case.deeplink.DeeplinkException
 import com.hypertrack.android.use_case.deeplink.DeeplinkValidationError
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.use_case.deeplink.LoginWithDeeplinkParamsUseCase
-import com.hypertrack.android.use_case.login.LoggedIn
 import com.hypertrack.android.utils.AbstractFailure
 import com.hypertrack.android.utils.AbstractResult
 import com.hypertrack.android.utils.AbstractSuccess
@@ -40,14 +39,13 @@ class HandlePastedDeeplinkOrTokenUseCase(
     private val loginWithDeeplinkParamsUseCase: LoginWithDeeplinkParamsUseCase,
     private val logMessageToCrashlyticsUseCase: LogMessageToCrashlyticsUseCase,
     private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
-    private val branchWrapper: BranchWrapper,
     private val osUtilsProvider: OsUtilsProvider,
     private val moshi: Moshi,
 ) {
 
     fun execute(
         text: String,
-    ): Flow<AbstractResult<LoggedIn, DeeplinkValidationError>> {
+    ): Flow<AbstractResult<InitiateLoginAction, DeeplinkValidationError>> {
         return {
             tryAsResult {
                 with(DEEPLINK_REGEX.matcher(text)) {
@@ -84,7 +82,7 @@ class HandlePastedDeeplinkOrTokenUseCase(
                         deeplinkResultReceivedFlow(it.data)
                     }
                     is Failure -> {
-                        AbstractFailure<LoggedIn, DeeplinkValidationError>(
+                        AbstractFailure<InitiateLoginAction, DeeplinkValidationError>(
                             DeeplinkValidationError(DeeplinkException(it.exception))
                         ).toFlow()
                     }
@@ -102,14 +100,15 @@ class HandlePastedDeeplinkOrTokenUseCase(
 
     private fun deeplinkResultReceivedFlow(
         deeplinkResult: DeeplinkResult,
-    ): Flow<AbstractResult<LoggedIn, DeeplinkValidationError>> {
+    ): Flow<AbstractResult<InitiateLoginAction, DeeplinkValidationError>> {
         return when (deeplinkResult) {
             is DeeplinkParams -> {
                 loginWithDeeplinkParamsUseCase.execute(deeplinkResult)
                     .flatMapConcat { res ->
                         when (res) {
                             is AbstractSuccess -> {
-                                AbstractSuccess<LoggedIn, DeeplinkValidationError>(res.success).toFlow()
+
+                                AbstractSuccess<InitiateLoginAction, DeeplinkValidationError>(res.success).toFlow()
                             }
                             is AbstractFailure -> {
                                 flowOf(

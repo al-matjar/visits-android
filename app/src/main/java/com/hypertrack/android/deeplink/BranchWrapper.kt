@@ -123,10 +123,12 @@ class BranchWrapper(
     companion object {
         const val KEY_BRANCH_FORCE_NEW_SESSION = "branch_force_new_session"
         private const val KEY_CLICKED_BRANCH_LINK = "+clicked_branch_link"
-        const val BRANCH_TIMEOUT = 60000
-        private const val BRANCH_CONNECTION_TIMEOUT = 15000
-        private const val BRANCH_INTERVAL_BETWEEN_RETRIES = 5000
-        private const val BRANCH_RETRY_COUNT = 3
+
+        // make sure to sync these values with deeplink check timeout
+        private const val BRANCH_TIMEOUT = 3000
+        private const val BRANCH_CONNECTION_TIMEOUT = 3000
+        private const val BRANCH_INTERVAL_BETWEEN_RETRIES = 0
+        private const val BRANCH_RETRY_COUNT = 0
 
         fun init(application: Application) {
 //            if(MyApplication.DEBUG_MODE) {

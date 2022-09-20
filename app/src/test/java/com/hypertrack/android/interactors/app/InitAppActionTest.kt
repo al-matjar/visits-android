@@ -2,7 +2,7 @@ package com.hypertrack.android.interactors.app
 
 import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appReducer
-import com.hypertrack.android.interactors.app.AppReducerTest.Companion.createdState
+import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appNotInitialized
 import io.mockk.mockk
 import junit.framework.TestCase
 import org.junit.Test
@@ -11,7 +11,7 @@ class InitAppActionTest {
 
     @Test
     fun `InitAppAction - Created`() {
-        val state = createdState()
+        val state = appNotInitialized()
         val action = InitAppAction(
             application = mockk()
         )
@@ -25,7 +25,7 @@ class InitAppActionTest {
 
     @Test
     fun `InitAppAction - Created (pending deeplink)`() {
-        val state = createdState(pendingDeeplinkResult = NoDeeplink)
+        val state = appNotInitialized(pendingDeeplinkResult = NoDeeplink)
         val action = InitAppAction(
             application = mockk()
         )

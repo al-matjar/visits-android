@@ -2,6 +2,7 @@ package com.hypertrack.android.interactors.app.reducer
 
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.UserScope
+import com.hypertrack.android.interactors.app.AppActionEffect
 import com.hypertrack.android.interactors.app.AppEffect
 import com.hypertrack.android.interactors.app.HistoryAppAction
 import com.hypertrack.android.interactors.app.HistoryViewAppAction
@@ -12,9 +13,14 @@ import com.hypertrack.android.interactors.app.action.DayHistoryErrorAction
 import com.hypertrack.android.interactors.app.action.DayHistoryLoadedAction
 import com.hypertrack.android.interactors.app.action.HistoryAction
 import com.hypertrack.android.interactors.app.action.RefreshSummaryAction
+import com.hypertrack.android.interactors.app.action.SignedInAction
 import com.hypertrack.android.interactors.app.action.StartDayHistoryLoadingAction
+import com.hypertrack.android.interactors.app.optics.AppStateOptics
+import com.hypertrack.android.interactors.app.state.AppInitialized
+import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.interactors.app.state.HistoryState
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryScreenState
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.ViewReadyAction
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.OnResumeAction
 import com.hypertrack.android.utils.Loading
@@ -22,6 +28,7 @@ import com.hypertrack.android.utils.LoadingFailure
 import com.hypertrack.android.utils.LoadingSuccess
 import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.exception.IllegalActionException
+import com.hypertrack.android.utils.state_machine.mergeResults
 import com.hypertrack.android.utils.withEffects
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -35,22 +42,25 @@ class HistoryReducer(
     fun reduce(
         historyAction: HistoryAppAction,
         userState: UserLoggedIn,
-        historySubState: HistorySubState
-    ): ReducerResult<HistorySubState, out AppEffect> {
+        oldHistorySubState: HistorySubState
+    ): ReducerResult<out HistorySubState, out AppEffect> {
         val action = historyAction.historyAction
-        return reduce(action, historySubState.history, userState.userScope).mergeResult(
-            { newHistoryState ->
-                if (historySubState.historyScreenState != null) {
+        val newHistoryStateResult = reduce(action, oldHistorySubState.history, userState.userScope)
+        return mergeResults(
+            newHistoryStateResult,
+            otherResult = { newHistoryState: ReducerResult<out HistoryState, out AppEffect> ->
+                if (oldHistorySubState.historyScreenState != null) {
                     historyViewReducer.map(
                         userState,
-                        newHistoryState,
-                        historySubState.historyScreenState
+                        newHistoryState.newState,
+                        oldHistorySubState.historyScreenState
                     ).toNullable()
+                    ReducerResult<HistoryScreenState?, AppEffect>(null, setOf())
                 } else {
-                    ReducerResult(null, setOf())
+                    ReducerResult<HistoryScreenState?, AppEffect>(null, setOf())
                 }
             }
-        ) { newHistoryState, newViewState ->
+        ) { newHistoryState: HistoryState, newViewState: HistoryScreenState? ->
             HistorySubState(history = newHistoryState, historyScreenState = newViewState)
         }
     }
@@ -98,7 +108,7 @@ class HistoryReducer(
         action: HistoryAction,
         oldState: HistoryState,
         userScope: UserScope
-    ): ReducerResult<HistoryState, AppEffect> {
+    ): ReducerResult<out HistoryState, out AppEffect> {
         return when (action) {
             is StartDayHistoryLoadingAction -> {
                 val shouldLoad = if (action.day == LocalDate.now()) {
@@ -157,6 +167,21 @@ class HistoryReducer(
                 )
             }
         }
+    }
+
+    fun reduce(
+        action: SignedInAction,
+        state: AppInitialized
+    ): ReducerResult<AppInitialized, AppEffect> {
+        return state.withEffects(
+            AppActionEffect(
+                HistoryAppAction(
+                    StartDayHistoryLoadingAction(
+                        AppStateOptics.getHistoryViewState(state)?.selectedDay ?: LocalDate.now()
+                    )
+                )
+            )
+        )
     }
 
     companion object {

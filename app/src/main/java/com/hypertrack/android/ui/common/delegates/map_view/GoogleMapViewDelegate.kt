@@ -202,7 +202,7 @@ class GoogleMapViewDelegate(
         action: OnResumeAction,
         state: State,
         mapView: MapView
-    ): ReducerResult<State, Flow<Unit>> {
+    ): ReducerResult<out State, out Flow<Unit>> {
         return state.withEffects({
             mapView.onResume()
         }.asFlow())
@@ -222,7 +222,10 @@ class GoogleMapViewDelegate(
         }.asFlow())
     }
 
-    private fun illegalAction(action: Action, state: State): ReducerResult<State, Flow<Unit>> {
+    private fun illegalAction(
+        action: Action,
+        state: State
+    ): ReducerResult<out State, out Flow<Unit>> {
         return state.withEffects({
             IllegalActionException(action, state).also {
                 if (MyApplication.DEBUG_MODE) {
@@ -238,7 +241,7 @@ class GoogleMapViewDelegate(
     private fun withNonNullMapView(
         action: MapViewCreatedAction,
         block: (MapView) -> ReducerResult<State, Flow<Unit>>
-    ): ReducerResult<State, Flow<Unit>> {
+    ): ReducerResult<out State, out Flow<Unit>> {
         return if (action.mapView != null) {
             block.invoke(action.mapView)
         } else {

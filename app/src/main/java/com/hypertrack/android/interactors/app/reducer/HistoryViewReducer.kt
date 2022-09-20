@@ -72,7 +72,7 @@ class HistoryViewReducer(
         viewState: HistoryScreenState,
         appHistoryState: HistoryState,
         userState: UserLoggedIn
-    ): ReducerResult<HistoryScreenState, out AppEffect> {
+    ): ReducerResult<out HistoryScreenState, out AppEffect> {
         return withSelectedDay(appHistoryState, viewState) { historyState ->
             when (viewState) {
                 is Initial -> reduce(action, viewState, historyState, userState)
@@ -86,7 +86,7 @@ class HistoryViewReducer(
         userState: UserLoggedIn,
         appHistoryState: HistoryState,
         viewState: HistoryScreenState
-    ): ReducerResult<HistoryScreenState, out AppEffect> {
+    ): ReducerResult<out HistoryScreenState, out AppEffect> {
         return withSelectedDay(appHistoryState, viewState) { historyState ->
             when (viewState) {
                 is Initial -> viewState.withEffects()
@@ -150,7 +150,7 @@ class HistoryViewReducer(
         viewState: MapReadyState,
         historyState: LoadingState<History, ErrorMessage>,
         userState: UserLoggedIn
-    ): ReducerResult<HistoryScreenState, out AppEffect> {
+    ): ReducerResult<out HistoryScreenState, out AppEffect> {
         return when (action) {
             is ViewReadyAction -> {
                 viewState.copy(map = action.map, viewEventHandle = action.viewEventHandle)
@@ -277,7 +277,7 @@ class HistoryViewReducer(
         state: Initial,
         historyState: LoadingState<History, ErrorMessage>,
         userState: UserLoggedIn
-    ): ReducerResult<HistoryScreenState, AppEffect> {
+    ): ReducerResult<out HistoryScreenState, out AppEffect> {
         return when (action) {
             is ViewReadyAction -> {
                 MapReadyState(
@@ -313,8 +313,8 @@ class HistoryViewReducer(
         state: HistoryScreenState,
         block: (
             LoadingState<History, ErrorMessage>
-        ) -> ReducerResult<HistoryScreenState, out AppEffect>
-    ): ReducerResult<HistoryScreenState, out AppEffect> {
+        ) -> ReducerResult<out HistoryScreenState, out AppEffect>
+    ): ReducerResult<out HistoryScreenState, out AppEffect> {
         val historyStateForThisDay = appHistoryState.days[state.selectedDay]
         return if (historyStateForThisDay != null) {
             block.invoke(historyStateForThisDay)
@@ -409,7 +409,7 @@ class HistoryViewReducer(
     private fun illegalAction(
         action: HistoryViewAction,
         state: HistoryScreenState
-    ): ReducerResult<HistoryScreenState, AppEffect> {
+    ): ReducerResult<out HistoryScreenState, out AppEffect> {
         val exception = IllegalActionException(action, state)
         return if (MyApplication.DEBUG_MODE) {
             throw exception
@@ -421,8 +421,8 @@ class HistoryViewReducer(
     private fun withLoadingSuccess(
         action: HistoryViewAction,
         state: MapReadyState,
-        block: (HistorySuccessState) -> ReducerResult<HistoryScreenState, AppEffect>
-    ): ReducerResult<HistoryScreenState, AppEffect> {
+        block: (HistorySuccessState) -> ReducerResult<out HistoryScreenState, out AppEffect>
+    ): ReducerResult<out HistoryScreenState, out AppEffect> {
         return when (state.historyState) {
             is LoadingSuccess -> block.invoke(state.historyState.data)
             is Loading, is LoadingFailure -> illegalAction(action, state)
@@ -433,7 +433,7 @@ class HistoryViewReducer(
         action: HistoryViewAction,
         state: MapReadyState,
         toExpandedState: (Boolean) -> Boolean
-    ): ReducerResult<HistoryScreenState, AppEffect> {
+    ): ReducerResult<out HistoryScreenState, out AppEffect> {
         return withLoadingSuccess(action, state) { historyData ->
             val newState = toExpandedState.invoke(historyData.bottomSheetExpanded)
             state.copy(historyState = state.historyState.mapSuccess {

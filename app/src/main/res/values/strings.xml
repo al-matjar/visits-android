@@ -136,6 +136,7 @@
     <string name="timeline_inactive_reason_sdk_killed_by_user">Tracking service terminated by user</string>
     <string name="timeline_inactive_reason_sdk_killed_crashed">Tracking service terminated by app crash</string>
     <string name="timeline_inactive_reason_location_permission_when_in_use_background">Background location permissions denied</string>
+    <string name="timeline_inactive_reason_battery_saver">Location event were blocked by battery saver</string>
     <string name="timeline_inactive_reason_unexpected">Unknown outage</string>
 
     <string name="timeline_geotag_dialog_id">Geotag ID</string>
@@ -303,6 +304,9 @@
     <string name="dontkillmyapp_url">https://dontkillmyapp.com</string>
     <string name="today">Today</string>
     <string name="account_suspended">Account suspended</string>
+    <string name="logged_in">Logged in as: %s</string>
+    <string name="already_logged_in">You\'re already logged in</string>
+    <string name="login_already_in_progress">Login is already in progress</string>
 
 
     <plurals name="time">

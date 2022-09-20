@@ -17,12 +17,9 @@ sealed class GeoCacheItemStatus {
 data class Loaded(
     val geofences: List<Geofence>
 ) : GeoCacheItemStatus() {
+
     override fun toString(): String {
-        return if (true/*MyApplication.DEBUG_MODE*/) {
-            "${javaClass.simpleName}(geofences=${geofences.size})"
-        } else {
-            super.toString()
-        }
+        return "${javaClass.simpleName}(geofences=${geofences.size})"
     }
 }
 
@@ -33,10 +30,12 @@ data class LoadingError(
     val nextPageToken: String?,
 ) : GeoCacheItemStatus() {
     override fun toString(): String {
-        return if (true/*MyApplication.DEBUG_MODE*/) {
-            "${javaClass.simpleName}(geofences=${geofences.size}, nextPageToken=$nextPageToken, exception=$exception)"
-        } else {
-            super.toString()
+        return listOf(
+            "geofences=${geofences.size}",
+            "nextPageToken=$nextPageToken",
+            "exception=$exception"
+        ).joinToString(", ").let {
+            "${javaClass.simpleName}($it)"
         }
     }
 }

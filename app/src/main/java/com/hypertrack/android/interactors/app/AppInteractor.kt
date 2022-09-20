@@ -5,12 +5,20 @@ import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.interactors.app.action.GeofencesForMapLoadedAction
+import com.hypertrack.android.interactors.app.action.LoginErrorAction
+import com.hypertrack.android.interactors.app.action.SignedInAction
+import com.hypertrack.android.interactors.app.action.TimerEndedAction
+import com.hypertrack.android.interactors.app.action.TimerStartedAction
 import com.hypertrack.android.interactors.app.effect.HistoryEffectHandler
 import com.hypertrack.android.interactors.app.effect.MapEffectsHandler
+import com.hypertrack.android.interactors.app.reducer.DeeplinkReducer
+import com.hypertrack.android.interactors.app.reducer.DeeplinkReducer.Companion.DEEPLINK_CHECK_TIMEOUT
 import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
 import com.hypertrack.android.interactors.app.reducer.ScreensReducer
+import com.hypertrack.android.interactors.app.reducer.TimerReducer
+import com.hypertrack.android.interactors.app.reducer.login.LoginReducer
 import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
@@ -25,9 +33,12 @@ import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.Success
+import com.hypertrack.android.utils.emitAsFlow
+import com.hypertrack.android.utils.flatMapSuccess
 import com.hypertrack.android.utils.toFlow
 import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +53,7 @@ import kotlinx.coroutines.launch
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class AppInteractor(
-    val appScope: AppScope,
+    val appScope: AppScope
 ) {
 
     private val effectsDispatcher = Dispatchers.Default
@@ -55,18 +66,7 @@ class AppInteractor(
         pendingPushNotification = null
     )
 
-    // todo di
-    private val appReducer = AppReducer(
-        useCases,
-        appScope,
-        HistoryReducer(appScope, HistoryViewReducer(appScope)),
-        HistoryViewReducer(appScope),
-        ScreensReducer(
-            HistoryReducer(appScope, HistoryViewReducer(appScope)),
-            HistoryViewReducer(appScope)
-        ),
-        GeofencesForMapReducer()
-    )
+    private val appReducer = createAppReducer()
     private val appStateMachine = object : StateMachine<AppAction, AppState, AppEffect>(
         "AppState",
         appScope.crashReportsProvider,
@@ -153,33 +153,44 @@ class AppInteractor(
             }
             is LoginWithDeeplinkEffect -> {
                 useCases.loginWithDeeplinkParamsUseCase.execute(effect.deeplinkParams)
-                    .flowOn(effectsDispatcher)
-                    .flatMapConcat {
+                    .map {
                         when (it) {
                             is AbstractSuccess -> {
-                                useCases.loadUserStateAfterSignInUseCase
-                                    .execute(it.success).flowOn(Dispatchers.Main)
-                                    .map { result ->
-                                        when (result) {
-                                            is Success -> {
-                                                SignedInAction(result.data)
-                                            }
-                                            is Failure -> {
-                                                DeeplinkLoginErrorAction(result.exception)
-                                            }
-                                        }
-                                    }
+                                LoginAppAction(it.success)
                             }
                             is AbstractFailure -> {
                                 it.failure.failure.toException().let {
-                                    DeeplinkLoginErrorAction(it)
-                                }.toFlow()
+                                    LoginAppAction(LoginErrorAction(it))
+                                }
                             }
                         }
                     }
             }
-            is CleanupUserScopeEffect -> {
-                { effect.oldUserScope.onDestroy() }.asFlow().noAction()
+            is LoginWithPublishableKey -> {
+                {
+                    effect.oldUserState?.userScope?.onDestroy()
+                }.asFlow().flatMapConcat {
+                    useCases.getConfiguredHypertrackSdkInstanceUseCase.execute(effect.publishableKey)
+                }.flatMapConcat { hyperTrackSdk ->
+                    useCases.loginWithPublishableKeyUseCase.execute(
+                        hyperTrackSdk,
+                        effect.userData,
+                        effect.publishableKey,
+                        null
+                    )
+                }.flatMapSuccess {
+                    useCases.loadUserStateAfterSignInUseCase
+                        .execute(it).flowOn(Dispatchers.Main)
+                }.map { result ->
+                    when (result) {
+                        is Success -> {
+                            LoginAppAction(SignedInAction(result.data))
+                        }
+                        is Failure -> {
+                            LoginAppAction(LoginErrorAction(result.exception))
+                        }
+                    }
+                }
             }
             is HandlePushEffect -> {
                 effect.userState.userScope
@@ -197,6 +208,12 @@ class AppInteractor(
                     _appErrorEvent.postValue(effect.exception.toConsumable())
                 }.asFlow().noAction()
             }
+            is OnlyShowAppErrorEffect -> {
+                _appErrorEvent.updateConsumableAsFlow(effect.exception).noAction()
+            }
+            is ShowAppMessageEffect -> {
+                _appEvent.emitAsFlow(AppMessageEvent(effect.message)).noAction()
+            }
             is ReportAppErrorEffect -> {
                 {
                     appScope.crashReportsProvider.logException(effect.exception)
@@ -204,7 +221,7 @@ class AppInteractor(
             }
             is NavigateToUserScopeScreensEffect -> {
                 useCases.navigateToUserScopeScreensUseCase.execute(
-                    effect.newUserState.userScope.permissionsInteractor
+                    effect.userState.userScope.permissionsInteractor
                 ).map {
                     when (it) {
                         is Success -> {
@@ -251,6 +268,26 @@ class AppInteractor(
                     getEffectFlow(NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()))
                 }
             }
+            is StartTimer -> {
+                suspend {
+                    appScope.appCoroutineScope.launch {
+                        delay(
+                            when (effect.timer) {
+                                DeeplinkCheckTimeoutTimer -> DEEPLINK_CHECK_TIMEOUT
+                            }
+                        )
+                        handleAction(TimerAppAction(TimerEndedAction(effect.timer)))
+                    }.let {
+                        TimerAppAction(TimerStartedAction(effect.timer, it))
+                    }
+                }.asFlow()
+            }
+            is StopTimer -> {
+                {
+                    effect.timerJobs[effect.timer]?.cancel()
+                    Unit
+                }.asFlow().noAction()
+            }
         }
     }
 
@@ -261,9 +298,27 @@ class AppInteractor(
         return setOf(NotifyAppStateUpdateEffect(newState))
     }
 
-
     private fun getEffectFlow(effect: AppEventEffect): Flow<AppAction?> {
         return suspend { _appEvent.emit(effect.event) }.asFlow().noAction()
+    }
+
+    private fun createAppReducer(): AppReducer {
+        val loginReducer = LoginReducer(appScope)
+        val historyViewReducer = HistoryViewReducer(appScope)
+        return AppReducer(
+            useCases,
+            appScope,
+            DeeplinkReducer(loginReducer),
+            loginReducer,
+            HistoryReducer(appScope, historyViewReducer),
+            historyViewReducer,
+            ScreensReducer(
+                HistoryReducer(appScope, historyViewReducer),
+                historyViewReducer
+            ),
+            GeofencesForMapReducer(),
+            TimerReducer()
+        )
     }
 
     companion object {

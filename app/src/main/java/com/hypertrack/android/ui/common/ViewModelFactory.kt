@@ -45,10 +45,8 @@ class ViewModelFactory(
                 useCases.signInUseCase,
                 useCases.getBranchDataFromAppBackendUseCase,
                 useCases.loginWithDeeplinkParamsUseCase,
-                useCases.loadUserStateAfterSignInUseCase,
                 useCases.logExceptionToCrashlyticsUseCase,
                 useCases.logMessageToCrashlyticsUseCase,
-                appScope.branchWrapper,
                 appScope.moshi
             ) as T
             VisitsManagementViewModel::class.java -> VisitsManagementViewModel(

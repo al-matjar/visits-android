@@ -1,3 +1,5 @@
 package com.hypertrack.android.use_case.geofences
 
-class AdjacentGeofencesCheckTimeoutException : Exception()
+import com.hypertrack.android.utils.exception.BaseException
+
+class AdjacentGeofencesCheckTimeoutException : BaseException()

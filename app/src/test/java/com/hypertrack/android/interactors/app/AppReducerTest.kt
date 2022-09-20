@@ -1,10 +1,15 @@
 package com.hypertrack.android.interactors.app
 
+import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.TestInjector
 import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.deeplink.DeeplinkResult
+import com.hypertrack.android.di.AppScopeTest.Companion.appScope
 import com.hypertrack.android.di.UserScope
+import com.hypertrack.android.interactors.app.reducer.DeeplinkReducerTest.Companion.deeplinkReducer
+import com.hypertrack.android.interactors.app.reducer.HistoryReducerTest.Companion.historyReducer
 import com.hypertrack.android.interactors.app.reducer.ScreensReducer
+import com.hypertrack.android.interactors.app.reducer.login.LoginReducerTest.Companion.loginReducer
 import com.hypertrack.android.interactors.app.state.AppViewState
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
@@ -13,6 +18,7 @@ import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserState
 import com.hypertrack.android.interactors.trip.TripsInteractor
 import com.hypertrack.android.models.local.DeviceId
+import com.hypertrack.android.repository.user.UserData
 import com.hypertrack.android.use_case.sdk.TrackingStateUnknown
 import io.mockk.every
 import io.mockk.mockk
@@ -22,30 +28,37 @@ class AppReducerTest {
     companion object {
         fun appReducer(): AppReducer {
             return AppReducer(
-                appScope = mockk(),
+                appScope = appScope(),
                 useCases = mockk(),
-                historyReducer = mockk(),
+                historyReducer = historyReducer(),
                 screensReducer = mockk(),
                 historyViewReducer = mockk(),
-                geofencesForMapReducer = mockk()
+                geofencesForMapReducer = mockk(),
+                deeplinkReducer = deeplinkReducer(),
+                timerReducer = mockk(),
+                loginReducer = loginReducer(),
             )
         }
 
-        fun createdState(pendingDeeplinkResult: DeeplinkResult? = null): AppNotInitialized {
+        fun appNotInitialized(
+            pendingDeeplinkResult: DeeplinkResult? = null,
+            pendingPushNotification: RemoteMessage? = null
+        ): AppNotInitialized {
             return AppNotInitialized(
                 appScope = mockk(),
                 useCases = mockk(),
                 pendingDeeplinkResult = pendingDeeplinkResult,
-                pendingPushNotification = null,
+                pendingPushNotification = pendingPushNotification,
                 splashScreenViewState = null
             )
         }
 
-        fun initializedState(
+        fun appInitialized(
             tripsInteractorParam: TripsInteractor = mockk(),
             userState: UserState? = null,
             viewState: AppViewState = SplashScreenView,
-            showProgressbar: Boolean = false
+            showProgressbar: Boolean = false,
+            userIsLoggingIn: UserData? = null
         ): AppInitialized {
             return AppInitialized(
                 appScope = mockk(),
@@ -63,19 +76,22 @@ class AppReducerTest {
                     useCases = mockk()
                 ),
                 viewState = viewState,
-                showProgressbar = showProgressbar
+                showProgressbar = showProgressbar,
+                timerJobs = mockk(),
+                userIsLoggingIn = userIsLoggingIn
             )
         }
 
         fun userLoggedIn(
             userScope: UserScope = mockk(),
-            deviceId: DeviceId = TestInjector.TEST_DEVICE_ID
+            deviceId: DeviceId = TestInjector.TEST_DEVICE_ID,
+            userData: UserData? = null
         ): UserLoggedIn {
             return UserLoggedIn(
                 deviceId = deviceId,
                 trackingState = TrackingStateUnknown,
                 userScope = userScope,
-                userData = mockk(),
+                userData = userData ?: mockk(),
                 history = mockk(),
                 userLocation = mockk(),
                 useCases = mockk()

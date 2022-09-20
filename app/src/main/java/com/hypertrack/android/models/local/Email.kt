@@ -7,7 +7,7 @@ import com.squareup.moshi.JsonClass
 data class Email(val value: String) {
     override fun toString(): String {
         return if (MyApplication.DEBUG_MODE) {
-            super.toString()
+            javaClass.simpleName
         } else {
             javaClass.simpleName
         }

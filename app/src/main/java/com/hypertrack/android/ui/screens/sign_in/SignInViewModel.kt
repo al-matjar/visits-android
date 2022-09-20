@@ -3,7 +3,9 @@ package com.hypertrack.android.ui.screens.sign_in
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.hypertrack.android.deeplink.BranchWrapper
+import com.hypertrack.android.interactors.app.LoginAppAction
+import com.hypertrack.android.interactors.app.action.InitiateLoginAction
+import com.hypertrack.android.interactors.app.noAction
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
 import com.hypertrack.android.ui.common.util.postValue
@@ -12,18 +14,15 @@ import com.hypertrack.android.ui.screens.sign_in.use_case.ConfirmationRequired
 import com.hypertrack.android.ui.screens.sign_in.use_case.ConfirmationRequiredUseCase
 import com.hypertrack.android.ui.screens.sign_in.use_case.HandleDeeplinkFailureUseCase
 import com.hypertrack.android.ui.screens.sign_in.use_case.HandlePastedDeeplinkOrTokenUseCase
-import com.hypertrack.android.ui.screens.sign_in.use_case.HandleSignInUseCase
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInInvalidLoginOrPassword
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInNoSuchUser
+import com.hypertrack.android.ui.screens.sign_in.use_case.SignInResult
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInSuccess
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInWithCognitoUseCase
+import com.hypertrack.android.use_case.deeplink.DeeplinkValidationError
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
-import com.hypertrack.android.use_case.deeplink.DeeplinkException
-import com.hypertrack.android.use_case.deeplink.DeeplinkValidationError
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
-import com.hypertrack.android.use_case.login.LoadUserStateAfterSignInUseCase
-import com.hypertrack.android.use_case.login.LoggedIn
 import com.hypertrack.android.use_case.deeplink.LoginWithDeeplinkParamsUseCase
 import com.hypertrack.android.use_case.login.SignInUseCase
 import com.hypertrack.android.utils.*
@@ -45,27 +44,21 @@ class SignInViewModel(
     private val signInUseCase: SignInUseCase,
     private val getBranchDataFromAppBackendUseCase: GetBranchDataFromAppBackendUseCase,
     private val loginWithDeeplinkParamsUseCase: LoginWithDeeplinkParamsUseCase,
-    private val loadUserStateAfterSignInUseCase: LoadUserStateAfterSignInUseCase,
     private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
     private val logMessageToCrashlyticsUseCase: LogMessageToCrashlyticsUseCase,
-    private val branchWrapper: BranchWrapper,
     private val moshi: Moshi
 ) : BaseViewModel(baseDependencies) {
 
-    private val signInWithCognitoUseCase = SignInWithCognitoUseCase(
-        signInUseCase, resourceProvider
-    )
+    private val signInWithCognitoUseCase = SignInWithCognitoUseCase(signInUseCase)
     private val confirmationRequiredUseCase = ConfirmationRequiredUseCase(destination)
     private val handlePastedDeeplinkOrTokenUseCase = HandlePastedDeeplinkOrTokenUseCase(
         getBranchDataFromAppBackendUseCase,
         loginWithDeeplinkParamsUseCase,
         logMessageToCrashlyticsUseCase,
         logExceptionToCrashlyticsUseCase,
-        branchWrapper,
         osUtilsProvider,
         moshi
     )
-    private val handleSignInUseCase = HandleSignInUseCase(appInteractor, destination)
     private val handleDeeplinkFailureUseCase = HandleDeeplinkFailureUseCase(
         logExceptionToCrashlyticsUseCase,
         showErrorUseCase
@@ -77,7 +70,7 @@ class SignInViewModel(
         State(
             login = "",
             password = "",
-            deeplinkIssuesDialog = Hidden
+            deeplinkIssuesDialog = Hidden,
         ),
         viewModelScope,
         Dispatchers.Main,
@@ -113,7 +106,7 @@ class SignInViewModel(
         applyEffect(PrepareOnDeeplinkIssuesClickedActionEffect)
     }
 
-    private fun reduce(state: State, action: Action): ReducerResult<State, Effect> {
+    private fun reduce(state: State, action: Action): ReducerResult<out State, out Effect> {
         return when (action) {
             is LoginChangedAction -> {
                 state.copy(login = action.login).withEffects()
@@ -130,7 +123,9 @@ class SignInViewModel(
                 )
             }
             is DeeplinkOrTokenPastedAction -> {
-                state.withEffects(HandleDeeplinkOrTokenEffect(action.text, action.activity))
+                state.withEffects(
+                    HandleDeeplinkOrTokenEffect(action.text, action.activity)
+                )
             }
             is OnDeeplinkIssuesClickAction -> {
                 state.copy(deeplinkIssuesDialog = Displayed(action.hardwareId)).withEffects()
@@ -179,23 +174,25 @@ class SignInViewModel(
     private fun getEffectFlow(effect: Effect): Flow<Action?> {
         return when (effect) {
             is SignInEffect -> {
-                signInFlow(effect).map { null }
+                signInFlow(effect).noAction()
             }
             is UpdateViewStateEffect -> {
-                { viewState.postValue(effect.viewState) }.asFlow().map { null }
+                { viewState.postValue(effect.viewState) }.asFlow().noAction()
             }
             is HandleDeeplinkOrTokenEffect -> {
-                pasteDeeplinkOrTokenFlow(effect.text).map { null }
+                pasteDeeplinkOrTokenFlow(effect.text).noAction()
             }
             is ErrorEffect -> {
-                { showExceptionMessageAndReport(effect.exception) }.asFlow().map { null }
+                { showExceptionMessageAndReport(effect.exception) }.asFlow().noAction()
             }
             ClearDeeplinkTextEffect -> {
-                { clearDeeplinkTextEvent.postValue(Unit) }.asFlow().map { null }
+                { clearDeeplinkTextEvent.postValue(Unit) }.asFlow().noAction()
             }
             is CopyHardwareIdEffect -> {
-                { osUtilsProvider.copyToClipboard(effect.hardwareId.value) }.asFlow().map { null }
-                    .flowOn(Dispatchers.Main)
+                {
+                    osUtilsProvider.copyToClipboard(effect.hardwareId.value)
+                }
+                    .asFlow().flowOn(Dispatchers.Main).noAction<Action>()
             }
             is PrepareOnDeeplinkIssuesClickedActionEffect -> {
                 { DeviceInfoUtils.getHardwareId(appInteractor.appScope.appContext) }.asFlow()
@@ -205,6 +202,9 @@ class SignInViewModel(
                             is Failure -> ErrorAction(it.exception)
                         }
                     }
+            }
+            is AppActionEffect -> {
+                appInteractor.handleActionFlow(effect.action).noAction()
             }
         }
     }
@@ -242,16 +242,12 @@ class SignInViewModel(
                     login = effect.login.trim(),
                     password = effect.password
                 )
-            }.flatMapConcat { result ->
+            }.flatMapConcat { result: Result<SignInResult> ->
                 when (result) {
                     is Success -> {
                         when (val signInResult = result.data) {
                             is SignInSuccess -> {
-                                loadUserStateAfterSignInUseCase
-                                    .execute(signInResult.loggedIn).flowOn(Dispatchers.Main)
-                                    .flatMapSimpleSuccess {
-                                        handleSignInUseCase.execute(it)
-                                    }.showErrorAndReportIfFailure()
+                                appInteractor.handleActionFlow(LoginAppAction(signInResult.loginAction))
                             }
                             ConfirmationRequired -> {
                                 confirmationRequiredUseCase.execute(effect.login)
@@ -280,31 +276,15 @@ class SignInViewModel(
             .flatMapConcat {
                 handlePastedDeeplinkOrTokenUseCase.execute(text)
             }
-            .flatMapAbstractSuccess { it: LoggedIn ->
-                loadUserStateAfterSignInUseCase
-                    .execute(it).flowOn(Dispatchers.Main)
-                    .map { result ->
-                        when (result) {
-                            is Success -> {
-                                AbstractSuccess(result.data)
-                            }
-                            is Failure -> {
-                                AbstractFailure(
-                                    DeeplinkValidationError(
-                                        DeeplinkException(result.exception)
-                                    )
-                                )
-                            }
+            .flatMapConcat { result: AbstractResult<InitiateLoginAction, DeeplinkValidationError> ->
+                when (result) {
+                    is AbstractSuccess -> {
+                        appInteractor.handleActionFlow(LoginAppAction(result.success)).map {
+                            JustSuccess
                         }
                     }
-            }
-            .flatMapConcat {
-                when (it) {
-                    is AbstractSuccess -> {
-                        handleSignInUseCase.execute(it.success)
-                    }
                     is AbstractFailure -> {
-                        handleDeeplinkFailureUseCase.execute(it.failure.failure).map {
+                        handleDeeplinkFailureUseCase.execute(result.failure.failure).map {
                             JustSuccess
                         }
                     }

@@ -1,6 +1,7 @@
 package com.hypertrack.android.models.local
 
 import androidx.annotation.StringRes
+import com.hypertrack.android.models.local.OutageReason.Companion.OUTAGE_MARKER_BATTERY_SAVER
 import com.hypertrack.logistics.android.github.R
 
 sealed class OutageReason(@StringRes val stringRes: Int) {
@@ -56,35 +57,56 @@ sealed class OutageReason(@StringRes val stringRes: Int) {
                 OUTAGE_MARKER_DISCONNECTED -> {
                     Disconnected
                 }
+                OUTAGE_MARKER_SOFTWARE -> {
+                    SdkKilledCrashed
+                }
+                OUTAGE_MARKER_BATTERY_SAVER -> {
+                    BatterySaver
+                }
                 else -> {
                     Unknown(reason)
                 }
             }
         }
 
-        private const val OUTAGE_MARKER_LOCATION_PERMISSIONS_DENIED = "location_permissions_denied"
-        private const val OUTAGE_MARKER_LOCATION_SERVICES_DISABLED = "location_services_disabled"
+        private const val OUTAGE_MARKER_LOCATION_PERMISSIONS_DENIED =
+            "location_permissions_denied"
+        private const val OUTAGE_MARKER_LOCATION_SERVICES_DISABLED =
+            "location_services_disabled"
         private const val OUTAGE_MARKER_MOTION_ACTIVITY_PERMISSIONS_DENIED =
             "motion_activity_permissions_denied"
         private const val OUTAGE_MARKER_MOTION_ACTIVITY_SERVICES_DISABLED =
             "motion_activity_services_disabled"
         private const val OUTAGE_MARKER_MOTION_ACTIVITY_SERVICES_UNAVAILABLE =
             "motion_activity_services_unavailable"
-        private const val OUTAGE_MARKER_TRACKING_STOPPED = "tracking_stopped"
-        private const val OUTAGE_MARKER_STOPPED_PROGRAMMATICALLY = "stopped_programmatically"
-        private const val OUTAGE_MARKER_TRACKING_SERVICE_TERMINATED = "tracking_service_terminated"
-        private const val OUTAGE_MARKER_SDK_KILLED_BY_OS_REBOOT = "sdk_killed_by_os_reboot"
-        private const val OUTAGE_MARKER_LOCATION_UNAVAILABLE = "location_unavailable"
+        private const val OUTAGE_MARKER_TRACKING_STOPPED =
+            "tracking_stopped"
+        private const val OUTAGE_MARKER_STOPPED_PROGRAMMATICALLY =
+            "stopped_programmatically"
+        private const val OUTAGE_MARKER_TRACKING_SERVICE_TERMINATED =
+            "tracking_service_terminated"
+        private const val OUTAGE_MARKER_SDK_KILLED_BY_OS_REBOOT =
+            "sdk_killed_by_os_reboot"
+        private const val OUTAGE_MARKER_LOCATION_UNAVAILABLE =
+            "location_unavailable"
         private const val OUTAGE_MARKER_LOCATION_PERMISSION_WHEN_IN_USE_BACKGROUND =
             "location_permission_when_in_use_background"
-        private const val OUTAGE_MARKER_SDK_KILLED_CRASHED = "sdk_killed_crashed"
+        private const val OUTAGE_MARKER_SDK_KILLED_CRASHED =
+            "sdk_killed_crashed"
         private const val OUTAGE_MARKER_SDK_KILLED_EXCESSIVE_RESOURCE_USAGE =
             "sdk_killed_excessive_resource_usage"
-        private const val OUTAGE_MARKER_SDK_KILLED_BY_USER = "sdk_killed_by_user"
-        private const val OUTAGE_MARKER_SDK_LOW_MEMORY = "sdk_killed_low_memory"
+        private const val OUTAGE_MARKER_SDK_KILLED_BY_USER =
+            "sdk_killed_by_user"
+        private const val OUTAGE_MARKER_SDK_LOW_MEMORY =
+            "sdk_killed_low_memory"
         private const val OUTAGE_MARKER_SDK_KILLED_BY_PERMISSIONS_LOCATION =
             "sdk_killed_by_permissions_location"
-        private const val OUTAGE_MARKER_DISCONNECTED = "disconnected"
+        private const val OUTAGE_MARKER_DISCONNECTED =
+            "disconnected"
+        private const val OUTAGE_MARKER_SOFTWARE =
+            "outage.software"
+        private const val OUTAGE_MARKER_BATTERY_SAVER =
+            "location_disabled_battery_saver"
     }
 }
 
@@ -136,5 +158,7 @@ object SdkKilledByUser :
 
 object SdkKilledCrashed :
     OutageReason(R.string.timeline_inactive_reason_sdk_killed_crashed)
+
+object BatterySaver : OutageReason(R.string.timeline_inactive_reason_battery_saver)
 
 class Unknown(val reason: String) : OutageReason(R.string.timeline_inactive_reason_unexpected)

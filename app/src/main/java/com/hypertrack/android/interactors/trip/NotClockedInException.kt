@@ -1,3 +1,5 @@
 package com.hypertrack.android.interactors.trip
 
-object NotClockedInException : Exception()
+import com.hypertrack.android.utils.exception.BaseException
+
+object NotClockedInException : BaseException()

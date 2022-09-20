@@ -4,8 +4,12 @@ import com.google.firebase.messaging.RemoteMessage
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.TripCreationScope
+import com.hypertrack.android.interactors.app.Timer
+import com.hypertrack.android.interactors.app.UserAuthData
+import com.hypertrack.android.repository.user.UserData
 import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.use_case.sdk.TrackingStarted
+import kotlinx.coroutines.Job
 
 sealed class AppState {
     fun isSdkTracking(): Boolean {
@@ -35,7 +39,9 @@ data class AppNotInitialized(
     // if deeplink result is received before the init, it is saved here
     val pendingDeeplinkResult: DeeplinkResult?,
     // if push notification is received before the init, it is saved here
-    val pendingPushNotification: RemoteMessage?
+    // todo extract
+    val pendingPushNotification: RemoteMessage?,
+    val timerJobs: Map<Timer, Job> = mapOf()
 ) : AppState()
 
 data class AppInitialized(
@@ -43,7 +49,11 @@ data class AppInitialized(
     val useCases: UseCases,
     val userState: UserState,
     val tripCreationScope: TripCreationScope?,
+    // non-null if there is login in progress
+    val userIsLoggingIn: UserData?,
     val viewState: AppViewState,
     // todo move to view state
     val showProgressbar: Boolean = false,
+    // todo extract
+    val timerJobs: Map<Timer, Job>,
 ) : AppState()

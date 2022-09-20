@@ -1,9 +1,11 @@
 package com.hypertrack.android.deeplink
 
+import com.hypertrack.android.utils.exception.BaseException
+
 class BranchErrorException(
     val code: Int,
     branchMessage: String
-) : Exception("$code: $branchMessage") {
+) : BaseException("$code: $branchMessage") {
 
     val isBranchConnectionError = code == CODE_CONNECTION_ERROR || code == CODE_OPERATION_TIMEOUT
 

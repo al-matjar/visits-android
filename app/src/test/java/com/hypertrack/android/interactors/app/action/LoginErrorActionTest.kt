@@ -1,29 +1,32 @@
-package com.hypertrack.android.interactors.app
+package com.hypertrack.android.interactors.app.action
 
+import com.hypertrack.android.interactors.app.AppEffectTest
 import com.hypertrack.android.interactors.app.AppEffectTest.Companion.assertNavToSignIn
-import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appReducer
-import com.hypertrack.android.interactors.app.AppReducerTest.Companion.initializedState
-import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
+import com.hypertrack.android.interactors.app.AppReducerTest
+import com.hypertrack.android.interactors.app.LoginAppAction
+import com.hypertrack.android.interactors.app.NavigateToUserScopeScreensEffect
+import com.hypertrack.android.interactors.app.ShowAndReportAppErrorEffect
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.SplashScreenView
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
+import junit.framework.TestCase
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import org.junit.Test
 import java.lang.Exception
 
-class DeeplinkLoginErrorActionTest {
+class LoginErrorActionTest {
 
     @Test
-    fun `DeeplinkLoginErrorAction - Initialized (SplashScreenState, UserLoggedIn)`() {
-        val state = initializedState(
-            userState = userLoggedIn(),
+    fun `LoginErrorAction - Initialized (SplashScreenState, UserLoggedIn)`() {
+        val state = AppReducerTest.appInitialized(
+            userState = AppReducerTest.userLoggedIn(),
             viewState = SplashScreenView
         ).copy(
             showProgressbar = true
         )
-        val action = DeeplinkLoginErrorAction(Exception())
-        appReducer().reduce(state, action).let { result ->
+        val action = LoginErrorAction(Exception())
+        AppReducerTest.appReducer().reduce(state, LoginAppAction(action)).let { result ->
             (result.newState as AppInitialized).let {
                 println(result)
                 assertFalse(it.showProgressbar)
@@ -35,15 +38,15 @@ class DeeplinkLoginErrorActionTest {
     }
 
     @Test
-    fun `DeeplinkLoginErrorAction - Initialized (SplashScreenState, UserNotLoggedIn)`() {
-        val state = initializedState(
+    fun `LoginErrorAction - Initialized (SplashScreenState, UserNotLoggedIn)`() {
+        val state = AppReducerTest.appInitialized(
             userState = UserNotLoggedIn,
             viewState = SplashScreenView
         ).copy(
             showProgressbar = true
         )
-        val action = DeeplinkLoginErrorAction(Exception())
-        appReducer().reduce(state, action).let { result ->
+        val action = LoginErrorAction(Exception())
+        AppReducerTest.appReducer().reduce(state, LoginAppAction(action)).let { result ->
             (result.newState as AppInitialized).let {
                 assertFalse(it.showProgressbar)
                 assertTrue(result.effects.size == 2)

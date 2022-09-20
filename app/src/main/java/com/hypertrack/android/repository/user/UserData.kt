@@ -16,13 +16,7 @@ data class UserData constructor(
     val metadata: Map<String, Any>?
 ) {
 
-    override fun toString(): String {
-        return if (MyApplication.DEBUG_MODE) {
-            super.toString()
-        } else {
-            javaClass.simpleName
-        }
-    }
+    override fun toString(): String = javaClass.simpleName
 
     companion object {
         fun fromUserAuthData(userAuthData: UserAuthData): UserData {

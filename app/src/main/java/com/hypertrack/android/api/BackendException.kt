@@ -1,11 +1,12 @@
 package com.hypertrack.android.api
 
+import com.hypertrack.android.utils.exception.BaseException
 import org.json.JSONObject
 import retrofit2.Response
 
-class BackendException(val res: Response<*>) : Exception() {
+class BackendException(val res: Response<*>) : BaseException() {
 
-    val errorBody: String by lazy {
+    private val errorBody: String by lazy {
         try {
             res.errorBody()!!.string()
         } catch (e: Exception) {
@@ -29,6 +30,5 @@ class BackendException(val res: Response<*>) : Exception() {
                 null
             }
         }
-
 
 }

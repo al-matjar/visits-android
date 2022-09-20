@@ -1,12 +1,20 @@
-package com.hypertrack.android.interactors.app
+package com.hypertrack.android.interactors.app.action
 
+import com.hypertrack.android.assertEffect
+import com.hypertrack.android.assertEffects
+import com.hypertrack.android.assertWithChecks
+import com.hypertrack.android.createEffectCheck
 import com.hypertrack.android.di.UserScope
+import com.hypertrack.android.interactors.app.AppActionEffect
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appReducer
-import com.hypertrack.android.interactors.app.AppReducerTest.Companion.initializedState
+import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appInitialized
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
+import com.hypertrack.android.interactors.app.HistoryAppAction
+import com.hypertrack.android.interactors.app.LoginAppAction
+import com.hypertrack.android.interactors.app.NavigateToUserScopeScreensEffect
+import com.hypertrack.android.interactors.app.ShowAppMessageEffect
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppViewStateTest.Companion.tabsView
-import com.hypertrack.android.interactors.app.state.CurrentTripTab
 import com.hypertrack.android.interactors.app.state.SplashScreenView
 import com.hypertrack.android.models.local.DeviceId
 import io.mockk.mockk
@@ -22,7 +30,7 @@ class SignedInActionTest {
     fun `SignedInAction - Initialized (SplashScreenState, UserLoggedIn)`() {
         val oldUserScope = mockk<UserScope>()
         val newUserScope = mockk<UserScope>()
-        val state = initializedState(
+        val state = appInitialized(
             userState = userLoggedIn(
                 userScope = oldUserScope,
                 deviceId = deviceId
@@ -34,23 +42,18 @@ class SignedInActionTest {
             deviceId = deviceId
         )
         val action = SignedInAction(newUserState)
-        appReducer().reduce(state, action).let { result ->
+        appReducer().reduce(state, LoginAppAction(action)).let { result ->
             (result.newState as AppInitialized).let { newState ->
-                println(result.effects)
                 assertEquals(newUserState, newState.userState)
-                assertTrue(result.effects.size == 2)
-                result.effects
-                    .filterIsInstance<CleanupUserScopeEffect>()
-                    .first()
-                    .let {
-                        assertEquals(oldUserScope, it.oldUserScope)
+                result.effects.assertWithChecks(
+                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) },
+                    { it.assertEffect(ShowAppMessageEffect::class) },
+                    createEffectCheck<AppActionEffect> {
+                        it.action is HistoryAppAction &&
+                                (it.action as HistoryAppAction)
+                                    .historyAction is StartDayHistoryLoadingAction
                     }
-                result.effects
-                    .filterIsInstance<NavigateToUserScopeScreensEffect>()
-                    .first()
-                    .let {
-                        assertEquals(newUserState, it.newUserState)
-                    }
+                )
             }
         }
     }
@@ -59,7 +62,7 @@ class SignedInActionTest {
     fun `SignedInAction - Initialized (UserScopeScreensState, UserLoggedIn)`() {
         val oldUserScope = mockk<UserScope>()
         val newUserScope = mockk<UserScope>()
-        val state = initializedState(
+        val state = appInitialized(
             userState = userLoggedIn(
                 userScope = oldUserScope,
                 deviceId = deviceId
@@ -71,23 +74,18 @@ class SignedInActionTest {
             deviceId = deviceId
         )
         val action = SignedInAction(newUserState)
-        appReducer().reduce(state, action).let { result ->
+        appReducer().reduce(state, LoginAppAction(action)).let { result ->
             (result.newState as AppInitialized).let { newState ->
-                println(result.effects)
                 assertEquals(newUserState, newState.userState)
-                assertTrue(result.effects.size == 2)
-                result.effects
-                    .filterIsInstance<CleanupUserScopeEffect>()
-                    .first()
-                    .let {
-                        assertEquals(oldUserScope, it.oldUserScope)
+                result.effects.assertWithChecks(
+                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) },
+                    { it.assertEffect(ShowAppMessageEffect::class) },
+                    createEffectCheck<AppActionEffect> {
+                        it.action is HistoryAppAction &&
+                                (it.action as HistoryAppAction)
+                                    .historyAction is StartDayHistoryLoadingAction
                     }
-                result.effects
-                    .filterIsInstance<NavigateToUserScopeScreensEffect>()
-                    .first()
-                    .let {
-                        assertEquals(newUserState, it.newUserState)
-                    }
+                )
             }
         }
     }

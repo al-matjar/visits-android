@@ -40,20 +40,6 @@ class LoginWithDeeplinkParamsUseCaseTest {
             deeplinkParams: DeeplinkParams
         ): LoginWithDeeplinkParamsUseCase {
             return LoginWithDeeplinkParamsUseCase(
-                getConfiguredHypertrackSdkInstanceUseCase = mockk {
-                    every { execute(any()) } returns flowOf(mockk())
-                },
-                logExceptionToCrashlyticsUseCase = logExceptionToCrashlyticsUseCase(),
-                loginWithPublishableKeyUseCase = mockk {
-                    every { execute(any(), any(), any(), any()) } answers {
-                        flowOf(
-                            LoggedIn(
-                                hyperTrackSdk = mockk(),
-                                publishableKey = thirdArg()
-                            ).asSuccess()
-                        )
-                    }
-                },
                 validateDeeplinkUseCase = mockk {
                     every { execute(deeplinkParams) } returns flowOf(DeeplinkValid(
                         emailAuthData(

@@ -6,12 +6,15 @@ import android.util.Log
 import androidx.lifecycle.Transformations.map
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -96,4 +99,12 @@ fun <T, K> StateFlow<T>.mapState(scope: CoroutineScope, block: (T) -> K): StateF
 
 fun <T> tryAsFlow(block: () -> T): Flow<Result<T>> {
     return { tryAsResult { block.invoke() } }.asFlow()
+}
+
+fun <T> MutableSharedFlow<T>.emitAsFlow(item: T): Flow<Unit> {
+    return suspend { emit(item) }.asFlow()
+}
+
+fun <T> MutableStateFlow<T>.emitAsFlow(item: T): Flow<Unit> {
+    return suspend { emit(item) }.asFlow()
 }

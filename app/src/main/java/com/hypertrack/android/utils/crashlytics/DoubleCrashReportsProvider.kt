@@ -1,11 +1,13 @@
 package com.hypertrack.android.utils.crashlytics
 
+import android.content.Context
 import com.hypertrack.android.utils.CrashReportsProvider
 
 class DoubleCrashReportsProvider(
     private val sentryCrashReportsProvider: SentryCrashReportsProvider,
     private val firebaseCrashReportsProvider: FirebaseCrashReportsProvider
 ) : CrashReportsProvider {
+
     override fun logException(exception: Throwable, metadata: Map<String, String>) {
         sentryCrashReportsProvider.logException(exception, metadata)
         firebaseCrashReportsProvider.logException(exception, metadata)

@@ -3,6 +3,8 @@ package com.hypertrack.android.ui.common.use_case.get_error_message
 import com.hypertrack.android.api.BackendException
 import com.hypertrack.android.api.graphql.GraphQlException
 import com.hypertrack.android.deeplink.BranchErrorException
+import com.hypertrack.android.interactors.app.reducer.login.AlreadyLoggedInException
+import com.hypertrack.android.interactors.app.reducer.login.LoginAlreadyInProgressException
 import com.hypertrack.android.interactors.trip.NotClockedInException
 import com.hypertrack.android.repository.access_token.AccountSuspendedException
 import com.hypertrack.android.ui.screens.sign_in.use_case.InvalidDeeplinkFormat
@@ -84,6 +86,12 @@ class GetErrorMessageUseCase(
                 }
                 exception is GraphQlException -> {
                     getTextErrorString(ServerError)
+                }
+                exception is LoginAlreadyInProgressException -> {
+                    getTextErrorString(TextError(R.string.login_already_in_progress))
+                }
+                exception is AlreadyLoggedInException -> {
+                    getTextErrorString(TextError(R.string.login_already_in_progress))
                 }
                 exception.isNetworkError() -> {
                     getTextErrorString(NetworkError)

@@ -4,6 +4,7 @@ import com.hypertrack.android.api.BackendException
 import com.hypertrack.android.api.LiveAccountApi
 import com.hypertrack.android.models.local.Email
 import com.hypertrack.android.interactors.app.EmailAuthData
+import com.hypertrack.android.interactors.app.action.InitiateLoginAction
 import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.repository.user.UserData
 import com.hypertrack.android.use_case.sdk.GetConfiguredHypertrackSdkInstanceUseCase
@@ -21,43 +22,32 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class VerifyByOtpCodeUseCase(
-    private val getConfiguredHypertrackSdkInstanceUseCase: GetConfiguredHypertrackSdkInstanceUseCase,
-    private val loginWithPublishableKeyUseCase: LoginWithPublishableKeyUseCase,
     private val liveAccountUrlService: LiveAccountApi,
     private val servicesApiKey: String,
 ) {
 
-    fun execute(email: String, code: String): Flow<AbstractResult<LoggedIn, OtpFailure>> {
+    fun execute(
+        email: String,
+        code: String
+    ): Flow<AbstractResult<InitiateLoginAction, OtpFailure>> {
         return suspend {
             verifyByOtpCode(email = email, code = code)
         }.asFlow()
-            .flatMapConcat { verificationResult ->
+            .map { verificationResult ->
                 when (verificationResult) {
                     is AbstractSuccess -> {
                         val publishableKey = RealPublishableKey(verificationResult.success)
-                        getConfiguredHypertrackSdkInstanceUseCase.execute(publishableKey)
-                            .flatMapConcat { hypertrackSdk ->
-                                loginWithPublishableKeyUseCase.execute(
-                                    hypertrackSdk,
-                                    UserData.fromUserAuthData(
-                                        EmailAuthData(
-                                            email = Email(email),
-                                            publishableKey = publishableKey,
-                                            mapOf()
-                                        )
-                                    ),
-                                    publishableKey,
-                                    null,
-                                ).map {
-                                    when (it) {
-                                        is Success -> AbstractSuccess(it.data)
-                                        is Failure -> AbstractFailure(OtpError(it.exception))
-                                    }
-                                }
-                            }
+                        val userData = UserData.fromUserAuthData(
+                            EmailAuthData(
+                                email = Email(email),
+                                publishableKey = publishableKey,
+                                mapOf()
+                            )
+                        )
+                        AbstractSuccess(InitiateLoginAction(publishableKey, userData))
                     }
                     is AbstractFailure -> {
-                        flowOf(AbstractFailure(verificationResult.failure))
+                        AbstractFailure(verificationResult.failure)
                     }
                 }
             }

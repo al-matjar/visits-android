@@ -4,7 +4,9 @@ import android.app.Activity
 import androidx.lifecycle.MutableLiveData
 import com.hypertrack.android.interactors.*
 import com.hypertrack.android.interactors.app.AppInteractor
-import com.hypertrack.android.interactors.app.SignedInAction
+import com.hypertrack.android.interactors.app.LoginAppAction
+import com.hypertrack.android.interactors.app.action.InitiateLoginAction
+import com.hypertrack.android.interactors.app.action.SignedInAction
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.ui.base.*
 import com.hypertrack.android.ui.common.util.postValue
@@ -19,6 +21,7 @@ import com.hypertrack.android.use_case.login.ResendError
 import com.hypertrack.android.use_case.login.ResendNoAction
 import com.hypertrack.android.use_case.login.VerifyByOtpCodeUseCase
 import com.hypertrack.android.utils.AbstractFailure
+import com.hypertrack.android.utils.AbstractResult
 import com.hypertrack.android.utils.AbstractSuccess
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.Success
@@ -59,73 +62,32 @@ class ConfirmEmailViewModel(
         if (complete) {
             loadingState.postValue(true)
             runInVmEffectsScope {
-                verifyByOtpCodeUseCase.execute(email = email, code = code)
-                    .flatMapConcat {
-                        when (it) {
-                            is AbstractSuccess -> {
-                                loadUserStateAfterSignInUseCase
-                                    .execute(it.success).flowOn(Dispatchers.Main)
-                                    .map { result ->
-                                        when (result) {
-                                            is Success -> {
-                                                AbstractSuccess(result.data)
-                                            }
-                                            is Failure -> {
-                                                AbstractFailure<UserLoggedIn, OtpFailure>(
-                                                    OtpError(
-                                                        result.exception
-                                                    )
-                                                )
-                                            }
-                                        }
-
-                                    }
-                            }
-                            is AbstractFailure -> {
-                                flowOf(AbstractFailure<UserLoggedIn, OtpFailure>(it.failure))
+                verifyByOtpCodeUseCase.execute(email = email, code = code).collect { res ->
+                    when (res) {
+                        is AbstractSuccess -> {
+                            appInteractor.handleAction(LoginAppAction(res.success))
+                        }
+                        is AbstractFailure -> {
+                            loadingState.postValue(false)
+                            when (res.failure) {
+                                is OtpSignInRequired -> {
+                                    destination.postValue(
+                                        ConfirmFragmentDirections
+                                            .actionConfirmFragmentToSignInFragment(
+                                                email
+                                            )
+                                    )
+                                }
+                                is OtpWrongCode -> {
+                                    showError(R.string.wrong_code)
+                                }
+                                is OtpError -> {
+                                    showExceptionMessageAndReport(res.failure.exception)
+                                }
                             }
                         }
-                    }
-                    .collect { res ->
-                        loadingState.postValue(false)
-                        when (res) {
-                            is AbstractSuccess -> {
-                                appInteractor.handleAction(SignedInAction(res.success))
-                                res.success.userScope.permissionsInteractor.let { permissionsInteractor ->
-                                    when (permissionsInteractor.checkPermissionsState()
-                                        .getNextPermissionRequest()) {
-                                        PermissionDestination.PASS -> {
-                                            destination.postValue(ConfirmFragmentDirections.actionGlobalVisitManagementFragment())
-                                        }
-                                        PermissionDestination.FOREGROUND_AND_TRACKING -> {
-                                            destination.postValue(ConfirmFragmentDirections.actionGlobalPermissionRequestFragment())
-                                        }
-                                        PermissionDestination.BACKGROUND -> {
-                                            destination.postValue(ConfirmFragmentDirections.actionGlobalBackgroundPermissionsFragment())
-                                        }
-                                    }
-                                }
-                            }
-                            is AbstractFailure -> {
-                                when (res.failure) {
-                                    is OtpSignInRequired -> {
-                                        destination.postValue(
-                                            ConfirmFragmentDirections
-                                                .actionConfirmFragmentToSignInFragment(
-                                                    email
-                                                )
-                                        )
-                                    }
-                                    is OtpWrongCode -> {
-                                        showError(R.string.wrong_code)
-                                    }
-                                    is OtpError -> {
-                                        showExceptionMessageAndReport(res.failure.exception)
-                                    }
-                                }
-                            }
-                        } as Any?
-                    }
+                    } as Any?
+                }
             }
         }
     }

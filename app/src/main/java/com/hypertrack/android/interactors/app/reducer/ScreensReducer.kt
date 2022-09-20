@@ -55,6 +55,7 @@ import com.hypertrack.android.ui.screens.visits_management.tabs.history.HistoryS
 import com.hypertrack.android.ui.screens.visits_management.tabs.history.Initial
 import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.exception.IllegalActionException
+import com.hypertrack.android.utils.state_machine.mergeResults
 import com.hypertrack.android.utils.withEffects
 import java.time.LocalDate
 
@@ -66,7 +67,7 @@ class ScreensReducer(
     fun reduce(
         action: RegisterScreenAction,
         state: AppNotInitialized
-    ): ReducerResult<AppState, AppEffect> {
+    ): ReducerResult<out AppState, out AppEffect> {
         return when (action.screen) {
             is SplashScreen -> {
                 state.copy(splashScreenViewState = SplashScreenView).withEffects()
@@ -82,7 +83,7 @@ class ScreensReducer(
     fun reduce(
         action: RegisterScreenAction,
         state: AppInitialized
-    ): ReducerResult<AppState, out AppEffect> {
+    ): ReducerResult<out AppState, out AppEffect> {
         return if (state.viewState.isForScreen(action.screen)) {
             // preserve old state if the opened screen is the same
             state.withEffects()
@@ -94,7 +95,7 @@ class ScreensReducer(
     private fun initViewState(
         state: AppInitialized,
         screen: Screen
-    ): ReducerResult<AppState, out AppEffect> {
+    ): ReducerResult<out AppState, out AppEffect> {
         return when (screen) {
             AddGeotagScreen -> AddGeotagScreenView.toAppState(state).withEffects()
             AddIntegrationScreen -> AddIntegrationScreenView.toAppState(state).withEffects()
@@ -123,7 +124,7 @@ class ScreensReducer(
     private fun initTabsViewState(
         screen: Screen,
         appState: AppInitialized
-    ): ReducerResult<AppState, out AppEffect> {
+    ): ReducerResult<out AppState, out AppEffect> {
         return withLoggedIn(
             appState,
             notLoggedIn = {
@@ -133,18 +134,18 @@ class ScreensReducer(
             }
         ) { userLoggedIn ->
             // start loading history if needed
-            historyReducer.reduce(
+            val historyResult = historyReducer.reduce(
                 HistoryAppAction(StartDayHistoryLoadingAction(LocalDate.now())),
                 userLoggedIn,
                 AppStateOptics.getHistorySubState(userLoggedIn, appState.viewState)
-            ).let {
-                @Suppress("UNCHECKED_CAST")
-                it as ReducerResult<HistorySubState, AppEffect>
-            }.mergeResult(
-                otherReducer = { historySubState ->
+            )
+
+            mergeResults(
+                historyResult,
+                otherResult = { historySubState ->
                     historyViewReducer.map(
                         userLoggedIn,
-                        historySubState.history,
+                        historySubState.newState.history,
                         Initial(LocalDate.now())
                     )
                 }

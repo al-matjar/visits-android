@@ -1,27 +1,25 @@
 package com.hypertrack.android.interactors.app
 
 import com.google.firebase.messaging.RemoteMessage
-import com.hypertrack.android.deeplink.BranchErrorException
-import com.hypertrack.android.deeplink.DeeplinkError
-import com.hypertrack.android.deeplink.DeeplinkParams
-import com.hypertrack.android.deeplink.NoDeeplink
 import com.hypertrack.android.di.AppScope
-import com.hypertrack.android.di.Injector.crashReportsProvider
 import com.hypertrack.android.di.TripCreationScope
 import com.hypertrack.android.interactors.app.action.ClearGeofencesForMapAction
 import com.hypertrack.android.interactors.app.action.GeofencesForMapLoadedAction
 import com.hypertrack.android.interactors.app.action.LoadGeofencesForMapAction
+import com.hypertrack.android.interactors.app.action.SignedInAction
 import com.hypertrack.android.interactors.app.optics.AppStateOptics
 import com.hypertrack.android.interactors.app.optics.GeofencesForMapOptic
+import com.hypertrack.android.interactors.app.reducer.DeeplinkReducer
 import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
+import com.hypertrack.android.interactors.app.reducer.login.LoginReducer
 import com.hypertrack.android.interactors.app.reducer.ScreensReducer
+import com.hypertrack.android.interactors.app.reducer.TimerReducer
 import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.NoneScreenView
-import com.hypertrack.android.interactors.app.state.SplashScreenView
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
 import com.hypertrack.android.interactors.app.state.UserState
@@ -33,17 +31,21 @@ import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.asSet
 import com.hypertrack.android.utils.state_machine.ReducerResult
+import com.hypertrack.android.utils.state_machine.chain
 import com.hypertrack.android.utils.state_machine.effectIf
+import com.hypertrack.android.utils.state_machine.mergeResults
 import com.hypertrack.android.utils.withEffects
-import com.hypertrack.logistics.android.github.NavGraphDirections
 
 class AppReducer(
     private val useCases: UseCases,
     private val appScope: AppScope,
+    private val deeplinkReducer: DeeplinkReducer,
+    private val loginReducer: LoginReducer,
     private val historyReducer: HistoryReducer,
     private val historyViewReducer: HistoryViewReducer,
     private val screensReducer: ScreensReducer,
-    private val geofencesForMapReducer: GeofencesForMapReducer
+    private val geofencesForMapReducer: GeofencesForMapReducer,
+    private val timerReducer: TimerReducer
 ) {
 
     fun reduce(state: AppState, action: AppAction): ReducerResult<out AppState, out AppEffect> {
@@ -60,61 +62,39 @@ class AppReducer(
                             useCases,
                             action.userState,
                             tripCreationScope = null,
-                            viewState = state.splashScreenViewState ?: NoneScreenView
+                            userIsLoggingIn = null,
+                            viewState = state.splashScreenViewState ?: NoneScreenView,
+                            timerJobs = state.timerJobs
                         )
                         val pushEffect = getHandlePendingPushEffect(
                             action.userState,
                             state.pendingPushNotification
                         )
-                        val deeplinkResult = state.pendingDeeplinkResult
-                        when (deeplinkResult) {
-                            // if there is pending deeplink result, activity is started
-                            // we need to login with deeplink or move from SplashScreen
-                            is DeeplinkParams -> {
-                                initialized
-                                    .withEffects(
-                                        // still on splash screen
-                                        // emits SignedInAction
-                                        LoginWithDeeplinkEffect(deeplinkResult) as AppEffect
-                                    ).let {
-                                        it
-                                    }
-                                    .withAdditionalEffects(pushEffect)
+                        deeplinkReducer.reduce(action, state, initialized)
+                            .withEffects {
+                                it.effects + pushEffect
                             }
-                            is DeeplinkError -> {
-                                val errorEffect = getDeeplinkErrorEffect(deeplinkResult)
-                                initialized.withEffects(
-                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()) as AppEffect,
-                                    errorEffect
-                                ).withAdditionalEffects(pushEffect)
-                            }
-                            NoDeeplink -> {
-                                initialized.withEffects(
-                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()) as AppEffect
-                                ).withAdditionalEffects(pushEffect)
-                            }
-                            null -> {
-                                // activity is not started yet
-                                // the navigation will be performed on
-                                // DeeplinkCheckedAction > Initialized
-                                initialized.withEffects(pushEffect)
-                            }
-                        }
                     }
                     is AppErrorAction -> {
                         handleAction(action, state)
                     }
                     is DeeplinkCheckedAction -> {
-                        // if there is DeeplinkCheckedAction, this means that activity is started
-                        state.copy(
-                            pendingDeeplinkResult = action.deeplinkResult,
-                        ).withEffects()
+                        deeplinkReducer.reduce(action, state)
                     }
                     is PushReceivedAction -> {
                         state.copy(pendingPushNotification = action.remoteMessage).withEffects()
                     }
                     is RegisterScreenAction -> {
                         screensReducer.reduce(action, state)
+                    }
+                    is DeeplinkAppAction -> {
+                        deeplinkReducer.reduce(action.action, state)
+                    }
+                    is TimerAppAction -> {
+                        timerReducer.reduce(action.action, state)
+                    }
+                    is AppEffectAction -> {
+                        state.withEffects(action.appEffect)
                     }
                     is TrackingStateChangedAction,
                     is ActivityOnNewIntent,
@@ -126,135 +106,17 @@ class AppReducer(
                     is GeofencesForMapAppAction,
                     is CreateTripCreationScopeAction,
                     DestroyTripCreationScopeAction,
-                    is DeeplinkLoginErrorAction,
                     is HistoryAppAction,
                     is HistoryViewAppAction,
-                    is SignedInAction -> {
+                    is LoginAppAction -> {
                         illegalAction(action, state)
-                    }
-                    is AppEffectAction -> {
-                        state.withEffects(action.appEffect)
                     }
                 }
             }
             is AppInitialized -> {
                 when (action) {
                     is DeeplinkCheckedAction -> {
-                        // activity started
-                        when (state.viewState) {
-                            SplashScreenView -> {
-                                // initial deeplink check (on activity launch)
-                                // app is hanging on splash screen and waiting for deeplink check
-                                // finished
-                                // need to perform initial navigation (to VM or SignIn)
-                                when (action.deeplinkResult) {
-                                    is DeeplinkParams -> {
-                                        // initial navigation will be performed after logging in
-                                        // or getting error
-                                        state.withEffects(
-                                            LoginWithDeeplinkEffect(action.deeplinkResult) as AppEffect
-                                        )
-                                    }
-                                    is DeeplinkError -> {
-                                        val errorEffect =
-                                            getDeeplinkErrorEffect(action.deeplinkResult)
-                                        val newState = state.copy(showProgressbar = false)
-                                        when (state.userState) {
-                                            is UserLoggedIn -> {
-                                                newState.withEffects(
-                                                    errorEffect,
-                                                    NavigateToUserScopeScreensEffect(state.userState)
-                                                )
-                                            }
-                                            UserNotLoggedIn -> {
-                                                newState.withEffects(
-                                                    errorEffect,
-                                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment())
-                                                )
-                                            }
-                                        }
-                                    }
-                                    NoDeeplink -> {
-                                        val newState = state.copy(showProgressbar = false)
-                                        when (state.userState) {
-                                            is UserLoggedIn -> {
-                                                newState.withEffects(
-                                                    NavigateToUserScopeScreensEffect(state.userState)
-                                                )
-                                            }
-                                            UserNotLoggedIn -> {
-                                                newState.withEffects(
-                                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment())
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else -> {
-                                when (action.deeplinkResult) {
-                                    is DeeplinkParams -> {
-                                        state.copy(showProgressbar = true).withEffects(
-                                            LoginWithDeeplinkEffect(action.deeplinkResult)
-                                        )
-                                    }
-                                    is DeeplinkError -> {
-                                        state.copy(showProgressbar = false).withEffects(
-                                            ShowAndReportAppErrorEffect(
-                                                action.deeplinkResult.exception
-                                            )
-                                        )
-                                    }
-                                    NoDeeplink -> {
-                                        state.copy(showProgressbar = false).withEffects()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    is SignedInAction -> {
-                        val oldUserState = state.userState
-                        val newUserState = action.userState
-                        val effects = when (oldUserState) {
-                            is UserLoggedIn -> setOf(
-                                CleanupUserScopeEffect(
-                                    appScope,
-                                    oldUserState.userScope
-                                )
-                            )
-                            UserNotLoggedIn -> setOf()
-                        } + setOf(
-                            NavigateToUserScopeScreensEffect(newUserState)
-                        )
-
-                        state.copy(
-                            userState = action.userState,
-                            showProgressbar = false
-                        ).withEffects(effects)
-                    }
-                    is DeeplinkLoginErrorAction -> {
-                        // if the app is waiting on splash screen, we need tto perform
-                        // initial navigation
-                        val navigationEffect = when (state.viewState) {
-                            SplashScreenView -> {
-                                when (state.userState) {
-                                    is UserLoggedIn -> {
-                                        setOf(NavigateToUserScopeScreensEffect(state.userState))
-                                    }
-                                    UserNotLoggedIn -> {
-                                        setOf(NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()))
-                                    }
-                                }
-
-                            }
-                            else -> setOf()
-                        }
-
-                        state.copy(showProgressbar = false)
-                            .withEffects(
-                                ShowAndReportAppErrorEffect(action.exception) as AppEffect
-                            )
-                            .withAdditionalEffects(navigationEffect)
+                        deeplinkReducer.reduce(action, state)
                     }
                     is PushReceivedAction -> {
                         handleAction(action, state, state.appScope, state.userState)
@@ -424,8 +286,27 @@ class AppReducer(
                             }
                         }
                     }
+                    is TimerAppAction -> {
+                        timerReducer.reduce(action.action, state)
+                    }
+                    is DeeplinkAppAction -> {
+                        deeplinkReducer.reduce(action.action, state)
+                    }
                     is AppEffectAction -> {
                         state.withEffects(action.appEffect)
+                    }
+                    is LoginAppAction -> {
+                        action.action.let { loginAction ->
+                            if (loginAction is SignedInAction) {
+                                chain(
+                                    loginReducer.reduce(loginAction, state)
+                                ) {
+                                    historyReducer.reduce(loginAction, it)
+                                }
+                            } else {
+                                loginReducer.reduce(loginAction, state)
+                            }
+                        }
                     }
                 }
             }
@@ -433,7 +314,7 @@ class AppReducer(
     }
 
     private fun handleAction(action: AppErrorAction, state: AppState)
-            : ReducerResult<AppState, AppEffect> {
+            : ReducerResult<out AppState, out AppEffect> {
         return state.withEffects(
             ShowAndReportAppErrorEffect(action.exception)
         )
@@ -455,7 +336,7 @@ class AppReducer(
                     )
                 )
             }
-            UserNotLoggedIn -> {
+            is UserNotLoggedIn -> {
                 setOf()
             }
         }
@@ -465,7 +346,7 @@ class AppReducer(
     private fun illegalAction(
         action: AppAction,
         state: AppState
-    ): ReducerResult<AppState, AppEffect> {
+    ): ReducerResult<out AppState, out AppEffect> {
         return IllegalActionException(action, state).let {
             if (MyApplication.DEBUG_MODE) {
                 throw it
@@ -495,22 +376,11 @@ class AppReducer(
                     setOf()
                 }
             }
-            UserNotLoggedIn -> {
+            is UserNotLoggedIn -> {
                 setOf()
             }
         }
     }
 
-    private fun getDeeplinkErrorEffect(deeplinkResult: DeeplinkError): AppEffect {
-        val exception = deeplinkResult.exception
-        val shouldNotShowErrorMessage =
-            (exception is BranchErrorException
-                    && exception.isBranchConnectionError)
-        return if (shouldNotShowErrorMessage) {
-            ReportAppErrorEffect(exception)
-        } else {
-            ShowAndReportAppErrorEffect(exception)
-        }
-    }
 
 }

@@ -11,17 +11,21 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asLiveData
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDirections
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.hypertrack.android.deeplink.BranchWrapper
+import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.interactors.app.AppAction
 import com.hypertrack.android.interactors.app.AppErrorAction
 import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.ActivityOnNewIntent
+import com.hypertrack.android.interactors.app.AppEvent
+import com.hypertrack.android.interactors.app.AppMessageEvent
 import com.hypertrack.android.ui.activity.use_case.HandleDeeplinkResultUseCase
 import com.hypertrack.android.interactors.app.state.AppState
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
@@ -42,12 +46,18 @@ import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.ErrorMessage
+import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.MyApplication.Companion.context
 import com.hypertrack.android.utils.NotificationUtil
+import com.hypertrack.android.utils.ResourceProvider
+import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.catchException
+import io.sentry.core.protocol.App
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.lang.Exception
 
@@ -55,6 +65,7 @@ class ActivityViewModel(
     private val appInteractor: AppInteractor,
     private val appState: LiveData<AppState>,
     private val crashReportsProvider: CrashReportsProvider,
+    private val resourceProvider: ResourceProvider,
     private val branchWrapper: BranchWrapper,
     private val appCoroutineScope: CoroutineScope,
     private val getErrorMessageUseCase: GetErrorMessageUseCase,
@@ -64,6 +75,18 @@ class ActivityViewModel(
     val navigationEvent = MediatorLiveData<Consumable<NavDirections>>().apply {
         addSource(appInteractor.navigationEvent) {
             postValue(it)
+        }
+    }
+    val showAppMessageEvent = MediatorLiveData<String>().apply {
+        runInVmEffectsScope {
+            appInteractor.appEvent.collect {
+                if (it is AppMessageEvent) {
+                    when (val result = it.message.construct(resourceProvider)) {
+                        is Success -> postValue(result.data)
+                        is Failure -> onError(result.exception)
+                    }
+                }
+            }
         }
     }
     val showErrorMessageEvent = Transformations.switchMap(appInteractor.appErrorEvent) {
@@ -78,6 +101,7 @@ class ActivityViewModel(
         }
     }
 
+
     // todo navigate via global nav event
     private val handleNotificationClickUseCase = HandleNotificationClickUseCase(
         navigationEvent
@@ -89,12 +113,12 @@ class ActivityViewModel(
         CheckForUpdatesUseCase()
     )
 
-    private val deeplinkDelegate = DeeplinkDelegate(appCoroutineScope, branchWrapper)
+    private val deeplinkDelegate = DeeplinkDelegate(appCoroutineScope, appInteractor, branchWrapper)
 
     init {
         runInVmEffectsScope {
             deeplinkDelegate.deeplinkFlow.catchException {
-                onError(it)
+                handleEffect(handleDeeplinkResultUseCase.execute(DeeplinkError(it, null)))
             }.collect {
                 handleEffect(handleDeeplinkResultUseCase.execute(it))
             }
@@ -222,6 +246,7 @@ class ActivityViewModelFactory(
             appInteractor,
             appInteractor.appState,
             appScope.crashReportsProvider,
+            appScope.resourceProvider,
             appScope.branchWrapper,
             appScope.appCoroutineScope,
             useCases.getErrorMessageUseCase,

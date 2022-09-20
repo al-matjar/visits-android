@@ -85,7 +85,7 @@ class UseCases(
         getHypertrackSdkInstanceUseCase
     )
 
-    private val loginWithPublishableKeyUseCase = LoginWithPublishableKeyUseCase(
+    val loginWithPublishableKeyUseCase = LoginWithPublishableKeyUseCase(
         RefreshUserAccessTokenUseCase(appScope.accessTokenRepository),
         appScope.userRepository,
         appScope.accessTokenRepository,
@@ -93,19 +93,14 @@ class UseCases(
     )
 
     val loginWithDeeplinkParamsUseCase = LoginWithDeeplinkParamsUseCase(
-        ValidateDeeplinkUseCase(appScope.moshi),
-        getConfiguredHypertrackSdkInstanceUseCase,
-        loginWithPublishableKeyUseCase,
-        logExceptionToCrashlyticsUseCase,
+        ValidateDeeplinkUseCase(appScope.moshi)
     )
 
     val signInUseCase = SignInUseCase(
         GetPublishableKeyWithCognitoUseCase(
             appScope.cognitoAccountLoginProvider,
             appScope.tokenApi,
-        ),
-        loginWithPublishableKeyUseCase,
-        getConfiguredHypertrackSdkInstanceUseCase,
+        )
     )
 
     val resendExceptionToCrashlyticsUseCase = ResendEmailConfirmationUseCase(
@@ -114,8 +109,6 @@ class UseCases(
     )
 
     val verifyByOtpCodeUseCase = VerifyByOtpCodeUseCase(
-        getConfiguredHypertrackSdkInstanceUseCase,
-        loginWithPublishableKeyUseCase,
         appScope.liveAccountApi,
         servicesApiKey
     )
