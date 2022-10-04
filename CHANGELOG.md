@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1] - 2022-10-04
+
+### Fixed
+
+- Freeze on Splash screen
+
 ## [1.0.0] - 2022-09-29
 
 ### Changed
