@@ -103,9 +103,6 @@ class DeeplinkReducer(
                     is DeeplinkParams -> {
                         // initial navigation will be performed after logging in
                         // or getting error
-                        if (state.userState is UserLoggedIn) {
-
-                        }
                         state.withEffects(
                             LoginWithDeeplinkEffect(action.deeplinkResult) as AppEffect
                         )

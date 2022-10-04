@@ -12,7 +12,7 @@ sealed class AppViewState {
             AddPlaceScreenView -> screen is AddPlaceScreen
             BackgroundPermissionsScreenView -> screen is BackgroundPermissionsScreen
             ConfirmEmailScreenView -> screen is ConfirmEmailScreen
-            NoneScreenView -> true
+            NoneScreenView -> false
             OrderDetailsScreenView -> screen is OrderDetailsScreen
             OutageScreenView -> screen is OutageScreen
             PermissionsScreenView -> screen is PermissionsScreen
