@@ -26,6 +26,7 @@ import androidx.core.graphics.drawable.toBitmap
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.ui.MainActivity.Companion.REQUEST_CODE_COPY_TEXT_TO_CLIPBOARD
 import com.hypertrack.android.ui.common.util.ClipboardUtil
 import com.hypertrack.android.ui.common.util.LocationUtils
 import com.hypertrack.android.ui.common.util.isEmail
@@ -160,8 +161,12 @@ public class OsUtilsProvider(
         sendIntent.type = "text/plain"
         val intent = Intent(SHARE_BROADCAST_ACTION)
         intent.setPackage(context.packageName)
-        val pendingIntent =
-            PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            REQUEST_CODE_COPY_TEXT_TO_CLIPBOARD,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val chooser = Intent.createChooser(sendIntent, sharingTitle, pendingIntent.intentSender)
         chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(chooser)

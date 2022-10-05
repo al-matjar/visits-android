@@ -3,6 +3,7 @@ package com.hypertrack.android.ui.activity.use_case
 import android.app.Activity
 import android.content.Context
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.internal.ar
 import com.hypertrack.android.interactors.app.AppAction
 import com.hypertrack.android.interactors.app.AppErrorAction
 import com.hypertrack.android.ui.MainActivity
@@ -36,12 +37,20 @@ class RequestUpdateIfAvailableUseCase(
                     null
                 }
                 is Failure -> {
-                    AppErrorAction(result.exception)
+                    // omit reporting error (appears on emulator)
+                    if (result.exception is ar && result.exception.message == FAILED_TO_BIND_MESSAGE) {
+                        null
+                    } else {
+                        AppErrorAction(result.exception)
+                    }
                 }
             }
 
         }
     }
 
+    companion object {
+        const val FAILED_TO_BIND_MESSAGE = "Failed to bind to the service."
+    }
 }
 

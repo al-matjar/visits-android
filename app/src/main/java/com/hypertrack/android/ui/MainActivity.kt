@@ -153,6 +153,7 @@ class MainActivity : NavActivity() {
 
         const val REQUEST_CODE_IMAGE_CAPTURE = 1
         const val REQUEST_CODE_UPDATE = 2
+        const val REQUEST_CODE_COPY_TEXT_TO_CLIPBOARD = 3
     }
 }
 
