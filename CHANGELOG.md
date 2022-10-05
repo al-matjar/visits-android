@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.2] - 2022-10-04
+
+### Fixed
+
+- Error on sharing trip link on Android 12+
+
 ## [1.0.1] - 2022-10-04
 
 ### Fixed
