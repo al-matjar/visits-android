@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.3] - 2022-10-21
+
+### Changed
+
+- Increased geofences loading timeout on Place creation to 30 seconds
+
 ## [1.0.2] - 2022-10-04
 
 ### Fixed
