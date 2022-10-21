@@ -88,7 +88,7 @@ class CheckForAdjacentGeofencesUseCase(
     }
 
     companion object {
-        const val GEOFENCE_AREAS_LOADING_TIMEOUT = 10000L
+        const val GEOFENCE_AREAS_LOADING_TIMEOUT = 30000L
 
         private fun checkIntersection(
             intersect: Intersect,
