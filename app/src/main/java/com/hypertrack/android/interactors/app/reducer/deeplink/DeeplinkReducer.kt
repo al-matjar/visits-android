@@ -1,4 +1,4 @@
-package com.hypertrack.android.interactors.app.reducer
+package com.hypertrack.android.interactors.app.reducer.deeplink
 
 import com.hypertrack.android.deeplink.BranchErrorException
 import com.hypertrack.android.deeplink.DeeplinkError
@@ -11,8 +11,7 @@ import com.hypertrack.android.interactors.app.AppInitializedAction
 import com.hypertrack.android.interactors.app.DeeplinkCheckTimeoutTimer
 import com.hypertrack.android.interactors.app.DeeplinkCheckedAction
 import com.hypertrack.android.interactors.app.LoginWithDeeplinkEffect
-import com.hypertrack.android.interactors.app.NavigateEffect
-import com.hypertrack.android.interactors.app.NavigateToUserScopeScreensEffect
+import com.hypertrack.android.interactors.app.NavigateAppEffect
 import com.hypertrack.android.interactors.app.ReportAppErrorEffect
 import com.hypertrack.android.interactors.app.ShowAndReportAppErrorEffect
 import com.hypertrack.android.interactors.app.StartTimer
@@ -20,6 +19,11 @@ import com.hypertrack.android.interactors.app.StopTimer
 import com.hypertrack.android.interactors.app.action.DeeplinkAction
 import com.hypertrack.android.interactors.app.action.DeeplinkCheckStartedAction
 import com.hypertrack.android.interactors.app.action.DeeplinkCheckTimeoutAction
+import com.hypertrack.android.interactors.app.action.TimerAction
+import com.hypertrack.android.interactors.app.action.TimerEndedAction
+import com.hypertrack.android.interactors.app.action.TimerStartedAction
+import com.hypertrack.android.interactors.app.effect.navigation.NavigateToSignInEffect
+import com.hypertrack.android.interactors.app.effect.navigation.NavigateToUserScopeScreensEffect
 import com.hypertrack.android.interactors.app.reducer.login.LoginReducer
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
@@ -32,7 +36,6 @@ import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.state_machine.effectIf
 import com.hypertrack.android.utils.withEffects
-import com.hypertrack.logistics.android.github.NavGraphDirections
 
 class DeeplinkReducer(
     private val loginReducer: LoginReducer
@@ -40,15 +43,15 @@ class DeeplinkReducer(
 
     fun reduce(
         appAction: AppInitializedAction,
-        state: AppNotInitialized,
-        initialized: AppInitialized
+        oldState: AppNotInitialized,
+        newState: AppInitialized
     ): ReducerResult<out AppState, out AppEffect> {
-        val deeplinkResult = state.pendingDeeplinkResult
+        val deeplinkResult = oldState.pendingDeeplinkResult
         return when (deeplinkResult) {
             // if there is pending deeplink result, activity is started
             // we need to login with deeplink or move from SplashScreen
             is DeeplinkParams -> {
-                initialized
+                newState
                     .withEffects(
                         // still on splash screen
                         // emits SignedInAction
@@ -57,21 +60,21 @@ class DeeplinkReducer(
             }
             is DeeplinkError -> {
                 val errorEffect = getDeeplinkErrorEffect(deeplinkResult)
-                initialized.withEffects(
-                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()) as AppEffect,
+                newState.withEffects(
+                    NavigateAppEffect(NavigateToSignInEffect(appAction)) as AppEffect,
                     errorEffect
                 )
             }
             NoDeeplink -> {
-                initialized.withEffects(
-                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()) as AppEffect
+                newState.withEffects(
+                    NavigateAppEffect(NavigateToSignInEffect(appAction)) as AppEffect
                 )
             }
             null -> {
                 // activity is not started yet
                 // the navigation will be performed on
                 // DeeplinkCheckedAction > Initialized
-                initialized.withEffects()
+                newState.withEffects()
             }
         }
     }
@@ -91,10 +94,11 @@ class DeeplinkReducer(
     fun reduce(
         action: DeeplinkCheckedAction,
         state: AppInitialized
-    ): ReducerResult<out AppState, out AppEffect> {
+    ): ReducerResult<AppInitialized, out AppEffect> {
         // activity started
-        return when (state.viewState) {
-            SplashScreenView -> {
+        val timerEffect = StopTimer(DeeplinkCheckTimeoutTimer, state.timerJobs)
+        return when (val viewState = state.viewState) {
+            is SplashScreenView -> {
                 // initial deeplink check (on activity launch)
                 // app is hanging on splash screen and waiting for deeplink check
                 // finished
@@ -115,13 +119,15 @@ class DeeplinkReducer(
                             is UserLoggedIn -> {
                                 newState.withEffects(
                                     errorEffect,
-                                    NavigateToUserScopeScreensEffect(state.userState)
+                                    NavigateAppEffect(
+                                        NavigateToUserScopeScreensEffect(viewState, state.userState)
+                                    )
                                 )
                             }
                             UserNotLoggedIn -> {
                                 newState.withEffects(
                                     errorEffect,
-                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment())
+                                    NavigateAppEffect(NavigateToSignInEffect(viewState))
                                 )
                             }
                         }
@@ -131,12 +137,14 @@ class DeeplinkReducer(
                         when (state.userState) {
                             is UserLoggedIn -> {
                                 newState.withEffects(
-                                    NavigateToUserScopeScreensEffect(state.userState)
+                                    NavigateAppEffect(
+                                        NavigateToUserScopeScreensEffect(viewState, state.userState)
+                                    )
                                 )
                             }
                             UserNotLoggedIn -> {
                                 newState.withEffects(
-                                    NavigateEffect(NavGraphDirections.actionGlobalSignInFragment())
+                                    NavigateAppEffect(NavigateToSignInEffect(viewState))
                                 )
                             }
                         }
@@ -163,7 +171,7 @@ class DeeplinkReducer(
                 }
             }
         }.withEffects {
-            it.effects + StopTimer(DeeplinkCheckTimeoutTimer, state.timerJobs)
+            it.effects + timerEffect
         }
     }
 
@@ -203,6 +211,28 @@ class DeeplinkReducer(
                     }
                 }
             }
+        }
+    }
+
+    fun reduce(
+        action: TimerEndedAction,
+        timer: DeeplinkCheckTimeoutTimer,
+        state: AppState
+    ): ReducerResult<out AppState, out AppEffect> {
+        // we are unable to stop deeplink check event from firing after timeout
+        // it will be handled in the same way as the case when user clicks a deeplink
+        return when (state) {
+            is AppInitialized -> {
+                reduce(DeeplinkCheckedAction(NoDeeplink), state).withEffects {
+                    it.effects + ShowAndReportAppErrorEffect(DeeplinkTimeoutException())
+                }
+            }
+            is AppNotInitialized -> {
+                // state with low probability (app init lasts more than DEEPLINK_CHECK_TIMEOUT)
+                reduce(DeeplinkCheckedAction(NoDeeplink), state)
+            }
+        }.withEffects {
+            it.effects + ShowAndReportAppErrorEffect(DeeplinkTimeoutException())
         }
     }
 

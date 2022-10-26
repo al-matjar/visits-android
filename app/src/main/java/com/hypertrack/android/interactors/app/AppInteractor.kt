@@ -11,8 +11,10 @@ import com.hypertrack.android.interactors.app.action.TimerEndedAction
 import com.hypertrack.android.interactors.app.action.TimerStartedAction
 import com.hypertrack.android.interactors.app.effect.HistoryEffectHandler
 import com.hypertrack.android.interactors.app.effect.MapEffectsHandler
-import com.hypertrack.android.interactors.app.reducer.DeeplinkReducer
-import com.hypertrack.android.interactors.app.reducer.DeeplinkReducer.Companion.DEEPLINK_CHECK_TIMEOUT
+import com.hypertrack.android.interactors.app.effect.navigation.NavigateToSignInEffect
+import com.hypertrack.android.interactors.app.effect.navigation.NavigationEffectHandler
+import com.hypertrack.android.interactors.app.reducer.deeplink.DeeplinkReducer
+import com.hypertrack.android.interactors.app.reducer.deeplink.DeeplinkReducer.Companion.DEEPLINK_CHECK_TIMEOUT
 import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
@@ -36,7 +38,6 @@ import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.emitAsFlow
 import com.hypertrack.android.utils.flatMapSuccess
 import com.hypertrack.android.utils.toFlow
-import com.hypertrack.logistics.android.github.NavGraphDirections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -77,11 +78,6 @@ class AppInteractor(
         this::applyEffects,
         this::stateChangeEffects
     ) {}
-    private val historyEffectHandler = HistoryEffectHandler(appScope, useCases)
-    private val mapEffectsHandler = MapEffectsHandler(
-        useCases.logExceptionIfFailureUseCase,
-        this::getEffectFlow
-    )
 
     private val _appState = MutableLiveData<AppState>(initialState)
     val appState: LiveData<AppState> = _appState
@@ -100,6 +96,13 @@ class AppInteractor(
     // todo register activity event handle via action
     private val _navigationEvent = MutableLiveData<Consumable<NavDirections>>()
     val navigationEvent: LiveData<Consumable<NavDirections>> = _navigationEvent
+
+    private val historyEffectHandler = HistoryEffectHandler(appScope, useCases)
+    private val mapEffectsHandler = MapEffectsHandler(
+        useCases.logExceptionIfFailureUseCase,
+        this::getEffectFlow
+    )
+    private val navigationEffectHandler = NavigationEffectHandler(useCases, _navigationEvent)
 
     fun handleAction(action: AppAction) {
         appStateMachine.handleAction(action)
@@ -212,27 +215,17 @@ class AppInteractor(
                 _appErrorEvent.updateConsumableAsFlow(effect.exception).noAction()
             }
             is ShowAppMessageEffect -> {
-                _appEvent.emitAsFlow(AppMessageEvent(effect.message)).noAction()
+                effect.message.construct(effect.appScope.resourceProvider).let {
+                    when (it) {
+                        is Success -> _appEvent.emitAsFlow(AppMessageEvent(it.data)).noAction()
+                        is Failure -> AppErrorAction(it.exception).toFlow()
+                    }
+                }
             }
             is ReportAppErrorEffect -> {
                 {
                     appScope.crashReportsProvider.logException(effect.exception)
                 }.asFlow().noAction()
-            }
-            is NavigateToUserScopeScreensEffect -> {
-                useCases.navigateToUserScopeScreensUseCase.execute(
-                    effect.userState.userScope.permissionsInteractor
-                ).map {
-                    when (it) {
-                        is Success -> {
-                            _navigationEvent.postValue(it.data.toConsumable())
-                            null
-                        }
-                        is Failure -> {
-                            AppErrorAction(it.exception)
-                        }
-                    }
-                }
             }
             is LoadHistoryEffect -> {
                 historyEffectHandler.applyEffect(effect)
@@ -249,8 +242,8 @@ class AppInteractor(
             is AppActionEffect -> {
                 { effect.action }.asFlow()
             }
-            is NavigateEffect -> {
-                _navigationEvent.updateConsumableAsFlow(effect.destination).noAction()
+            is NavigateAppEffect -> {
+                navigationEffectHandler.applyEffect(effect.navigationEffect)
             }
             is LoadGeofencesForMapEffect -> {
                 effect.useCases.loadGeofencesForMapUseCase.execute(effect.geoHash, effect.pageToken)
@@ -265,7 +258,7 @@ class AppInteractor(
             }
             is DestroyUserScopeEffect -> {
                 useCases.destroyUserScopeUseCase.execute(effect.userScope).flatMapConcat {
-                    getEffectFlow(NavigateEffect(NavGraphDirections.actionGlobalSignInFragment()))
+                    getEffectFlow(NavigateAppEffect(NavigateToSignInEffect(effect)))
                 }
             }
             is StartTimer -> {

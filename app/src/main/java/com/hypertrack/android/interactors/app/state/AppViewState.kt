@@ -26,9 +26,13 @@ sealed class AppViewState {
     }
 }
 
+// not logged in screens
 object NoneScreenView : AppViewState()
 object SplashScreenView : AppViewState()
 object SignInScreenView : AppViewState()
+object ConfirmEmailScreenView : AppViewState()
+
+// user scope screens
 object AddPlaceScreenView : AppViewState()
 object PlaceDetailsScreenView : AppViewState()
 object SelectDestinationScreenView : AppViewState()
@@ -39,7 +43,6 @@ object AddOrderInfoScreenView : AppViewState()
 object AddPlaceInfoScreenView : AppViewState()
 object BackgroundPermissionsScreenView : AppViewState()
 object PermissionsScreenView : AppViewState()
-object ConfirmEmailScreenView : AppViewState()
 object OutageScreenView : AppViewState()
 object SendFeedbackScreenView : AppViewState()
 data class TabsView(

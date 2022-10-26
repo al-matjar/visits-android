@@ -81,10 +81,7 @@ class ActivityViewModel(
         runInVmEffectsScope {
             appInteractor.appEvent.collect {
                 if (it is AppMessageEvent) {
-                    when (val result = it.message.construct(resourceProvider)) {
-                        is Success -> postValue(result.data)
-                        is Failure -> onError(result.exception)
-                    }
+                    postValue(it.message)
                 }
             }
         }

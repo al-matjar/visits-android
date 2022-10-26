@@ -1,7 +1,6 @@
 package com.hypertrack.android.interactors.app.action
 
-import com.hypertrack.android.assertEffect
-import com.hypertrack.android.assertEffects
+import com.hypertrack.android.assertHasEffect
 import com.hypertrack.android.assertWithChecks
 import com.hypertrack.android.createEffectCheck
 import com.hypertrack.android.di.UserScope
@@ -11,15 +10,15 @@ import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appInitia
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
 import com.hypertrack.android.interactors.app.HistoryAppAction
 import com.hypertrack.android.interactors.app.LoginAppAction
-import com.hypertrack.android.interactors.app.NavigateToUserScopeScreensEffect
+import com.hypertrack.android.interactors.app.NavigateAppEffect
 import com.hypertrack.android.interactors.app.ShowAppMessageEffect
+import com.hypertrack.android.interactors.app.effect.navigation.NavigateToUserScopeScreensEffect
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppViewStateTest.Companion.tabsView
 import com.hypertrack.android.interactors.app.state.SplashScreenView
 import com.hypertrack.android.models.local.DeviceId
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertTrue
 import org.junit.Test
 
 class SignedInActionTest {
@@ -46,8 +45,10 @@ class SignedInActionTest {
             (result.newState as AppInitialized).let { newState ->
                 assertEquals(newUserState, newState.userState)
                 result.effects.assertWithChecks(
-                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) },
-                    { it.assertEffect(ShowAppMessageEffect::class) },
+                    { it.assertHasEffect(ShowAppMessageEffect::class) },
+                    createEffectCheck<NavigateAppEffect> {
+                        it.navigationEffect is NavigateToUserScopeScreensEffect
+                    },
                     createEffectCheck<AppActionEffect> {
                         it.action is HistoryAppAction &&
                                 (it.action as HistoryAppAction)
@@ -78,8 +79,10 @@ class SignedInActionTest {
             (result.newState as AppInitialized).let { newState ->
                 assertEquals(newUserState, newState.userState)
                 result.effects.assertWithChecks(
-                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) },
-                    { it.assertEffect(ShowAppMessageEffect::class) },
+                    { it.assertHasEffect(ShowAppMessageEffect::class) },
+                    createEffectCheck<NavigateAppEffect> {
+                        it.navigationEffect is NavigateToUserScopeScreensEffect
+                    },
                     createEffectCheck<AppActionEffect> {
                         it.action is HistoryAppAction &&
                                 (it.action as HistoryAppAction)

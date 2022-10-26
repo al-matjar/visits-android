@@ -8,7 +8,10 @@ import com.hypertrack.android.deeplink.DeeplinkParams
 import com.hypertrack.android.di.AppScope
 import com.hypertrack.android.di.UserScope
 import com.hypertrack.android.interactors.app.effect.MapEffect
+import com.hypertrack.android.interactors.app.effect.navigation.NavigationEffect
 import com.hypertrack.android.interactors.app.state.AppState
+import com.hypertrack.android.interactors.app.state.SignInScreenView
+import com.hypertrack.android.interactors.app.state.SplashScreenView
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.models.local.RealPublishableKey
 import com.hypertrack.android.repository.user.UserData
@@ -51,30 +54,15 @@ data class NotifyAppStateUpdateEffect(
     }
 }
 
-data class ShowAndReportAppErrorEffect(
-    val exception: Exception
-) : AppEffect()
+data class ShowAndReportAppErrorEffect(val exception: Exception) : AppEffect()
 
-data class OnlyShowAppErrorEffect(
-    val exception: Exception
-) : AppEffect()
+data class OnlyShowAppErrorEffect(val exception: Exception) : AppEffect()
 
-data class ShowAppMessageEffect(
-    val message: AppMessage
-) : AppEffect()
+data class ShowAppMessageEffect(val appScope: AppScope, val message: AppMessage) : AppEffect()
 
-data class ReportAppErrorEffect(
-    val exception: Exception
-) : AppEffect()
+data class ReportAppErrorEffect(val exception: Exception) : AppEffect()
 
-// todo use appState instead of permInteractor to determine navigation destination
-data class NavigateToUserScopeScreensEffect(
-    val userState: UserLoggedIn
-) : AppEffect() {
-    override fun toString(): String = javaClass.simpleName
-}
-
-data class NavigateEffect(val destination: NavDirections) : AppEffect()
+data class NavigateAppEffect(val navigationEffect: NavigationEffect) : AppEffect()
 
 data class AppEventEffect(val event: AppEvent) : AppEffect()
 
@@ -95,6 +83,7 @@ data class LoadGeofencesForMapEffect(
 ) : AppEffect()
 
 data class StartTimer(val timer: Timer) : AppEffect()
+
 data class StopTimer(val timer: Timer, val timerJobs: Map<Timer, Job>) : AppEffect() {
     override fun toString(): String = javaClass.simpleName
 }

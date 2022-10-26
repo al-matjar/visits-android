@@ -7,9 +7,10 @@ import com.hypertrack.android.interactors.app.action.ClearGeofencesForMapAction
 import com.hypertrack.android.interactors.app.action.GeofencesForMapLoadedAction
 import com.hypertrack.android.interactors.app.action.LoadGeofencesForMapAction
 import com.hypertrack.android.interactors.app.action.SignedInAction
+import com.hypertrack.android.interactors.app.action.TimerEndedAction
 import com.hypertrack.android.interactors.app.optics.AppStateOptics
 import com.hypertrack.android.interactors.app.optics.GeofencesForMapOptic
-import com.hypertrack.android.interactors.app.reducer.DeeplinkReducer
+import com.hypertrack.android.interactors.app.reducer.deeplink.DeeplinkReducer
 import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
@@ -26,14 +27,15 @@ import com.hypertrack.android.interactors.app.state.UserState
 import com.hypertrack.android.interactors.app.state.allGeofences
 import com.hypertrack.android.models.local.GeofenceForMap
 import com.hypertrack.android.repository.access_token.AccountSuspendedException
+import com.hypertrack.android.ui.screens.splash_screen.FreezeOnSplashScreenReported
 import com.hypertrack.android.use_case.app.UseCases
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.asSet
+import com.hypertrack.android.utils.message.ErrorReportedMessage
 import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.state_machine.chain
 import com.hypertrack.android.utils.state_machine.effectIf
-import com.hypertrack.android.utils.state_machine.mergeResults
 import com.hypertrack.android.utils.withEffects
 
 class AppReducer(
@@ -91,7 +93,16 @@ class AppReducer(
                         deeplinkReducer.reduce(action.action, state)
                     }
                     is TimerAppAction -> {
-                        timerReducer.reduce(action.action, state)
+                        val timerAction = action.action
+                        chain(
+                            timerReducer.reduce(timerAction, state)
+                        ) {
+                            if (timerAction is TimerEndedAction && timerAction.timer is DeeplinkCheckTimeoutTimer) {
+                                deeplinkReducer.reduce(timerAction, timerAction.timer, it)
+                            } else {
+                                it.withEffects()
+                            }
+                        }
                     }
                     is AppEffectAction -> {
                         state.withEffects(action.appEffect)
@@ -287,7 +298,16 @@ class AppReducer(
                         }
                     }
                     is TimerAppAction -> {
-                        timerReducer.reduce(action.action, state)
+                        val timerAction = action.action
+                        chain(
+                            timerReducer.reduce(action.action, state)
+                        ) {
+                            if (timerAction is TimerEndedAction && timerAction.timer is DeeplinkCheckTimeoutTimer) {
+                                deeplinkReducer.reduce(timerAction, timerAction.timer, it)
+                            } else {
+                                it.withEffects()
+                            }
+                        }
                     }
                     is DeeplinkAppAction -> {
                         deeplinkReducer.reduce(action.action, state)

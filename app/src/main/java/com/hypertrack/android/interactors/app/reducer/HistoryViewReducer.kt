@@ -8,13 +8,14 @@ import com.hypertrack.android.interactors.app.AppEffect
 import com.hypertrack.android.interactors.app.AppMapEffect
 import com.hypertrack.android.interactors.app.HistoryAppAction
 import com.hypertrack.android.interactors.app.HistoryViewEffect
-import com.hypertrack.android.interactors.app.NavigateEffect
+import com.hypertrack.android.interactors.app.NavigateAppEffect
 import com.hypertrack.android.interactors.app.ShowAndReportAppErrorEffect
 import com.hypertrack.android.interactors.app.UserLocationChangedAction
 import com.hypertrack.android.interactors.app.action.StartDayHistoryLoadingAction
 import com.hypertrack.android.interactors.app.effect.MoveMapToBoundsEffect
 import com.hypertrack.android.interactors.app.effect.MoveMapToLocationEffect
 import com.hypertrack.android.interactors.app.effect.UpdateMapEffect
+import com.hypertrack.android.interactors.app.effect.navigation.NavigateInGraphEffect
 import com.hypertrack.android.interactors.app.state.HistorySuccessState
 import com.hypertrack.android.interactors.app.state.HistoryState
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
@@ -237,9 +238,11 @@ class HistoryViewReducer(
             }
             is OnGeofenceClickAction -> {
                 (viewState as HistoryScreenState).withEffects(
-                    NavigateEffect(
-                        VisitsManagementFragmentDirections
-                            .actionVisitManagementFragmentToPlaceDetailsFragment(action.geofenceId)
+                    NavigateAppEffect(
+                        NavigateInGraphEffect(
+                            VisitsManagementFragmentDirections
+                                .actionVisitManagementFragmentToPlaceDetailsFragment(action.geofenceId)
+                        )
                     )
                 )
             }

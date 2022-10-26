@@ -87,8 +87,9 @@ dependencies {
 
     implementation "com.google.android.material:material:${versions.material}"
     implementation "com.google.android.libraries.places:places:${versions.google_places}"
+    implementation "com.google.android.play:core:${versions.play_core}"
+    implementation "com.google.android.play:core-ktx:${versions.play_core_ktx}"
     implementation "com.google.android.gms:play-services-ads-identifier:${versions.play_services_ads_identifier}"
-
     implementation "com.google.android.gms:play-services-location:${versions.play_services_location}"
     implementation "com.google.android.gms:play-services-maps:${versions.play_services_maps}"
     implementation "com.google.maps.android:android-maps-utils:${versions.android_maps_utils}"
@@ -126,9 +127,6 @@ dependencies {
     testImplementation "org.robolectric:robolectric:${versions.robolectric}"
     testImplementation "com.squareup.okhttp3:mockwebserver:${versions.okhttp_mock_web_server}"
     testImplementation "io.mockk:mockk:${versions.mockk}"
-
-    implementation 'com.google.android.play:core:1.10.0'
-    implementation 'com.google.android.play:core-ktx:1.8.1'
 
     // androidTest
     androidTestImplementation "androidx.test.ext:junit:${versions.androidx_junit}"

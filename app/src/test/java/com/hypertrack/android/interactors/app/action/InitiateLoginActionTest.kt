@@ -2,7 +2,7 @@ package com.hypertrack.android.interactors.app.action
 
 import com.hypertrack.android.TestInjector.TEST_PUBLISHABLE_KEY
 import com.hypertrack.android.TestInjector.TEST_USER_DATA
-import com.hypertrack.android.assertEffect
+import com.hypertrack.android.assertHasEffect
 import com.hypertrack.android.assertEffects
 import com.hypertrack.android.assertWithChecks
 import com.hypertrack.android.createEffectCheck
@@ -10,8 +10,9 @@ import com.hypertrack.android.interactors.app.AppEffect
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appInitialized
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
 import com.hypertrack.android.interactors.app.LoginWithPublishableKey
-import com.hypertrack.android.interactors.app.NavigateToUserScopeScreensEffect
+import com.hypertrack.android.interactors.app.NavigateAppEffect
 import com.hypertrack.android.interactors.app.ShowAndReportAppErrorEffect
+import com.hypertrack.android.interactors.app.effect.navigation.NavigateToUserScopeScreensEffect
 import com.hypertrack.android.interactors.app.reducer.login.AlreadyLoggedInException
 import com.hypertrack.android.interactors.app.reducer.login.LoginAlreadyInProgressException
 import com.hypertrack.android.interactors.app.reducer.login.LoginReducerTest.Companion.loginReducer
@@ -93,7 +94,9 @@ class InitiateLoginActionTest {
                 createEffectCheck<ShowAndReportAppErrorEffect> {
                     it.exception is AlreadyLoggedInException
                 },
-                { it.assertEffect(NavigateToUserScopeScreensEffect::class) }
+                createEffectCheck<NavigateAppEffect> {
+                    it.navigationEffect is NavigateToUserScopeScreensEffect
+                }
             )
         }
     }

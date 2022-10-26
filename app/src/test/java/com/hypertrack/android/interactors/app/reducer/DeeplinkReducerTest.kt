@@ -12,6 +12,7 @@ import com.hypertrack.android.interactors.app.DeeplinkCheckedAction
 import com.hypertrack.android.interactors.app.StartTimer
 import com.hypertrack.android.interactors.app.action.DeeplinkCheckStartedAction
 import com.hypertrack.android.interactors.app.action.DeeplinkCheckTimeoutAction
+import com.hypertrack.android.interactors.app.reducer.deeplink.DeeplinkReducer
 import com.hypertrack.android.interactors.app.reducer.login.LoginReducerTest.Companion.loginReducer
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.AppViewState

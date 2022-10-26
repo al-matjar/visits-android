@@ -3,6 +3,7 @@ package com.hypertrack.android.ui.common.use_case.get_error_message
 import com.hypertrack.android.api.BackendException
 import com.hypertrack.android.api.graphql.GraphQlException
 import com.hypertrack.android.deeplink.BranchErrorException
+import com.hypertrack.android.interactors.app.reducer.deeplink.DeeplinkTimeoutException
 import com.hypertrack.android.interactors.app.reducer.login.AlreadyLoggedInException
 import com.hypertrack.android.interactors.app.reducer.login.LoginAlreadyInProgressException
 import com.hypertrack.android.interactors.trip.NotClockedInException
@@ -82,16 +83,19 @@ class GetErrorMessageUseCase(
                     getTextErrorString(TextError(R.string.add_place_timeout))
                 }
                 exception is AccountSuspendedException -> {
-                    getTextErrorString(TextError(R.string.account_suspended))
+                    getTextErrorString(TextError(R.string.error_account_suspended))
                 }
                 exception is GraphQlException -> {
                     getTextErrorString(ServerError)
                 }
                 exception is LoginAlreadyInProgressException -> {
-                    getTextErrorString(TextError(R.string.login_already_in_progress))
+                    getTextErrorString(TextError(R.string.error_login_already_in_progress))
                 }
                 exception is AlreadyLoggedInException -> {
-                    getTextErrorString(TextError(R.string.login_already_in_progress))
+                    getTextErrorString(TextError(R.string.error_login_already_in_progress))
+                }
+                exception is DeeplinkTimeoutException -> {
+                    getTextErrorString(TextError(R.string.error_deeplink_timeout))
                 }
                 exception.isNetworkError() -> {
                     getTextErrorString(NetworkError)

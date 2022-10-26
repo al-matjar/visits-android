@@ -1,18 +1,19 @@
 package com.hypertrack.android.interactors.app
 
-import com.hypertrack.android.assertEffect
+import com.hypertrack.android.assertHasEffect
 import com.hypertrack.android.assertWithChecks
 import com.hypertrack.android.createEffectCheck
 import com.hypertrack.android.deeplink.BranchErrorException
 import com.hypertrack.android.deeplink.DeeplinkError
 import com.hypertrack.android.deeplink.DeeplinkResult
 import com.hypertrack.android.deeplink.NoDeeplink
-import com.hypertrack.android.interactors.app.AppEffectTest.Companion.assertNavToSignIn
+import com.hypertrack.android.interactors.app.AppEffectTest.Companion.assertContainsNavToSignIn
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appReducer
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appNotInitialized
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.appInitialized
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.userLoggedIn
 import com.hypertrack.android.interactors.app.AppReducerTest.Companion.validDeeplinkParams
+import com.hypertrack.android.interactors.app.effect.navigation.NavigateToUserScopeScreensEffect
 import com.hypertrack.android.interactors.app.reducer.DeeplinkReducerTest.Companion.anyDeeplinkResult
 import io.mockk.mockk
 import com.hypertrack.android.interactors.app.state.AppInitialized
@@ -87,7 +88,7 @@ class DeeplinkCheckedActionTest {
             (result.newState as AppInitialized).let {
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertEffect(LoginWithDeeplinkEffect::class) }
+                    { it.assertHasEffect(LoginWithDeeplinkEffect::class) }
                 )
             }
         }
@@ -108,7 +109,7 @@ class DeeplinkCheckedActionTest {
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
                     createNavigateToSignInCheck(),
-                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
+                    { it.assertHasEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
@@ -146,8 +147,10 @@ class DeeplinkCheckedActionTest {
             (result.newState as AppInitialized).let {
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertEffect(ShowAndReportAppErrorEffect::class) },
-                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) }
+                    { it.assertHasEffect(ShowAndReportAppErrorEffect::class) },
+                    createEffectCheck<NavigateAppEffect> {
+                        it.navigationEffect is NavigateToUserScopeScreensEffect
+                    }
                 )
             }
         }
@@ -166,7 +169,9 @@ class DeeplinkCheckedActionTest {
             (result.newState as AppInitialized).let {
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) }
+                    createEffectCheck<NavigateAppEffect> {
+                        it.navigationEffect is NavigateToUserScopeScreensEffect
+                    }
                 )
             }
         }
@@ -186,7 +191,7 @@ class DeeplinkCheckedActionTest {
                 assertFalse(newState.showProgressbar)
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
+                    { it.assertHasEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
@@ -226,7 +231,7 @@ class DeeplinkCheckedActionTest {
                 assertTrue(it.showProgressbar)
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertEffect(LoginWithDeeplinkEffect::class) }
+                    { it.assertHasEffect(LoginWithDeeplinkEffect::class) }
                 )
             }
         }
@@ -246,7 +251,7 @@ class DeeplinkCheckedActionTest {
                 assertFalse(newState.showProgressbar)
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
+                    { it.assertHasEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
@@ -266,8 +271,10 @@ class DeeplinkCheckedActionTest {
                 assertFalse(newState.showProgressbar)
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertEffect(ReportAppErrorEffect::class) },
-                    { it.assertEffect(NavigateToUserScopeScreensEffect::class) }
+                    { it.assertHasEffect(ReportAppErrorEffect::class) },
+                    createEffectCheck<NavigateAppEffect> {
+                        it.navigationEffect is NavigateToUserScopeScreensEffect
+                    }
                 )
             }
         }
@@ -287,7 +294,7 @@ class DeeplinkCheckedActionTest {
                 assertFalse(newState.showProgressbar)
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
+                    { it.assertHasEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
@@ -308,7 +315,7 @@ class DeeplinkCheckedActionTest {
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
                     createNavigateToSignInCheck(),
-                    { it.assertEffect(ReportAppErrorEffect::class) }
+                    { it.assertHasEffect(ReportAppErrorEffect::class) }
                 )
             }
         }
@@ -328,7 +335,7 @@ class DeeplinkCheckedActionTest {
                 assertFalse(newState.showProgressbar)
                 result.effects.assertWithChecks(
                     createEffectCheck<StopTimer> { it.timer is DeeplinkCheckTimeoutTimer },
-                    { it.assertEffect(ShowAndReportAppErrorEffect::class) }
+                    { it.assertHasEffect(ShowAndReportAppErrorEffect::class) }
                 )
             }
         }
@@ -369,7 +376,7 @@ class DeeplinkCheckedActionTest {
         }
 
         fun createNavigateToSignInCheck(): (Set<Any>) -> Unit {
-            return { effects -> assertNavToSignIn(effects.map { it as AppEffect }) }
+            return { effects -> assertContainsNavToSignIn(effects.map { it as AppEffect }) }
         }
     }
 

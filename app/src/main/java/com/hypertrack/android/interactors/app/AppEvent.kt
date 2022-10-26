@@ -8,7 +8,7 @@ import com.hypertrack.android.use_case.sdk.TrackingState
 import com.hypertrack.android.utils.message.AppMessage
 
 sealed class AppEvent
-data class AppMessageEvent(val message: AppMessage) : AppEvent()
+data class AppMessageEvent(val message: String) : AppEvent()
 data class UpdateUserLocationEvent(val userLocation: LatLng?) : AppEvent()
 data class TrackingStateChangedEvent(val trackingState: TrackingState) : AppEvent()
 data class GeofencesForMapUpdatedEvent(val geofences: List<GeofenceForMap>) : AppEvent() {

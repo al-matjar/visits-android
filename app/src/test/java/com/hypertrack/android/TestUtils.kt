@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import junit.framework.AssertionFailedError
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNull
-import junit.framework.TestCase.assertTrue
 import kotlin.reflect.KClass
 
 fun <T> LiveData<T>.observeAndGetValue(): T {
@@ -29,14 +28,14 @@ fun Set<Any>.assertEffects(vararg classes: KClass<*>) {
     }
 }
 
-fun Set<Any>.assertEffect(clazz: KClass<*>) {
+fun Set<Any>.assertHasEffect(clazz: KClass<*>) {
     if (filterIsInstance(clazz.java).size != 1) {
         throw AssertionFailedError("${clazz.simpleName} is expected but not found")
     }
 }
 
 fun Set<Any>.assertNoEffects() {
-    if (size != 0) {
+    if (isNotEmpty()) {
         throw AssertionFailedError("No effects are expected but found $this")
     }
 }
