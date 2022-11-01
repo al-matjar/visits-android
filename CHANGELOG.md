@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.5] - 2022-11-01
+
+### Fixed
+
+- Crash in HyperTrackSDK
+
 ## [1.0.4] - 2022-10-31
 
 ### Fixed

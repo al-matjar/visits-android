@@ -1,7 +1,7 @@
 buildscript {
     ext.versions = [:]
 
-    versions.compile_sdk = 33
+    versions.compile_sdk = 31
     versions.target_sdk = 31
     versions.min_sdk = 23
 
@@ -21,11 +21,11 @@ buildscript {
     // updating breaks the tests (kotlin 1.7 dependency?)
     versions.core_ktx = "1.7.0"
     versions.desugar_jdk_libs = "1.1.5"
-    versions.firebase_messaging = "23.1.0"
-    versions.firebase_crashlytics = "18.3.1"
-    versions.firebase_analytics = "21.2.0"
+    versions.firebase_messaging = "23.0.0"
+    versions.firebase_crashlytics = "18.2.7"
+    versions.firebase_analytics = "20.0.2"
     versions.firebase_appindexing = "20.0.0"
-    versions.google_places = "2.6.0"
+    versions.google_places = "2.5.0"
     versions.kotlinx_coroutines = "1.5.2"
     // updating breaks the tests
     versions.kotlin_version = "1.6.21"
@@ -41,9 +41,9 @@ buildscript {
     // updating breaks the tests (kotlin 1.7 dependency?)
     versions.nav_version = "2.4.0"
     versions.okhttp = "4.9.3"
-    versions.play_services_location = "21.0.0"
+    versions.play_services_location = "19.0.1"
     versions.play_services_ads_identifier = "18.0.1"
-    versions.play_services_maps = "18.1.0"
+    versions.play_services_maps = "18.0.2"
     versions.play_core = "1.10.3"
     versions.play_core_ktx = "1.8.1"
     versions.recyclerview = "1.2.1"
@@ -75,7 +75,7 @@ buildscript {
     dependencies {
         // using this version because kotlin-android-extensions is deprecated in later versions
         // not using variables for version to take advantage of Android Studio GUI for changing plugin version
-        classpath 'com.android.tools.build:gradle:7.0.4'
+        classpath 'com.android.tools.build:gradle:7.0.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin_version}"
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:${versions.nav_version}"
         classpath "com.google.gms:google-services:${versions.google_services}"

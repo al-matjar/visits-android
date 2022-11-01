@@ -4,12 +4,13 @@ include ':android-kotlin-geohash'
 
 dependencyResolutionManagement {
     repositories {
+        google()
+        mavenCentral()
+        jcenter()
+
         maven {
             name 'hypertrack'
             url 'https://s3-us-west-2.amazonaws.com/m2.hypertrack.com/'
         }
-
-        google()
-        mavenCentral()
     }
 }
