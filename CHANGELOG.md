@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.6] - 2022-11-01
+
+### Changed
+
+- Updated dependencies
+
 ## [1.0.5] - 2022-11-01
 
 ### Fixed
