@@ -15,6 +15,10 @@ data class GeofencesForMapState(
         tiles.values.any { it.status is Loading }
     }
 
+    override fun toString(): String {
+        return "${javaClass.simpleName}(notLoadedTiles=${tiles.filter { it.value.status !is Loaded }})"
+    }
+
     companion object {
         // geohash size, 1 - biggest
         const val GEOHASH_LETTERS_NUMBER = 4

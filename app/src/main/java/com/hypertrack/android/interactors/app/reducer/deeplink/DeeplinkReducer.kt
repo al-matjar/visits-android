@@ -28,6 +28,7 @@ import com.hypertrack.android.interactors.app.reducer.login.LoginReducer
 import com.hypertrack.android.interactors.app.state.AppInitialized
 import com.hypertrack.android.interactors.app.state.AppNotInitialized
 import com.hypertrack.android.interactors.app.state.AppState
+import com.hypertrack.android.interactors.app.state.NoneScreenView
 import com.hypertrack.android.interactors.app.state.SplashScreenView
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
 import com.hypertrack.android.interactors.app.state.UserNotLoggedIn
@@ -117,17 +118,20 @@ class DeeplinkReducer(
                         val newState = state.copy(showProgressbar = false)
                         when (state.userState) {
                             is UserLoggedIn -> {
+                                val navigateEffect = NavigateAppEffect(
+                                    NavigateToUserScopeScreensEffect(viewState, state.userState)
+                                )
                                 newState.withEffects(
                                     errorEffect,
-                                    NavigateAppEffect(
-                                        NavigateToUserScopeScreensEffect(viewState, state.userState)
-                                    )
+                                    navigateEffect
                                 )
                             }
                             UserNotLoggedIn -> {
+                                val navigateEffect =
+                                    NavigateAppEffect(NavigateToSignInEffect(viewState))
                                 newState.withEffects(
                                     errorEffect,
-                                    NavigateAppEffect(NavigateToSignInEffect(viewState))
+                                    navigateEffect
                                 )
                             }
                         }
@@ -160,9 +164,7 @@ class DeeplinkReducer(
                     }
                     is DeeplinkError -> {
                         state.copy(showProgressbar = false).withEffects(
-                            ShowAndReportAppErrorEffect(
-                                action.deeplinkResult.exception
-                            )
+                            getDeeplinkErrorEffect(action.deeplinkResult)
                         )
                     }
                     NoDeeplink -> {

@@ -294,7 +294,7 @@ class DeeplinkCheckedActionTest {
                 assertFalse(newState.showProgressbar)
                 result.effects.assertWithChecks(
                     createStopDeeplinkTimeoutTimerCheck(),
-                    { it.assertHasEffect(ShowAndReportAppErrorEffect::class) }
+                    { it.assertHasEffect(ReportAppErrorEffect::class) }
                 )
             }
         }
@@ -335,7 +335,7 @@ class DeeplinkCheckedActionTest {
                 assertFalse(newState.showProgressbar)
                 result.effects.assertWithChecks(
                     createEffectCheck<StopTimer> { it.timer is DeeplinkCheckTimeoutTimer },
-                    { it.assertHasEffect(ShowAndReportAppErrorEffect::class) }
+                    { it.assertHasEffect(ReportAppErrorEffect::class) }
                 )
             }
         }

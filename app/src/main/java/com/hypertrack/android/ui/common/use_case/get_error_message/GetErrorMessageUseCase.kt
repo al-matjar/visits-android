@@ -97,12 +97,14 @@ class GetErrorMessageUseCase(
                 exception is DeeplinkTimeoutException -> {
                     getTextErrorString(TextError(R.string.error_deeplink_timeout))
                 }
+                exception is BranchErrorException -> {
+                    getTextErrorString(TextError(R.string.error_branch))
+                }
                 exception.isNetworkError() -> {
                     getTextErrorString(NetworkError)
                 }
                 (
-                        exception is BranchErrorException ||
-                                exception is ManuallyTriggeredException ||
+                        exception is ManuallyTriggeredException ||
                                 exception is IllegalActionException ||
                                 exception is UnknownPushNotificationException
                         ) -> {

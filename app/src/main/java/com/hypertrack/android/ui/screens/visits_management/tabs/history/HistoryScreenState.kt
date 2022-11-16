@@ -29,5 +29,14 @@ data class MapReadyState(
     val map: HypertrackMapWrapper,
     val historyState: LoadingState<HistorySuccessState, ErrorMessage>,
     val viewEventHandle: MutableLiveData<Consumable<ViewEvent>>
-) : HistoryScreenState()
+) : HistoryScreenState() {
+    override fun toString(): String {
+        return listOf(
+            "date=$date",
+            "historyState=$historyState",
+        ).joinToString(", ").let {
+            "${javaClass.simpleName}($it)"
+        }
+    }
+}
 

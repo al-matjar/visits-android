@@ -60,10 +60,6 @@
     <string name="directions_button">Show in Maps app</string>
     <string name="address_hint">Please check the address below and if it empty or wrong, enter the correct value (if possible)</string>
 
-    <string name="error_unknown">Unknown error</string>
-    <string name="error_network">Network error. Please check your internet connection</string>
-    <string name="error_server">Unknown server error</string>
-
     <string name="notification_important_channel_name">HyperTrack Important Notifications</string>
     <string name="notification_important_channel_description">HyperTrack Visits app notifications</string>
     <string name="notification_new_trip">A new trip was assigned to you</string>
@@ -260,13 +256,17 @@
     <string name="outage_open_dontkillmyapp">Click to open <b>Dontkillmyapp.com</b> for detailed instructions</string>
     <string name="outage_dontkillmyapp_hint">Select your device manufacturer and follow the instructions to whitelist the app</string>
 
+    <string name="app_message_logged_in">Logged in as: %s</string>
+    <string name="app_message_error_reported">The issue is reported. Thank you.</string>
+
+    <string name="error_unknown">Unknown error (This is not supposed to happen. Please report this using the \"Send Feedback\" button on Profile tab. Press here to copy detailed error info)</string>
+    <string name="error_network">Network error. Please check your internet connection</string>
+    <string name="error_server">Unknown server error</string>
     <string name="error_account_suspended">Account suspended</string>
     <string name="error_already_logged_in">You\'re already logged in</string>
     <string name="error_login_already_in_progress">Login is already in progress</string>
     <string name="error_deeplink_timeout">Deeplink check timed out</string>
-
-    <string name="app_message_logged_in">Logged in as: %s</string>
-    <string name="app_message_error_reported">The issue is reported. Thank you.</string>
+    <string name="error_branch">Branch.io service error</string>
 
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="geotag">Geotag</string>
