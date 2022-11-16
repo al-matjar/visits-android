@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.0.7] - 2022-11-16
+
+### Fixed
+
+- Unknown error on opening app
+
 ## [1.0.6] - 2022-11-01
 
 ### Changed
