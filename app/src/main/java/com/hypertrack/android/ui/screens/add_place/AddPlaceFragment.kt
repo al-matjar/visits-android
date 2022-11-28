@@ -15,13 +15,12 @@ import kotlinx.coroutines.FlowPreview
 @FlowPreview
 open class AddPlaceFragment : SelectDestinationFragment() {
 
-    protected override val vm: AddPlaceViewModel by viewModels {
+    override val vm: AddPlaceViewModel by viewModels {
         Injector.provideUserScopeViewModelFactory()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        Injector.provideAppInteractor().handleAction(RegisterScreenAction(AddPlaceScreen))
 
         toolbar.title = getString(R.string.add_place)
 
@@ -32,4 +31,7 @@ open class AddPlaceFragment : SelectDestinationFragment() {
         }
     }
 
+    override fun registerScreen() {
+        Injector.provideAppInteractor().handleAction(RegisterScreenAction(AddPlaceScreen))
+    }
 }

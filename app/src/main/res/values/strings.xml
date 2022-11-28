@@ -77,7 +77,7 @@
 
     <string name="sign_in_deeplink_issues">Having issues with the deeplink?</string>
     <string name="sign_in_deeplink_hint">In case if you have a deeplink \n you have to click it to log in</string>
-    <string name="sign_in_paste_deeplink_hint">Paste the deeplink or login token here</string>
+    <string name="sign_in_paste_deeplink_hint">Paste your deeplink here</string>
     <string name="sign_in_hardware_id">Hardware ID</string>
     <string name="sign_in_deeplink_invalid_format">Invalid deeplink format.\nCorrect format: \n\n <b>https://hypertrack-logistics.app.link/\u2026</b></string>
 
@@ -207,7 +207,7 @@
     <string name="add_place_company_name">Company name</string>
     <string name="add_place_geofence_description">Description</string>
     <string name="add_place_geofence_radius">Radius (meters)</string>
-    <string name="add_place_timeout">Operation timed out, please try again</string>
+    <string name="add_place_timeout">The app needs to check for adjacent geofences near the location that you select. This check is timed out, the data wasn\'t able to be loaded in time. This may be caused by poor internet connection or server issues. Please try again.</string>
     <string name="add_place_geofence_radius_validation_error">Radius value should be between %s and %s</string>
 
     <string name="add_place_info_adjacent_geofence_error">There is another geofence adjacent to this position. Creation of adjacent geofences is prohibited</string>
@@ -267,6 +267,7 @@
     <string name="error_login_already_in_progress">Login is already in progress</string>
     <string name="error_deeplink_timeout">Deeplink check timed out</string>
     <string name="error_branch">Branch.io service error</string>
+    <string name="error_branch_url_unsuitable_for_backend">Failed to get deeplink data. Please use \"Having issues with deeplink\" button to paste the link directly</string>
 
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="geotag">Geotag</string>

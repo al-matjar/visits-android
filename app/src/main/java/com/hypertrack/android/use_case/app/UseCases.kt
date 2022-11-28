@@ -1,9 +1,7 @@
 package com.hypertrack.android.use_case.app
 
 import com.hypertrack.android.di.AppScope
-import com.hypertrack.android.di.Injector
 import com.hypertrack.android.interactors.app.AppInteractor
-import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
 import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.use_case.login.GetPublishableKeyWithCognitoUseCase
@@ -15,19 +13,18 @@ import com.hypertrack.android.use_case.login.LoginWithPublishableKeyUseCase
 import com.hypertrack.android.use_case.login.RefreshUserAccessTokenUseCase
 import com.hypertrack.android.use_case.login.ResendEmailConfirmationUseCase
 import com.hypertrack.android.use_case.login.SignInUseCase
-import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkUseCase
+import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkParamsUseCase
+import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkUrlUseCase
+import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkUrlUseCase.Companion.createDeeplinkRegex
 import com.hypertrack.android.use_case.error.LogExceptionIfFailureUseCase
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
-import com.hypertrack.android.use_case.geofences.CheckForAdjacentGeofencesUseCase
-import com.hypertrack.android.use_case.geofences.LoadGeofencesForMapUseCase
 import com.hypertrack.android.use_case.login.DeleteUserScopeDataUseCase
 import com.hypertrack.android.use_case.login.DeleteUserScopeUseCase
 import com.hypertrack.android.use_case.login.LoadUserDataUseCase
 import com.hypertrack.android.use_case.login.VerifyByOtpCodeUseCase
 import com.hypertrack.android.use_case.sdk.GetConfiguredHypertrackSdkInstanceUseCase
 import com.hypertrack.android.use_case.sdk.GetHypertrackSdkInstanceUseCase
-import com.hypertrack.android.utils.Intersect
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
 class UseCases(
@@ -93,7 +90,7 @@ class UseCases(
     )
 
     val loginWithDeeplinkParamsUseCase = LoginWithDeeplinkParamsUseCase(
-        ValidateDeeplinkUseCase(appScope.moshi)
+        ValidateDeeplinkParamsUseCase(appScope.moshi)
     )
 
     val signInUseCase = SignInUseCase(
@@ -116,6 +113,8 @@ class UseCases(
     val navigateToUserScopeScreensUseCase = NavigateToUserScopeScreensUseCase()
 
     val getErrorMessageUseCase = GetErrorMessageUseCase(appScope.resourceProvider)
+
+    val validateDeeplinkUrlUseCase = ValidateDeeplinkUrlUseCase(createDeeplinkRegex())
 
     val getBranchDataFromAppBackendUseCase = GetBranchDataFromAppBackendUseCase(
         appInteractor.appScope.appBackendApi,

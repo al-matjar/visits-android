@@ -1,6 +1,7 @@
 package com.hypertrack.android.ui.screens.add_place_info
 
 import com.google.android.gms.maps.model.LatLng
+import com.hypertrack.android.interactors.app.AppAction
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map_state.MapUiEffect
 import com.hypertrack.android.ui.common.map_state.UpdateGeofenceForDetailsEffect
@@ -42,3 +43,5 @@ data class StartUpdateRadiusEffect(
     val location: LatLng,
     val radius: Int?,
 ) : Effect()
+
+data class AppActionEffect(val appAction: AppAction) : Effect()

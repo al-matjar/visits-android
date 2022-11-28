@@ -1,6 +1,7 @@
 package com.hypertrack.android.utils
 
 import androidx.test.platform.app.InstrumentationRegistry
+import com.hypertrack.android.use_case.app.AppCreationUseCase.Companion.LIVE_API_URL_BASE
 import com.hypertrack.logistics.android.github.R
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.runBlocking
@@ -32,7 +33,7 @@ class AwsLoginProviderTest {
     private val cognitoExchangeTokenApi by lazy {
         val retrofit = Retrofit.Builder()
             .baseUrl(LIVE_API_URL_BASE)
-            .addConverterFactory(MoshiConverterFactory.create(Injector.getMoshi()))
+            .addConverterFactory(MoshiConverterFactory.create(TestInjector.getMoshi()))
             .build()
         return@lazy retrofit.create(CognitoExchangeTokenApi::class.java)
     }

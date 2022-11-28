@@ -1,7 +1,13 @@
 package com.hypertrack.android.ui.screens.add_place_info
 
 import com.hypertrack.android.interactors.PlacesInteractor
+import com.hypertrack.android.interactors.app.GeofencesForMapAppAction
+import com.hypertrack.android.interactors.app.action.LoadGeofencesForMapAction
+import com.hypertrack.android.interactors.app.reducer.geofences_for_map.GeofencesForMapReducer
+import com.hypertrack.android.interactors.app.state.GeofencesForMapState
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.interactors.app.state.allGeofences
+import com.hypertrack.android.models.local.GeofenceForMap
 import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.ui.common.map_state.MapUiState
 import com.hypertrack.android.ui.common.map_state.OnMapMovedMapUiAction
@@ -13,6 +19,7 @@ import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionErro
 import com.hypertrack.android.ui.common.use_case.get_error_message.TextError
 import com.hypertrack.android.ui.common.use_case.get_error_message.UnknownError
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
+import com.hypertrack.android.ui.common.util.getGeoHash
 import com.hypertrack.android.use_case.app.UserScopeUseCases
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.state_machine.ReducerResult
@@ -41,10 +48,18 @@ class AddPlaceInfoReducer(
                     is InitFinishedAction -> {
                         val defaultRadius = PlacesInteractor.DEFAULT_RADIUS
 
+                        // gets update effects for map ui state
                         mapUiReducer.reduce(
                             UpdateMapViewMapUiAction(action.map),
                             MapUiState(
-                                action.map
+                                action.map,
+                                geofences = GeofencesForMapReducer().getSubState(
+                                    action.location.getGeoHash(
+                                        GeofencesForMapState.GEOHASH_LETTERS_NUMBER
+                                    ), userState.geofencesForMap.tiles
+                                ).allGeofences().map {
+                                    GeofenceForMap.fromGeofence(it)
+                                }.toSet()
                             )
                         ).withState {
                             Initialized(
@@ -70,7 +85,7 @@ class AddPlaceInfoReducer(
                         }
                     }
                     is OnErrorAction -> {
-                        reduce(action)
+                        reduce(action, state)
                     }
                     is MapUiAction,
                     is MapMovedAction,
@@ -81,6 +96,7 @@ class AddPlaceInfoReducer(
                     }
                     IntegrationDeletedAction,
                     GeofenceNameClickedAction,
+                    RetryAction,
                     is AddressChangedAction,
                     is CreateGeofenceAction,
                     is GeofenceCreationErrorAction,
@@ -107,7 +123,7 @@ class AddPlaceInfoReducer(
                         reduce(action, state, userState.useCases)
                     }
                     is OnErrorAction -> {
-                        reduce(action)
+                        reduce(action, state)
                     }
                     GeofenceNameClickedAction -> {
                         when (state.integrations) {
@@ -153,22 +169,7 @@ class AddPlaceInfoReducer(
                         )
                     }
                     is CreateGeofenceAction -> {
-                        if (state.radius != null) {
-                            CreatingGeofence(state).withEffects(
-                                CreateGeofenceEffect(
-                                    GeofenceCreationData(
-                                        integration = when (state.integrations) {
-                                            is IntegrationsDisabled -> null
-                                            is IntegrationsEnabled -> state.integrations.integration
-                                        },
-                                        radius = state.radius,
-                                        params = action.params,
-                                    )
-                                )
-                            )
-                        } else {
-                            ErrorState(R.string.add_place_info_radius_null.asError()).withEffects()
-                        }
+                        reduce(action, state)
                     }
                     is InitFinishedAction, is GeofenceCreationErrorAction -> {
                         illegalAction(action, state)
@@ -222,10 +223,60 @@ class AddPlaceInfoReducer(
                                 }
                             }
                     }
+                    RetryAction -> {
+                        illegalAction(action, state)
+                    }
                 }
             }
             is ErrorState -> {
-                state.withEffects()
+                when (action) {
+                    is RetryAction -> {
+                        val restoredState: Initialized? = when (state.previousState) {
+                            is Initialized -> {
+                                state.previousState
+                            }
+                            is CheckingForAdjacentGeofence -> {
+                                state.previousState.previousState
+                            }
+                            is CreatingGeofence -> {
+                                state.previousState.previousState
+                            }
+                            is ErrorState -> {
+                                null
+                            }
+                            Initial -> {
+                                null
+                            }
+                        }
+                        restoredState?.let {
+                            it.withEffects(
+                                AppActionEffect(
+                                    GeofencesForMapAppAction(
+                                        LoadGeofencesForMapAction(
+                                            it.location
+                                        )
+                                    )
+                                )
+                            )
+                        } ?: illegalAction(action, state)
+                    }
+                    else -> {
+                        state.withEffects()
+                    }
+                }
+            }
+            is CheckingForAdjacentGeofence -> {
+                when (action) {
+                    is CreateGeofenceAction -> {
+                        reduce(action, state.previousState)
+                    }
+                    is OnErrorAction -> {
+                        reduce(action, state)
+                    }
+                    else -> {
+                        state.withEffects()
+                    }
+                }
             }
             is CreatingGeofence -> {
                 when (action) {
@@ -235,7 +286,7 @@ class AddPlaceInfoReducer(
                         )
                     }
                     is OnErrorAction -> {
-                        reduce(action)
+                        reduce(action, state)
                     }
                     else -> {
                         state.withEffects()
@@ -280,7 +331,7 @@ class AddPlaceInfoReducer(
             }
             else -> {
                 if (state.radius != null) {
-                    state.withEffects(
+                    CheckingForAdjacentGeofence(state).withEffects(
                         ProceedWithAdjacentGeofenceCheckEffect(
                             action.params,
                             state.radius,
@@ -288,20 +339,42 @@ class AddPlaceInfoReducer(
                         )
                     )
                 } else {
-                    ErrorState(R.string.add_place_info_radius_null.asError()).withEffects()
+                    ErrorState(state, R.string.add_place_info_radius_null.asError()).withEffects()
                 }
             }
         }
     }
 
+    private fun reduce(
+        action: CreateGeofenceAction,
+        state: Initialized
+    ): ReducerResult<State, Effect> {
+        return if (state.radius != null) {
+            CreatingGeofence(state).withEffects(
+                CreateGeofenceEffect(
+                    GeofenceCreationData(
+                        integration = when (state.integrations) {
+                            is IntegrationsDisabled -> null
+                            is IntegrationsEnabled -> state.integrations.integration
+                        },
+                        radius = state.radius,
+                        params = action.params,
+                    )
+                )
+            )
+        } else {
+            ErrorState(state, R.string.add_place_info_radius_null.asError()).withEffects()
+        }
+    }
+
     private fun illegalAction(action: Action, state: State): ReducerResult<State, Effect> {
-        return ErrorState(UnknownError).withEffects(
+        return ErrorState(state, UnknownError).withEffects(
             LogExceptionToCrashlyticsEffect(IllegalActionException(action, state))
         )
     }
 
-    private fun reduce(action: OnErrorAction): ReducerResult<State, Effect> {
-        return ErrorState(action.error).withEffects(
+    private fun reduce(action: OnErrorAction, state: State): ReducerResult<State, Effect> {
+        return ErrorState(state, action.error).withEffects(
             when (action.error) {
                 is ExceptionError -> setOf(LogExceptionToCrashlyticsEffect(action.error.exception))
                 is ComplexTextError, is TextError -> setOf()

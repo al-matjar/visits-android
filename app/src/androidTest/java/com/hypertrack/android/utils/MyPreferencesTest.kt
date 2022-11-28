@@ -3,16 +3,10 @@ package com.hypertrack.android.utils
 import androidx.test.platform.app.InstrumentationRegistry
 import com.hypertrack.android.interactors.PhotoForUpload
 import com.hypertrack.android.interactors.PhotoUploadingState
-import com.hypertrack.android.repository.BasicAuthAccessTokenRepository
-import com.hypertrack.android.repository.Driver
 import com.hypertrack.android.repository.MyPreferences
-import com.hypertrack.android.ui.screens.visits_management.tabs.places.Visit
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 
 
@@ -26,49 +20,23 @@ class MyPreferencesTest {
         myPreferences =
             MyPreferences(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                Injector.getMoshi()
+                TestInjector.getMoshi(),
+                object : CrashReportsProvider {
+                    override fun logException(exception: Throwable, metadata: Map<String, String>) {
+                    }
+
+                    override fun log(txt: String) {
+                    }
+
+                    override fun setUserIdentifier(id: String) {
+                    }
+
+                    override fun setCustomKey(key: String, value: String) {
+                    }
+                }
             )
         myPreferences.clearPreferences()
     }
-
-    @Test
-    fun itShouldReturnDriverWithoutIdIfNoDriverSaved() {
-        val driver = myPreferences.getDriverValue()
-        assertTrue(driver.driverId.isEmpty())
-    }
-
-    @Test
-    fun itShouldReturnNullIfNoRepoSaved() {
-        assertNull(myPreferences.restoreRepository())
-    }
-
-    @Test
-    fun crudDriver() {
-
-        val driverId = "Kowalski"
-
-        val driver = Driver(driverId)
-        myPreferences.saveDriver(driver)
-        val restoredDriver = myPreferences.getDriverValue()
-        assertEquals(driverId, restoredDriver.driverId)
-        myPreferences.clearPreferences()
-    }
-
-    @Test
-    fun crudDriverWithAccessTokenRepo() {
-
-        val token = "expired.jwt.token"
-        val repo = BasicAuthAccessTokenRepository("localhost", "42", "fake-key", "", token)
-
-        myPreferences.persistRepository(repo)
-
-        val restoredRepo = myPreferences.restoreRepository()!!
-        assertEquals(token, restoredRepo.getAccessToken())
-
-
-        myPreferences.clearPreferences()
-    }
-
 
     @Test
     fun crudPhotoUploadQueue() {

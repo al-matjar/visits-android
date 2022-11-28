@@ -7,6 +7,7 @@ import com.hypertrack.android.utils.MyApplication
 data class GeofencesForMapState(
     val tiles: Map<GeoHash, GeoCacheItem> = mapOf(),
 ) {
+    // todo optimize
     fun allGeofences(): List<Geofence> {
         return tiles.allGeofences()
     }

@@ -22,6 +22,8 @@ import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
+import com.hypertrack.android.use_case.app.threading.ActionsScope
+import com.hypertrack.android.use_case.app.threading.EffectsScope
 import com.hypertrack.android.use_case.sdk.TrackingState
 import com.hypertrack.android.utils.BatteryLevelMonitor
 import com.hypertrack.android.utils.CognitoAccountLoginProvider
@@ -79,8 +81,9 @@ class AppScope(
     val notificationUtil: NotificationUtil,
     val moshi: Moshi,
     val trackingStateListener: (TrackingState) -> Unit,
-    val appCoroutineScope: CoroutineScope,
-    val stateMachineContext: CoroutineContext,
+    // threading
+    val actionsScope: ActionsScope,
+    val effectsScope: EffectsScope
 ) {
 
     override fun toString(): String = javaClass.simpleName

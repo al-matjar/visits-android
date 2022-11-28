@@ -43,7 +43,7 @@ class LoadUserStateUseCase(
     // required by UserScope.TripInteractor
     fun execute(
         userLoginStatus: UserLoginStatus,
-    ): Flow<Result<UserState>> {
+    ): Flow<Result<out UserState>> {
         return when (userLoginStatus) {
             is LoggedIn -> {
                 createUserScopeUseCase.execute(

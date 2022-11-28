@@ -1,4 +1,4 @@
-package com.hypertrack.android.interactors.app.reducer
+package com.hypertrack.android.interactors.app.reducer.geofences_for_map
 
 import com.fonfon.kgeohash.GeoHash
 import com.hypertrack.android.interactors.app.AppEffect
@@ -20,12 +20,13 @@ import com.hypertrack.android.ui.common.util.getGeoHash
 import com.hypertrack.android.use_case.app.UserScopeUseCases
 import com.hypertrack.android.use_case.geofences.PageFailure
 import com.hypertrack.android.use_case.geofences.PageSuccess
-import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.exception.IllegalActionException
 import com.hypertrack.android.utils.withEffects
 
 class GeofencesForMapReducer {
+
+    private val itemReducer = GeofenceForMapItemReducer()
 
     fun reduce(
         action: GeofencesForMapAction,
@@ -85,39 +86,13 @@ class GeofencesForMapReducer {
     ): ReducerResult<MutableMap<GeoHash, GeoCacheItem>, AppEffect> {
         val results = subState.map {
             // get the new state for each and loading effects if needed
-            reduce(action, it.key, it.value, useCases)
+            itemReducer.reduce(action, it.key, it.value, useCases)
         }
         val newState = mutableMapOf<GeoHash, GeoCacheItem>().apply {
             results.forEach { put(it.newState.geoHash, it.newState) }
         }
         val effects = results.map { it.effects }.flatten().toSet()
         return newState.withEffects(effects)
-    }
-
-    // get loading state and load effect for item
-    private fun reduce(
-        action: LoadGeofencesForMapAction,
-        geoHash: GeoHash,
-        itemState: GeoCacheItem?,
-        useCases: UserScopeUseCases
-    ): ReducerResult<out GeoCacheItem, out LoadGeofencesForMapEffect> {
-        return when (val data = itemState?.status) {
-            // no item (there wasn't loading attempts for this GeoHash before)
-            null -> {
-                GeoCacheItem(geoHash, Loading).withEffects(
-                    LoadGeofencesForMapEffect(geoHash, pageToken = null, useCases)
-                )
-            }
-            is LoadingError -> {
-                itemState.withEffects(
-                    LoadGeofencesForMapEffect(geoHash, pageToken = data.nextPageToken, useCases)
-                )
-            }
-            is Loading, is Loaded -> {
-                // no need to init loading
-                itemState.withEffects()
-            }
-        }
     }
 
     // get new item state with loaded data

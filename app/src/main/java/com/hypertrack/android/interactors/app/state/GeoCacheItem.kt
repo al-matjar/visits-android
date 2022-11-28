@@ -40,5 +40,9 @@ data class LoadingError(
     }
 }
 
-object Loading : GeoCacheItemStatus()
+data class Loading(
+    val geofences: List<Geofence> = listOf(),
+    // null = first page
+    val nextPageToken: String? = null,
+) : GeoCacheItemStatus()
 

@@ -3,6 +3,7 @@
 package com.hypertrack.android.ui.screens.add_place_info
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -29,13 +30,6 @@ import com.hypertrack.android.ui.common.map_state.MapUiReducer
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
 import com.hypertrack.android.ui.common.util.isNearZero
 import com.hypertrack.android.ui.common.util.postValue
-import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.DEGREES_0
-import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.DEGREES_180
-import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.DEGREES_270
-import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.DEGREES_90
-import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.MAP_CAMERA_PADDING
-import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.RADIUS_CIRCLE_NULL_VALUE
-import com.hypertrack.android.ui.screens.add_place_info.AddPlaceInfoEffectsHandler.Companion.RADIUS_SHAPE_NULL_VALUE
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.exception.IllegalActionException
@@ -77,13 +71,13 @@ class AddPlaceInfoViewModel(
         javaClass.simpleName,
         crashReportsProvider,
         Initial,
-        viewModelScope,
-        Dispatchers.Main,
+        actionsScope,
         this::reduce,
         this::applyEffects,
         this::stateChangeEffects
     )
     private val effectsHandler = AddPlaceInfoEffectsHandler(
+        appInteractor,
         location,
         this::init,
         this::handleAction,
@@ -96,7 +90,9 @@ class AddPlaceInfoViewModel(
         getErrorMessageUseCase,
         showErrorUseCase,
         logExceptionToCrashlyticsUseCase,
-        userStateFlow.mapState(appInteractor.appScope.appCoroutineScope) { it?.geofencesForMap }
+        userStateFlow.mapState(appInteractor.appScope.actionsScope) {
+            it?.geofencesForMap
+        }
     )
 
     init {

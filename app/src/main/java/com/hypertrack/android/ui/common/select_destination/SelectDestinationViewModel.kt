@@ -73,8 +73,7 @@ open class SelectDestinationViewModel(
     private val mapUiReducer = dependencies.mapUiReducer
     private val mapUiEffectHandler = dependencies.mapUiEffectHandler
 
-    //    private val enableLogging = MyApplication.DEBUG_MODE
-    private val enableLogging = true
+    private val enableLogging = MyApplication.DEBUG_MODE
 
     protected open val defaultZoom = 13f
 

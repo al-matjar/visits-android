@@ -1,6 +1,7 @@
 package com.hypertrack.android.ui.common.select_destination.reducer
 
 import com.hypertrack.android.interactors.app.state.UserLoggedIn
+import com.hypertrack.android.models.local.GeofenceForMap
 import com.hypertrack.android.ui.common.map.HypertrackMapWrapper
 import com.hypertrack.android.ui.common.map_state.AddGeofencesMapUiAction
 import com.hypertrack.android.ui.common.map_state.MapUiReducer
@@ -183,7 +184,10 @@ class SelectDestinationViewModelReducer(
                         mapUiReducer.reduce(
                             UpdateMapViewMapUiAction(action.map), MapUiState(
                                 action.map,
-                                userLocation = state.userLocation?.latLng
+                                userLocation = state.userLocation?.latLng,
+                                geofences = userState.geofencesForMap.allGeofences().map {
+                                    GeofenceForMap.fromGeofence(it)
+                                }.toSet()
                             )
                         ).withState {
                             MapReady(

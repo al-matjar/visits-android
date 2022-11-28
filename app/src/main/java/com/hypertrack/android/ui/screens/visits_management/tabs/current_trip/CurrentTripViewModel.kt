@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 @Suppress("OPT_IN_USAGE", "EXPERIMENTAL_API_USAGE")
 class CurrentTripViewModel(
@@ -60,8 +61,7 @@ class CurrentTripViewModel(
         NotInitializedState(
             userLocation = null
         ),
-        viewModelScope,
-        appInteractor.appScope.stateMachineContext,
+        actionsScope,
         reducer::reduce,
         this::applyEffects,
         reducer::stateChangeEffects
@@ -124,7 +124,7 @@ class CurrentTripViewModel(
     }
 
     private fun applyEffect(effect: Effect) {
-        appInteractor.appScope.appCoroutineScope.launch {
+        appInteractor.appScope.effectsScope.value.launch {
             getEffectFlow(effect)
                 .catchException {
                     showExceptionMessageAndReport(it)
@@ -318,7 +318,7 @@ class CurrentTripViewModel(
             loadingState.postValue(true)
             userScope.tripsInteractor.completeTrip(tripId)
         }.asFlow()
-            .flowOn(appInteractor.appScope.stateMachineContext)
+            .flowOn(effectsScope.value.coroutineContext)
             .map {
                 when (it) {
                     JustSuccess -> map?.clear()

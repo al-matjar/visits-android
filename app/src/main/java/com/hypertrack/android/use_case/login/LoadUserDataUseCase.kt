@@ -18,7 +18,7 @@ class LoadUserDataUseCase(
 ) {
 
     @Suppress("IfThenToElvis")
-    fun execute(): Flow<Result<UserData>> {
+    fun execute(): Flow<Result<out UserData>> {
         return (userRepository.userData.load()).toFlow()
             .flatMapSuccess { userData ->
                 if (userData != null) {

@@ -4,7 +4,7 @@ import com.hypertrack.android.api.Point
 import com.hypertrack.android.api.models.RemoteTrip
 import com.hypertrack.android.api.TripDestination
 import com.hypertrack.android.api.Views
-import com.hypertrack.android.mock.TestMockData
+import com.hypertrack.android.mock.MockData
 import com.hypertrack.android.api.models.RemoteEstimate
 import com.hypertrack.android.api.models.RemoteOrder
 import com.hypertrack.android.models.local.OrderStatus
@@ -18,7 +18,7 @@ fun createBaseOrder(
 ): RemoteOrder {
     return RemoteOrder(
         id ?: ("order " + Math.random()),
-        TripDestination(TestMockData.PALO_ALTO_LAT_LNG, "Test Address"),
+        TripDestination(MockData.PALO_ALTO_LAT_LNG, "Test Address"),
         status.value,
         ZonedDateTime.now().toIso(),
         ZonedDateTime.now().toIso(),

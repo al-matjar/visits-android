@@ -41,10 +41,11 @@ class AddPlaceInfoViewModelTest {
         )
         val mockLiveData = mockk<MutableLiveData<Consumable<NavDirections>>>(relaxed = true)
         val effectsHandler = AddPlaceInfoEffectsHandler(
-            mockk(),
-            mockk(),
-            mockk(),
-            mockk(),
+            appInteractor = mockk(),
+            placeLocation = mockk(),
+            init = mockk(),
+            handleAction = mockk(),
+            viewState = mockk(),
             adjacentGeofenceDialogEvent = mockk(),
             placesInteractor = mockk(),
             mapItemsFactory = mockk(),
@@ -53,7 +54,7 @@ class AddPlaceInfoViewModelTest {
             showErrorUseCase = mockk(),
             destination = mockLiveData,
             geofencesForMapStateFlow = mockk(),
-            logExceptionToCrashlyticsUseCase = mockk()
+            logExceptionToCrashlyticsUseCase = mockk(),
         )
 
         val userState = userLoggedIn()

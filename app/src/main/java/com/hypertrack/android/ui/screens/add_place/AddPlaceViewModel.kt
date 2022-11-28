@@ -39,7 +39,7 @@ class AddPlaceViewModel(
     dependencies
 ) {
     private var radiusCircle: Circle? = null
-    private val geofencesForMapStateFlow = userState.mapState(viewModelScope) {
+    private val geofencesForMapStateFlow = userState.mapState(appInteractor.appScope.actionsScope) {
         it?.geofencesForMap
     }
 

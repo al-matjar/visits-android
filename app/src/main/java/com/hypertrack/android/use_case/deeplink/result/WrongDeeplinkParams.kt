@@ -1,30 +1,21 @@
-package com.hypertrack.android.use_case.deeplink
+package com.hypertrack.android.use_case.deeplink.result
 
 import com.hypertrack.android.ui.common.use_case.get_error_message.TextError
 import com.hypertrack.android.ui.common.use_case.get_error_message.UnknownError
-import com.hypertrack.android.ui.screens.sign_in.use_case.InvalidDeeplinkFormat
+import com.hypertrack.android.ui.screens.sign_in.use_case.exception.InvalidDeeplinkFormatException
+import com.hypertrack.android.use_case.deeplink.exception.InvalidDeeplinkParamsException
 import com.hypertrack.logistics.android.github.R
 
-sealed class DeeplinkFailure {
+sealed class WrongDeeplinkParams {
     override fun toString(): String = javaClass.simpleName
 
     fun toException(): Exception {
-        return InvalidDeeplinkException(this)
+        return InvalidDeeplinkParamsException(this)
     }
 
     fun toTextError(): TextError {
         val failure = this
         return when (failure) {
-            is DeeplinkException -> {
-                when (failure.exception) {
-                    is InvalidDeeplinkFormat -> {
-                        TextError(R.string.sign_in_deeplink_invalid_format)
-                    }
-                    else -> {
-                        UnknownError
-                    }
-                }
-            }
             NoPublishableKey -> {
                 TextError(R.string.splash_screen_no_key)
             }
@@ -41,8 +32,7 @@ sealed class DeeplinkFailure {
     }
 }
 
-data class DeeplinkException(val exception: Exception) : DeeplinkFailure()
-object DeprecatedDeeplink : DeeplinkFailure()
-object MirroredFieldsInMetadata : DeeplinkFailure()
-object NoLogin : DeeplinkFailure()
-object NoPublishableKey : DeeplinkFailure()
+object DeprecatedDeeplink : WrongDeeplinkParams()
+object MirroredFieldsInMetadata : WrongDeeplinkParams()
+object NoLogin : WrongDeeplinkParams()
+object NoPublishableKey : WrongDeeplinkParams()

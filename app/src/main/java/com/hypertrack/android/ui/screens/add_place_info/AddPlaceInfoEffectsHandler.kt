@@ -1,6 +1,5 @@
 package com.hypertrack.android.ui.screens.add_place_info
 
-import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -8,6 +7,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.SphericalUtil
 import com.hypertrack.android.interactors.PlacesInteractor
+import com.hypertrack.android.interactors.app.AppInteractor
 import com.hypertrack.android.interactors.app.noAction
 import com.hypertrack.android.interactors.app.state.GeofencesForMapState
 import com.hypertrack.android.repository.CreateGeofenceError
@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("OPT_IN_USAGE", "EXPERIMENTAL_API_USAGE")
 class AddPlaceInfoEffectsHandler(
+    private val appInteractor: AppInteractor,
     private val placeLocation: LatLng,
     private val init: suspend (map: HypertrackMapWrapper) -> Unit,
     private val handleAction: (action: Action) -> Unit,
@@ -100,6 +101,9 @@ class AddPlaceInfoEffectsHandler(
             }
             is UpdateRadiusAndZoomEffect -> {
                 getFlow(effect)
+            }
+            is AppActionEffect -> {
+                appInteractor.handleActionFlow(effect.appAction).noAction()
             }
         }
     }
@@ -229,7 +233,8 @@ class AddPlaceInfoEffectsHandler(
                     errorMessage = null,
                     integrationsViewState = createIntegrationsViewState(
                         IntegrationsDisabled(null)
-                    )
+                    ),
+                    showRetryButton = false
                 ).toFlow()
             }
             is Initialized -> {
@@ -243,6 +248,20 @@ class AddPlaceInfoEffectsHandler(
                     },
                     errorMessage = null,
                     integrationsViewState = createIntegrationsViewState(newState.integrations),
+                    showRetryButton = false
+                ).toFlow()
+            }
+            is CheckingForAdjacentGeofence -> {
+                ViewState(
+                    isLoading = true,
+                    address = null,
+                    radius = null,
+                    enableConfirmButton = false,
+                    errorMessage = null,
+                    integrationsViewState = createIntegrationsViewState(
+                        IntegrationsDisabled(null)
+                    ),
+                    showRetryButton = false
                 ).toFlow()
             }
             is CreatingGeofence -> {
@@ -254,7 +273,8 @@ class AddPlaceInfoEffectsHandler(
                     errorMessage = null,
                     integrationsViewState = createIntegrationsViewState(
                         IntegrationsDisabled(null)
-                    )
+                    ),
+                    showRetryButton = false
                 ).toFlow()
             }
             is ErrorState -> {
@@ -267,7 +287,10 @@ class AddPlaceInfoEffectsHandler(
                         errorMessage = errorMessage,
                         integrationsViewState = createIntegrationsViewState(
                             IntegrationsDisabled(null)
-                        )
+                        ),
+                        showRetryButton = newState.previousState.let {
+                            it is Initialized || it is CreatingGeofence || it is CheckingForAdjacentGeofence
+                        }
                     )
                 }
             }
@@ -293,7 +316,6 @@ class AddPlaceInfoEffectsHandler(
     }
 
     companion object {
-        const val RADIUS_SHAPE_NULL_VALUE = 1
         const val RADIUS_CIRCLE_NULL_VALUE = 50
         const val DEGREES_0 = 0.0
         const val DEGREES_90 = 90.0

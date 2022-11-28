@@ -28,12 +28,11 @@ open class SelectDestinationFragment :
         Injector.provideUserScopeViewModelFactory()
     }
 
-    private val adapter =
-        GooglePlacesAdapter()
+    private val adapter = GooglePlacesAdapter()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        Injector.provideAppInteractor().handleAction(RegisterScreenAction(SelectDestinationScreen))
+        registerScreen()
 
         (childFragmentManager.findFragmentById(R.id.mapView) as SupportMapFragment).getMapAsync {
             vm.onMapReady(requireContext(), it)
@@ -150,6 +149,10 @@ open class SelectDestinationFragment :
 
     private fun updateClearQueryView() {
         bClear.setGoneState(search.textString().isBlank())
+    }
+
+    protected open fun registerScreen() {
+        Injector.provideAppInteractor().handleAction(RegisterScreenAction(SelectDestinationScreen))
     }
 }
 

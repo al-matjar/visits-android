@@ -31,7 +31,9 @@ class ViewModelFactory(
             appInteractor,
             appScope.osUtilsProvider,
             appScope.osUtilsProvider,
-            appScope.crashReportsProvider
+            appScope.crashReportsProvider,
+            appScope.actionsScope,
+            appScope.effectsScope
         )
         return when (modelClass) {
             ConfirmEmailViewModel::class.java -> ConfirmEmailViewModel(
@@ -47,6 +49,7 @@ class ViewModelFactory(
                 useCases.loginWithDeeplinkParamsUseCase,
                 useCases.logExceptionToCrashlyticsUseCase,
                 useCases.logMessageToCrashlyticsUseCase,
+                useCases.validateDeeplinkUrlUseCase,
                 appScope.moshi
             ) as T
             VisitsManagementViewModel::class.java -> VisitsManagementViewModel(
@@ -59,7 +62,7 @@ class ViewModelFactory(
             ) as T
             HistoryViewModel::class.java -> HistoryViewModel(
                 baseViewModelDependencies,
-                appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+                appInteractor.appStateFlow.mapState(appScope.actionsScope) {
                     AppStateOptics.getHistoryViewState(it)
                 },
                 appScope.dateTimeFormatter,
@@ -72,7 +75,7 @@ class ViewModelFactory(
             ) as T
             CurrentTripViewModel::class.java -> CurrentTripViewModel(
                 baseViewModelDependencies,
-                MapUiEffectHandler(appInteractor)
+                MapUiEffectHandler(appInteractor),
             ) as T
             else -> throw IllegalArgumentException("Can't instantiate class $modelClass")
         }

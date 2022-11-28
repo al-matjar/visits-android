@@ -1,8 +1,6 @@
 package com.hypertrack.android.di
 
-import com.hypertrack.android.di.Injector.crashReportsProvider
 import io.mockk.mockk
-import junit.framework.TestCase
 
 class AppScopeTest {
     companion object {
@@ -43,8 +41,8 @@ class AppScopeTest {
                 notificationUtil = mockk(),
                 moshi = mockk(),
                 trackingStateListener = mockk(),
-                appCoroutineScope = mockk(),
-                stateMachineContext = mockk()
+                actionsScope = mockk(),
+                effectsScope = mockk()
             )
         }
     }

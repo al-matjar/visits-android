@@ -10,7 +10,8 @@ data class ViewState(
     val enableConfirmButton: Boolean,
     val integrationsViewState: IntegrationsViewState,
     val isLoading: Boolean,
-    val errorMessage: ErrorMessage?
+    val errorMessage: ErrorMessage?,
+    val showRetryButton: Boolean
 )
 
 sealed class IntegrationsViewState

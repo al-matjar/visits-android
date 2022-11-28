@@ -48,8 +48,7 @@ class AddGeotagViewModel(
         this::class.java.simpleName,
         crashReportsProvider,
         InitialState,
-        viewModelScope,
-        Dispatchers.Main,
+        actionsScope,
         this::handleAction,
         this::applyEffects,
         this::stateChangeEffects

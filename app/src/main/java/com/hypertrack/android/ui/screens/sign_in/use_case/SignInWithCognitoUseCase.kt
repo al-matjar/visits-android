@@ -1,6 +1,11 @@
 package com.hypertrack.android.ui.screens.sign_in.use_case
 
 import com.hypertrack.android.interactors.app.action.InitiateLoginAction
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.ConfirmationRequired
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.SignInInvalidLoginOrPassword
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.SignInNoSuchUser
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.SignInResult
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.SignInSuccess
 import com.hypertrack.android.use_case.login.CognitoException
 import com.hypertrack.android.use_case.login.CognitoLoginError
 import com.hypertrack.android.use_case.login.EmailConfirmationRequired

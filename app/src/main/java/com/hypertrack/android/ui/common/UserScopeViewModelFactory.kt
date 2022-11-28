@@ -38,9 +38,11 @@ class UserScopeViewModelFactory(
             appInteractor,
             appScope.osUtilsProvider,
             appScope.osUtilsProvider,
-            appScope.crashReportsProvider
+            appScope.crashReportsProvider,
+            appScope.actionsScope,
+            appScope.effectsScope
         )
-        val userLoggedInFlow = appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+        val userLoggedInFlow = appInteractor.appStateFlow.mapState(appScope.actionsScope) {
             AppStateOptics.getUserLoggedIn(it)
         }
         val selectDestinationViewModelDependencies = SelectDestinationViewModelDependencies(
@@ -68,7 +70,7 @@ class UserScopeViewModelFactory(
             ) as T
             AddIntegrationViewModel::class.java -> AddIntegrationViewModel(
                 baseDependencies,
-                appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+                appInteractor.appStateFlow.mapState(appScope.actionsScope) {
                     AppStateOptics.getUserLoggedIn(it)
                 },
                 userScope.integrationsRepository
@@ -92,7 +94,7 @@ class UserScopeViewModelFactory(
             ) as T
             SummaryViewModel::class.java -> SummaryViewModel(
                 baseDependencies,
-                appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+                appInteractor.appStateFlow.mapState(appScope.actionsScope) {
                     AppStateOptics.getHistoryState(it)?.days?.get(LocalDate.now()) ?: Loading()
                 },
                 appScope.distanceFormatter,

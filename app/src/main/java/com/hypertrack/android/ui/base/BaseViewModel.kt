@@ -11,6 +11,8 @@ import com.hypertrack.android.ui.common.use_case.get_error_message.ExceptionErro
 import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessageUseCase
 import com.hypertrack.android.ui.common.use_case.get_error_message.TextError
 import com.hypertrack.android.ui.common.util.postValue
+import com.hypertrack.android.use_case.app.threading.ActionsScope
+import com.hypertrack.android.use_case.app.threading.EffectsScope
 import com.hypertrack.android.utils.*
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +34,8 @@ open class BaseViewModel(
     protected val appInteractor = baseDependencies.appInteractor
     protected val osUtilsProvider = baseDependencies.osUtilsProvider
     protected val resourceProvider = baseDependencies.resourceProvider
+    protected val actionsScope = baseDependencies.actionsScope
+    protected val effectsScope = baseDependencies.effectsScope
 
     val destination = MutableLiveData<Consumable<NavDirections>>()
     val popBackStack = MutableLiveData<Consumable<Boolean>>()
@@ -128,6 +132,8 @@ class BaseViewModelDependencies(
     val osUtilsProvider: OsUtilsProvider,
     val resourceProvider: ResourceProvider,
     val crashReportsProvider: CrashReportsProvider,
+    val actionsScope: ActionsScope,
+    val effectsScope: EffectsScope
 )
 
 fun NavController.navigate(d: Consumable<NavDirections>) {

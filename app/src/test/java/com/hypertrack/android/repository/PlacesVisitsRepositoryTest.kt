@@ -7,7 +7,7 @@ import com.hypertrack.android.api.graphql.models.GraphQlDayVisitsStats
 import com.hypertrack.android.api.graphql.models.GraphQlGeofenceVisit
 import com.hypertrack.android.interactors.PlaceVisitsStats
 import com.hypertrack.android.interactors.PlacesVisitsRepository
-import com.hypertrack.android.mock.TestMockData
+import com.hypertrack.android.mock.GeofenceVisitMockData
 import com.hypertrack.android.models.local.DeviceId
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.datetime.toIso
@@ -178,7 +178,7 @@ class PlacesVisitsRepositoryTest {
             arrival: ZonedDateTime = ZonedDateTime.now(),
             deviceId: String = "device_id"
         ): GraphQlGeofenceVisit {
-            return TestMockData.createGraphQlGeofenceVisit(arrival = arrival)
+            return GeofenceVisitMockData.createGraphQlGeofenceVisit(arrival = arrival)
         }
     }
 

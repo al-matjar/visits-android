@@ -2,28 +2,34 @@ package com.hypertrack.android.ui.screens.sign_in
 
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations.map
 import androidx.lifecycle.viewModelScope
 import com.hypertrack.android.interactors.app.LoginAppAction
 import com.hypertrack.android.interactors.app.action.InitiateLoginAction
 import com.hypertrack.android.interactors.app.noAction
 import com.hypertrack.android.ui.base.*
+import com.hypertrack.android.ui.common.use_case.get_error_message.TextError
 import com.hypertrack.android.ui.common.use_case.get_error_message.asError
 import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.util.requireValue
-import com.hypertrack.android.ui.screens.sign_in.use_case.ConfirmationRequired
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.ConfirmationRequired
 import com.hypertrack.android.ui.screens.sign_in.use_case.ConfirmationRequiredUseCase
 import com.hypertrack.android.ui.screens.sign_in.use_case.HandleDeeplinkFailureUseCase
-import com.hypertrack.android.ui.screens.sign_in.use_case.HandlePastedDeeplinkOrTokenUseCase
-import com.hypertrack.android.ui.screens.sign_in.use_case.SignInInvalidLoginOrPassword
-import com.hypertrack.android.ui.screens.sign_in.use_case.SignInNoSuchUser
-import com.hypertrack.android.ui.screens.sign_in.use_case.SignInResult
-import com.hypertrack.android.ui.screens.sign_in.use_case.SignInSuccess
+import com.hypertrack.android.ui.screens.sign_in.use_case.HandlePastedDeeplinkUseCase
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.SignInInvalidLoginOrPassword
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.SignInNoSuchUser
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.SignInResult
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.SignInSuccess
 import com.hypertrack.android.ui.screens.sign_in.use_case.SignInWithCognitoUseCase
-import com.hypertrack.android.use_case.deeplink.DeeplinkValidationError
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.InvalidParams
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.InvalidUrl
+import com.hypertrack.android.ui.screens.sign_in.use_case.result.PasteSuccess
+import com.hypertrack.android.use_case.deeplink.result.DeeplinkParamsInvalid
 import com.hypertrack.android.use_case.error.LogExceptionToCrashlyticsUseCase
 import com.hypertrack.android.use_case.error.LogMessageToCrashlyticsUseCase
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
 import com.hypertrack.android.use_case.deeplink.LoginWithDeeplinkParamsUseCase
+import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkUrlUseCase
 import com.hypertrack.android.use_case.login.SignInUseCase
 import com.hypertrack.android.utils.*
 import com.hypertrack.android.utils.state_machine.ReducerResult
@@ -46,18 +52,18 @@ class SignInViewModel(
     private val loginWithDeeplinkParamsUseCase: LoginWithDeeplinkParamsUseCase,
     private val logExceptionToCrashlyticsUseCase: LogExceptionToCrashlyticsUseCase,
     private val logMessageToCrashlyticsUseCase: LogMessageToCrashlyticsUseCase,
+    private val validateDeeplinkUrlUseCase: ValidateDeeplinkUrlUseCase,
     private val moshi: Moshi
 ) : BaseViewModel(baseDependencies) {
 
     private val signInWithCognitoUseCase = SignInWithCognitoUseCase(signInUseCase)
     private val confirmationRequiredUseCase = ConfirmationRequiredUseCase(destination)
-    private val handlePastedDeeplinkOrTokenUseCase = HandlePastedDeeplinkOrTokenUseCase(
+    private val handlePastedDeeplinkUseCase = HandlePastedDeeplinkUseCase(
+        validateDeeplinkUrlUseCase,
         getBranchDataFromAppBackendUseCase,
         loginWithDeeplinkParamsUseCase,
         logMessageToCrashlyticsUseCase,
         logExceptionToCrashlyticsUseCase,
-        osUtilsProvider,
-        moshi
     )
     private val handleDeeplinkFailureUseCase = HandleDeeplinkFailureUseCase(
         logExceptionToCrashlyticsUseCase,
@@ -72,8 +78,7 @@ class SignInViewModel(
             password = "",
             deeplinkIssuesDialog = Hidden,
         ),
-        viewModelScope,
-        Dispatchers.Main,
+        actionsScope,
         this::reduce,
         this::applyEffects,
         this::stateChangeEffects,
@@ -274,20 +279,25 @@ class SignInViewModel(
     private fun pasteDeeplinkOrTokenFlow(text: String): Flow<Unit> {
         return startLoading()
             .flatMapConcat {
-                handlePastedDeeplinkOrTokenUseCase.execute(text)
+                handlePastedDeeplinkUseCase.execute(text)
             }
-            .flatMapConcat { result: AbstractResult<InitiateLoginAction, DeeplinkValidationError> ->
+            .flatMapSuccess { result ->
                 when (result) {
-                    is AbstractSuccess -> {
-                        appInteractor.handleActionFlow(LoginAppAction(result.success)).map {
-                            JustSuccess
-                        }
+                    is PasteSuccess -> {
+                        appInteractor.handleActionFlow(LoginAppAction(result.action))
                     }
-                    is AbstractFailure -> {
-                        handleDeeplinkFailureUseCase.execute(result.failure.failure).map {
-                            JustSuccess
-                        }
+                    is InvalidParams -> {
+                        handleDeeplinkFailureUseCase.execute(result.error)
                     }
+                    InvalidUrl -> {
+                        showErrorUseCase.execute(TextError(R.string.sign_in_deeplink_invalid_format))
+                    }
+                }.map { it.asSuccess() }
+            }
+            .map {
+                when (it) {
+                    is Success -> JustSuccess
+                    is Failure -> onError(it.exception).asSimpleSuccess()
                 }
             }
             .showErrorAndReportIfFailure()

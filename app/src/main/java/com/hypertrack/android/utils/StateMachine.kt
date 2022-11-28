@@ -1,5 +1,6 @@
 package com.hypertrack.android.utils
 
+import com.hypertrack.android.use_case.app.threading.ActionsScope
 import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.state_machine.ReducerResultWithViewStateEffect
 import kotlinx.coroutines.CoroutineScope
@@ -12,8 +13,7 @@ open class StateMachine<A, S, E>(
     private val tag: String,
     private val crashReportsProvider: CrashReportsProvider,
     initialState: S,
-    private val scope: CoroutineScope,
-    private val context: CoroutineContext,
+    private val actionsScope: ActionsScope,
     private val reduce: (state: S, action: A) -> ReducerResult<out S, out E>,
     private val applyEffects: (effects: Set<E>) -> Unit,
     // effects that are need to be executed to move to certain state
@@ -25,7 +25,7 @@ open class StateMachine<A, S, E>(
         get() = _state
 
     fun handleAction(action: A) {
-        scope.launch(context) {
+        actionsScope.value.launch {
             reduce(_state, action).let {
                 _state = it.newState
                 val effects = stateChangeEffects.invoke(it.newState) + it.effects

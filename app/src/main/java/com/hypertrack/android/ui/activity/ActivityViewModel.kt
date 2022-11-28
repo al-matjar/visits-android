@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.asLiveData
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDirections
+import com.google.android.a.a
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
@@ -43,7 +44,9 @@ import com.hypertrack.android.ui.common.use_case.get_error_message.GetErrorMessa
 import com.hypertrack.android.ui.common.util.postValue
 import com.hypertrack.android.ui.common.util.requireValue
 import com.hypertrack.android.use_case.app.UseCases
+import com.hypertrack.android.use_case.app.threading.EffectsScope
 import com.hypertrack.android.use_case.deeplink.GetBranchDataFromAppBackendUseCase
+import com.hypertrack.android.use_case.deeplink.ValidateDeeplinkUrlUseCase
 import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.ErrorMessage
 import com.hypertrack.android.utils.Failure
@@ -60,16 +63,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.lang.Exception
+import com.hypertrack.android.utils.Result
+import com.hypertrack.android.utils.mapAppErrorAction
 
 class ActivityViewModel(
     private val appInteractor: AppInteractor,
     private val appState: LiveData<AppState>,
     private val crashReportsProvider: CrashReportsProvider,
-    private val resourceProvider: ResourceProvider,
     private val branchWrapper: BranchWrapper,
-    private val appCoroutineScope: CoroutineScope,
+    private val effectsScope: EffectsScope,
     private val getErrorMessageUseCase: GetErrorMessageUseCase,
-    private val getBranchDataFromAppBackendUseCase: GetBranchDataFromAppBackendUseCase
+    private val getBranchDataFromAppBackendUseCase: GetBranchDataFromAppBackendUseCase,
+    private val validateDeeplinkUrlUseCase: ValidateDeeplinkUrlUseCase
 ) : ViewModel() {
 
     val navigationEvent = MediatorLiveData<Consumable<NavDirections>>().apply {
@@ -89,7 +94,7 @@ class ActivityViewModel(
     val showErrorMessageEvent = Transformations.switchMap(appInteractor.appErrorEvent) {
         MutableLiveData<Consumable<ErrorMessage>>().apply {
             it.consume {
-                appCoroutineScope.launch {
+                effectsScope.value.launch {
                     getErrorMessageUseCase.execute(ExceptionError(it)).collect {
                         postValue(it)
                     }
@@ -104,20 +109,28 @@ class ActivityViewModel(
         navigationEvent
     )
     private val handleDeeplinkResultUseCase = HandleDeeplinkResultUseCase(
-        getBranchDataFromAppBackendUseCase
+        getBranchDataFromAppBackendUseCase,
+        validateDeeplinkUrlUseCase
     )
     private val requestUpdateIfAvailableUseCase = RequestUpdateIfAvailableUseCase(
         CheckForUpdatesUseCase()
     )
 
-    private val deeplinkDelegate = DeeplinkDelegate(appCoroutineScope, appInteractor, branchWrapper)
+    private val deeplinkDelegate =
+        DeeplinkDelegate(effectsScope.value, appInteractor, branchWrapper)
 
     init {
         runInVmEffectsScope {
             deeplinkDelegate.deeplinkFlow.catchException {
-                handleEffect(handleDeeplinkResultUseCase.execute(DeeplinkError(it, null)))
+                handleEffect(
+                    handleDeeplinkResultUseCase.execute(DeeplinkError(it, null))
+                        .mapAppErrorAction()
+                )
             }.collect {
-                handleEffect(handleDeeplinkResultUseCase.execute(it))
+                handleEffect(
+                    handleDeeplinkResultUseCase.execute(it)
+                        .mapAppErrorAction()
+                )
             }
         }
     }
@@ -228,7 +241,7 @@ class ActivityViewModel(
     }
 
     private fun runInVmEffectsScope(block: suspend CoroutineScope.() -> Unit) {
-        appCoroutineScope.launch(block = block)
+        effectsScope.value.launch(block = block)
     }
 }
 
@@ -243,11 +256,11 @@ class ActivityViewModelFactory(
             appInteractor,
             appInteractor.appState,
             appScope.crashReportsProvider,
-            appScope.resourceProvider,
             appScope.branchWrapper,
-            appScope.appCoroutineScope,
+            appScope.effectsScope,
             useCases.getErrorMessageUseCase,
-            useCases.getBranchDataFromAppBackendUseCase
+            useCases.getBranchDataFromAppBackendUseCase,
+            useCases.validateDeeplinkUrlUseCase
         ) as T
     }
 }

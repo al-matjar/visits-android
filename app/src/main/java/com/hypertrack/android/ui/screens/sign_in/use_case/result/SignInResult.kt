@@ -1,4 +1,4 @@
-package com.hypertrack.android.ui.screens.sign_in.use_case
+package com.hypertrack.android.ui.screens.sign_in.use_case.result
 
 import com.hypertrack.android.interactors.app.action.InitiateLoginAction
 

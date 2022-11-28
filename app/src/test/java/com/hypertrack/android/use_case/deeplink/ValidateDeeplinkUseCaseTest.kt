@@ -6,6 +6,13 @@ import com.hypertrack.android.interactors.app.AppReducerTest.Companion.validDeep
 import com.hypertrack.android.interactors.app.EmailAndPhoneAuthData
 import com.hypertrack.android.interactors.app.EmailAuthData
 import com.hypertrack.android.interactors.app.PhoneAuthData
+import com.hypertrack.android.use_case.deeplink.result.DeeplinkParamsInvalid
+import com.hypertrack.android.use_case.deeplink.result.DeeplinkParamsValid
+import com.hypertrack.android.use_case.deeplink.result.DeprecatedDeeplink
+import com.hypertrack.android.use_case.deeplink.result.MirroredFieldsInMetadata
+import com.hypertrack.android.use_case.deeplink.result.NoLogin
+import com.hypertrack.android.use_case.deeplink.result.NoPublishableKey
+import com.hypertrack.android.utils.Success
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
@@ -25,7 +32,7 @@ class ValidateDeeplinkUseCaseTest {
                     url = "$url?a=c"
                 )
             ).collect { result ->
-                (result as DeeplinkValid).let {
+                (result as Success).let { it.data as DeeplinkParamsValid }.let {
                     assertEquals(publishableKey, it.userAuthData.publishableKey.value)
                     assertEquals(url, it.deeplinkWithoutGetParams)
                 }
@@ -34,13 +41,13 @@ class ValidateDeeplinkUseCaseTest {
             validateDeeplinkUseCase().execute(
                 DeeplinkParams(
                     mapOf(
-                        ValidateDeeplinkUseCase.DEEPLINK_KEY_PUBLISHABLE_KEY to publishableKey,
-                        ValidateDeeplinkUseCase.DEEPLINK_KEY_PHONE to "phone",
+                        ValidateDeeplinkParamsUseCase.DEEPLINK_KEY_PUBLISHABLE_KEY to publishableKey,
+                        ValidateDeeplinkParamsUseCase.DEEPLINK_KEY_PHONE to "phone",
                         "~referring_link" to "$url?a=c",
                     )
                 )
             ).collect { result ->
-                (result as DeeplinkValid).let {
+                (result as Success).let { it.data as DeeplinkParamsValid }.let {
                     assertEquals(publishableKey, it.userAuthData.publishableKey.value)
                     assertEquals(url, it.deeplinkWithoutGetParams)
                 }
@@ -64,7 +71,7 @@ class ValidateDeeplinkUseCaseTest {
         )
         runBlocking {
             validateDeeplinkUseCase().execute(params).collect { result ->
-                (result as DeeplinkValid).let { deeplinkValid ->
+                (result as Success).let { it.data as DeeplinkParamsValid }.let { deeplinkValid ->
                     validate(params, deeplinkValid) {
                         (deeplinkValid.userAuthData as EmailAuthData).let {
                             assertEquals(email, it.email.value)
@@ -84,7 +91,7 @@ class ValidateDeeplinkUseCaseTest {
         )
         runBlocking {
             validateDeeplinkUseCase().execute(params).collect { result ->
-                (result as DeeplinkValid).let { deeplinkValid ->
+                (result as Success).let { it.data as DeeplinkParamsValid }.let { deeplinkValid ->
                     validate(params, deeplinkValid) {
                         (deeplinkValid.userAuthData as PhoneAuthData).let {
                             assertEquals(phone, it.phone.value)
@@ -106,7 +113,7 @@ class ValidateDeeplinkUseCaseTest {
             )
 
             validateDeeplinkUseCase().execute(params).collect { result ->
-                (result as DeeplinkValid).let { deeplinkValid ->
+                (result as Success).let { it.data as DeeplinkParamsValid }.let { deeplinkValid ->
                     validate(params, deeplinkValid) {
                         (deeplinkValid.userAuthData as EmailAndPhoneAuthData).let {
                             assertEquals(phone, it.phone.value)
@@ -122,7 +129,7 @@ class ValidateDeeplinkUseCaseTest {
     fun `invalid deeplink (no publishable key)`() {
         runBlocking {
             validateDeeplinkUseCase().execute(DeeplinkParams(mapOf("a" to "b"))).collect { result ->
-                (result as DeeplinkValidationError).let {
+                (result as Success).let { it.data as DeeplinkParamsInvalid }.let {
                     assertEquals(NoPublishableKey, it.failure)
                 }
             }
@@ -134,7 +141,7 @@ class ValidateDeeplinkUseCaseTest {
         runBlocking {
             validateDeeplinkUseCase().execute(DeeplinkParams(mapOf("publishable_key" to "key")))
                 .collect { result ->
-                    (result as DeeplinkValidationError).let {
+                    (result as Success).let { it.data as DeeplinkParamsInvalid }.let {
                         assertEquals(NoLogin, it.failure)
                     }
                 }
@@ -152,7 +159,7 @@ class ValidateDeeplinkUseCaseTest {
                     )
                 )
             ).collect { result ->
-                (result as DeeplinkValidationError).let {
+                (result as Success).let { it.data as DeeplinkParamsInvalid }.let {
                     assertEquals(DeprecatedDeeplink, it.failure)
                 }
             }
@@ -173,7 +180,7 @@ class ValidateDeeplinkUseCaseTest {
         ).let {
             runBlocking {
                 validateDeeplinkUseCase().execute(it).collect { result ->
-                    (result as DeeplinkValidationError).let {
+                    (result as Success).let { it.data as DeeplinkParamsInvalid }.let {
                         assertEquals(MirroredFieldsInMetadata, it.failure)
                     }
                 }
@@ -191,7 +198,7 @@ class ValidateDeeplinkUseCaseTest {
         ).let {
             runBlocking {
                 validateDeeplinkUseCase().execute(it).collect { result ->
-                    (result as DeeplinkValidationError).let {
+                    (result as Success).let { it.data as DeeplinkParamsInvalid }.let {
                         assertEquals(MirroredFieldsInMetadata, it.failure)
                     }
                 }
@@ -200,8 +207,8 @@ class ValidateDeeplinkUseCaseTest {
     }
 
     companion object {
-        fun validateDeeplinkUseCase(): ValidateDeeplinkUseCase {
-            return ValidateDeeplinkUseCase(TestInjector.getMoshi())
+        fun validateDeeplinkUseCase(): ValidateDeeplinkParamsUseCase {
+            return ValidateDeeplinkParamsUseCase(TestInjector.getMoshi())
         }
 
         fun deeplinkParams(
@@ -224,11 +231,11 @@ class ValidateDeeplinkUseCaseTest {
 
         fun validate(
             deeplinkParams: DeeplinkParams,
-            deeplinkValid: DeeplinkValid,
-            additionalChecks: (DeeplinkValid) -> Unit
+            deeplinkParamsValid: DeeplinkParamsValid,
+            additionalChecks: (DeeplinkParamsValid) -> Unit
         ) {
-            assertEquals(TEST_LINK_URL, deeplinkValid.deeplinkWithoutGetParams)
-            additionalChecks.invoke(deeplinkValid)
+            assertEquals(TEST_LINK_URL, deeplinkParamsValid.deeplinkWithoutGetParams)
+            additionalChecks.invoke(deeplinkParamsValid)
         }
 
         private const val TEST_LINK_URL = "url"

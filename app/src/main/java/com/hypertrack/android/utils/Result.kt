@@ -1,5 +1,11 @@
 package com.hypertrack.android.utils
 
+import com.hypertrack.android.interactors.app.AppAction
+import com.hypertrack.android.interactors.app.AppErrorAction
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import com.hypertrack.android.utils.Result
+
 //todo split to different files
 sealed class SimpleResult
 object JustSuccess : SimpleResult()
@@ -79,15 +85,31 @@ fun <T> Result<T>.toNullableWithErrorReporting(
 
 //todo rename
 sealed class AbstractResult<S, F> {
-    fun <N> map(mapFunction: (S) -> N): AbstractResult<N, F> {
+    fun <NS, NF> map(
+        onSuccess: (S) -> NS,
+        onFailure: (F) -> NF
+    ): AbstractResult<NS, NF> {
         return when (this) {
-            is AbstractSuccess -> AbstractSuccess(mapFunction(this.success))
-            is AbstractFailure -> AbstractFailure(this.failure)
+            is AbstractSuccess -> AbstractSuccess(onSuccess(this.success))
+            is AbstractFailure -> AbstractFailure(onFailure(this.failure))
         }
+    }
+
+    fun <NS> mapSuccess(mapFunction: (S) -> NS): AbstractResult<NS, F> {
+        return map(onSuccess = mapFunction, onFailure = { it })
     }
 }
 
 data class AbstractSuccess<S, F>(val success: S) : AbstractResult<S, F>()
 data class AbstractFailure<S, F>(val failure: F) : AbstractResult<S, F>()
+
+fun <T : AppAction?> Flow<Result<out T>>.mapAppErrorAction(): Flow<AppAction?> {
+    return map {
+        when (it) {
+            is Success -> it.data
+            is Failure -> AppErrorAction(it.exception)
+        }
+    }
+}
 
 

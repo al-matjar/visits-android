@@ -4,7 +4,8 @@ import com.hypertrack.android.MainCoroutineScopeRule
 import com.hypertrack.android.TestInjector
 import com.hypertrack.android.api.*
 import com.hypertrack.android.interactors.GeofenceSuccess
-import com.hypertrack.android.mock.TestMockData
+import com.hypertrack.android.mock.GeofenceMockData
+import com.hypertrack.android.mock.GeofenceVisitMockData
 import com.hypertrack.android.models.local.DeviceId
 
 import io.mockk.coEvery
@@ -27,7 +28,7 @@ class PlacesRepositoryTest {
         val placesRepository = PlacesRepositoryImpl(
             DeviceId("d1"),
             mockk() {
-                coEvery { getGeofence("1") } returns TestMockData.createGeofence(
+                coEvery { getGeofence("1") } returns GeofenceMockData.createRemoteGeofence(
                     polygon = true, metadata = mapOf(
                         "integration" to mapOf(
                             "name" to "ABC",
@@ -56,25 +57,26 @@ class PlacesRepositoryTest {
             mockk(relaxed = true) {
                 coEvery { getGeofences(any(), any()) } returns GeofenceResponse(
                     listOf(
-                        TestMockData.createGeofence().copy(
+                        GeofenceMockData.createRemoteGeofence().copy(
                             marker = GeofenceMarkersResponse(
                                 listOf(
-                                    TestMockData.createGeofenceVisit(deviceId = DeviceId("other_device_id")),
-                                    TestMockData.createGeofenceVisit(deviceId = DeviceId("device_id"))
+                                    GeofenceVisitMockData.createGeofenceVisit(deviceId = DeviceId("other_device_id")),
+                                    GeofenceVisitMockData.createGeofenceVisit(deviceId = DeviceId("device_id"))
                                 ), null
                             )
                         )
                     ), null
                 )
 
-                coEvery { getGeofence(any()) } returns TestMockData.createGeofence().copy(
-                    marker = GeofenceMarkersResponse(
-                        listOf(
-                            TestMockData.createGeofenceVisit(deviceId = DeviceId("other_device_id")),
-                            TestMockData.createGeofenceVisit(deviceId = DeviceId("device_id"))
-                        ), null
+                coEvery { getGeofence(any()) } returns GeofenceMockData.createRemoteGeofence()
+                    .copy(
+                        marker = GeofenceMarkersResponse(
+                            listOf(
+                                GeofenceVisitMockData.createGeofenceVisit(deviceId = DeviceId("other_device_id")),
+                                GeofenceVisitMockData.createGeofenceVisit(deviceId = DeviceId("device_id"))
+                            ), null
+                        )
                     )
-                )
             },
             mockk(relaxed = true),
             mockk(relaxed = true),

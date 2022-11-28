@@ -110,9 +110,9 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
                 lError.show()
                 lProgressBar.hide()
                 confirm.hide()
-                bReload.hide()
                 tvErrorMessage.text = viewState.errorMessage.text
             }
+            bReload.setGoneState(!viewState.showRetryButton)
         }
 
         vm.showErrorMessageEvent.observeWithErrorHandling(viewLifecycleOwner, vm::onError) {
@@ -160,6 +160,10 @@ class AddPlaceInfoFragment : BaseFragment<MainActivity>(R.layout.fragment_add_pl
 
         bDeleteIntegration.setOnClickListener {
             vm.handleAction(IntegrationDeletedAction)
+        }
+
+        bReload.setOnClickListener {
+            vm.handleAction(RetryAction)
         }
     }
 

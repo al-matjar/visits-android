@@ -43,6 +43,8 @@ import com.hypertrack.android.ui.common.delegates.address.OrderAddressDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeofenceVisitDisplayDelegate
 import com.hypertrack.android.ui.common.delegates.display.GeotagDisplayDelegate
 import com.hypertrack.android.ui.common.map.HypertrackMapItemsFactory
+import com.hypertrack.android.use_case.app.threading.ActionsScope
+import com.hypertrack.android.use_case.app.threading.EffectsScope
 import com.hypertrack.android.use_case.sdk.TrackingState
 import com.hypertrack.android.utils.BatteryLevelMonitor
 import com.hypertrack.android.utils.CognitoAccountLoginProviderImpl
@@ -61,6 +63,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.recipes.RuntimeJsonAdapterFactory
 import com.squareup.moshi.recipes.ZonedDateTimeJsonAdapter
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import okhttp3.OkHttpClient
@@ -69,6 +72,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.*
 import java.util.concurrent.Executors
+import kotlin.coroutines.CoroutineContext
 
 class AppCreationUseCase {
 
@@ -170,8 +174,21 @@ class AppCreationUseCase {
             geocodingInteractor,
             osUtilsProvider
         )
+
+        // Context for parallel background tasks
+        val backgroundContext: CoroutineContext = Dispatchers.Default
+        // Scope for running app effects
+        val effectsScope = CoroutineScope(SupervisorJob() + backgroundContext).let {
+            EffectsScope(it)
+        }
+
+        // Context for sequential execution of app state machine actions
+        val actionsContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        val actionsScope = CoroutineScope(SupervisorJob() + actionsContext).let {
+            ActionsScope(it)
+        }
+
         val appCoroutineScope = CoroutineScope(SupervisorJob())
-        val stateMachineContext = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
         return AppScope(
             MyApplication.context,
@@ -227,8 +244,8 @@ class AppCreationUseCase {
             NotificationUtil,
             moshi,
             trackingStateListener,
-            appCoroutineScope,
-            stateMachineContext
+            actionsScope,
+            effectsScope,
         )
     }
 

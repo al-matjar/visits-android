@@ -94,7 +94,7 @@ class HandlePushUseCase(
         }
     }
 
-    private fun deserializeNotification(data: Map<String, String>): Flow<Result<PushNotification>> {
+    private fun deserializeNotification(data: Map<String, String>): Flow<Result<out PushNotification>> {
         return tryAsResult {
             when {
                 data[KEY_HYPERTRACK] != null -> {

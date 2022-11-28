@@ -8,8 +8,9 @@ import com.hypertrack.android.interactors.app.reducer.login.AlreadyLoggedInExcep
 import com.hypertrack.android.interactors.app.reducer.login.LoginAlreadyInProgressException
 import com.hypertrack.android.interactors.trip.NotClockedInException
 import com.hypertrack.android.repository.access_token.AccountSuspendedException
-import com.hypertrack.android.ui.screens.sign_in.use_case.InvalidDeeplinkFormat
-import com.hypertrack.android.use_case.deeplink.InvalidDeeplinkException
+import com.hypertrack.android.ui.screens.sign_in.use_case.exception.InvalidDeeplinkFormatException
+import com.hypertrack.android.use_case.deeplink.exception.DeeplinkUriUnsuitableForBackendException
+import com.hypertrack.android.use_case.deeplink.exception.InvalidDeeplinkParamsException
 import com.hypertrack.android.use_case.geofences.AdjacentGeofencesCheckTimeoutException
 import com.hypertrack.android.use_case.handle_push.UnknownPushNotificationException
 import com.hypertrack.android.utils.ErrorMessage
@@ -63,13 +64,13 @@ class GetErrorMessageUseCase(
                 exception is SimpleException -> {
                     exception.message ?: getTextErrorString(UnknownError)
                 }
-                exception is InvalidDeeplinkFormat -> {
+                exception is InvalidDeeplinkFormatException -> {
                     exception.toTextError().let {
                         getTextErrorString(it)
                     }
                 }
-                exception is InvalidDeeplinkException -> {
-                    exception.deeplinkFailure.toTextError().let {
+                exception is InvalidDeeplinkParamsException -> {
+                    exception.wrongDeeplinkParams.toTextError().let {
                         getTextErrorString(it)
                     }
                 }
@@ -99,6 +100,9 @@ class GetErrorMessageUseCase(
                 }
                 exception is BranchErrorException -> {
                     getTextErrorString(TextError(R.string.error_branch))
+                }
+                exception is DeeplinkUriUnsuitableForBackendException -> {
+                    getTextErrorString(TextError(R.string.error_branch_url_unsuitable_for_backend))
                 }
                 exception.isNetworkError() -> {
                     getTextErrorString(NetworkError)

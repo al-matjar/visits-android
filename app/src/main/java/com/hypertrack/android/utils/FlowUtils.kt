@@ -4,6 +4,7 @@ package com.hypertrack.android.utils
 
 import android.util.Log
 import androidx.lifecycle.Transformations.map
+import com.hypertrack.android.use_case.app.threading.ActionsScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -31,7 +32,7 @@ fun <T> Flow<T>.catchException(action: suspend (Exception) -> Unit): Flow<T> {
     }
 }
 
-fun <T, E> Flow<Result<T>>.flatMapSuccess(action: suspend (T) -> Flow<Result<E>>): Flow<Result<E>> {
+fun <T, E> Flow<Result<out T>>.flatMapSuccess(action: suspend (T) -> Flow<Result<out E>>): Flow<Result<out E>> {
     return flatMapConcat {
         when (it) {
             is Success -> action.invoke(it.data)
@@ -58,7 +59,7 @@ fun <T> Flow<Result<T>>.mapFailure(action: suspend (Exception) -> Exception): Fl
     }
 }
 
-fun <T> Flow<Result<T>>.flatMapSimpleSuccess(action: suspend (T) -> Flow<SimpleResult>): Flow<SimpleResult> {
+fun <T> Flow<Result<out T>>.flatMapSimpleSuccess(action: suspend (T) -> Flow<SimpleResult>): Flow<SimpleResult> {
     return flatMapConcat {
         when (it) {
             is Success -> action.invoke(it.data)
@@ -93,8 +94,8 @@ fun <T> Flow<T>.log(tag: String): Flow<T> {
     }
 }
 
-fun <T, K> StateFlow<T>.mapState(scope: CoroutineScope, block: (T) -> K): StateFlow<K> {
-    return map(block).stateIn(scope, SharingStarted.Lazily, block.invoke(value))
+fun <T, K> StateFlow<T>.mapState(scope: ActionsScope, block: (T) -> K): StateFlow<K> {
+    return map(block).stateIn(scope.value, SharingStarted.Lazily, block.invoke(value))
 }
 
 fun <T> tryAsFlow(block: () -> T): Flow<Result<T>> {

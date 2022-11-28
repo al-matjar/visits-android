@@ -23,7 +23,7 @@ class SignInUseCase(
             email.lowercase(Locale.getDefault()),
             password
         ).map { result: AbstractResult<RealPublishableKey, CognitoLoginError> ->
-            result.map { publishableKey ->
+            result.mapSuccess { publishableKey ->
                 val userData = UserData.fromUserAuthData(
                     EmailAuthData(
                         Email(email),

@@ -7,27 +7,31 @@ import com.hypertrack.android.interactors.app.EmailAuthData
 import com.hypertrack.android.models.local.Phone
 import com.hypertrack.android.interactors.app.PhoneAuthData
 import com.hypertrack.android.models.local.RealPublishableKey
+import com.hypertrack.android.use_case.deeplink.result.DeeplinkParamsInvalid
+import com.hypertrack.android.use_case.deeplink.result.DeeplinkParamsValid
+import com.hypertrack.android.use_case.deeplink.result.DeprecatedDeeplink
+import com.hypertrack.android.use_case.deeplink.result.MirroredFieldsInMetadata
+import com.hypertrack.android.use_case.deeplink.result.NoLogin
+import com.hypertrack.android.use_case.deeplink.result.NoPublishableKey
+import com.hypertrack.android.use_case.deeplink.result.ValidateDeeplinkParamsResult
 import com.hypertrack.android.utils.createAnyMapAdapter
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import com.hypertrack.android.utils.Result
+import com.hypertrack.android.utils.toFlow
+import com.hypertrack.android.utils.tryAsResult
 
 @Suppress("EXPERIMENTAL_API_USAGE", "OPT_IN_USAGE")
-class ValidateDeeplinkUseCase(
+class ValidateDeeplinkParamsUseCase(
     private val moshi: Moshi
 ) {
 
-    fun execute(deeplinkParams: DeeplinkParams): Flow<ValidateDeeplinkResult> {
-        return {
-            parseDeeplink(deeplinkParams.parameters)
-        }.asFlow()
-    }
-
     @Suppress("BlockingMethodInNonBlockingContext")
-    private fun parseDeeplink(
-        parameters: Map<String, Any>,
-    ): ValidateDeeplinkResult {
-        return try {
+    fun execute(deeplinkParams: DeeplinkParams): Flow<Result<ValidateDeeplinkParamsResult>> {
+        return tryAsResult {
+            val parameters = deeplinkParams.parameters
+
             val publishableKey = parameters[DEEPLINK_KEY_PUBLISHABLE_KEY] as String?
             val driverId = parameters[DEEPLINK_KEY_DRIVER_ID] as String?
             //todo validate email
@@ -46,14 +50,14 @@ class ValidateDeeplinkUseCase(
 
             when {
                 publishableKey == null -> {
-                    DeeplinkValidationError(NoPublishableKey)
+                    DeeplinkParamsInvalid(NoPublishableKey)
                 }
                 email == null && phoneNumber == null && driverId == null -> {
-                    DeeplinkValidationError(NoLogin)
+                    DeeplinkParamsInvalid(NoLogin)
                 }
                 email != null && metadata?.contains(DEEPLINK_KEY_EMAIL) == true ||
                         phoneNumber != null && metadata?.containsKey(DEEPLINK_KEY_PHONE) == true -> {
-                    DeeplinkValidationError(MirroredFieldsInMetadata)
+                    DeeplinkParamsInvalid(MirroredFieldsInMetadata)
                 }
                 else -> {
                     when {
@@ -71,24 +75,26 @@ class ValidateDeeplinkUseCase(
                                     RealPublishableKey(publishableKey),
                                     metadata
                                 )
-                            }.let { DeeplinkValid(it, deeplinkWithoutGetParams) }
+                            }.let { DeeplinkParamsValid(it, deeplinkWithoutGetParams) }
                         }
                         phoneNumber != null -> {
                             PhoneAuthData(
                                 Phone(phoneNumber),
                                 RealPublishableKey(publishableKey),
                                 metadata
-                            ).let { DeeplinkValid(it, deeplinkWithoutGetParams) }
+                            ).let { DeeplinkParamsValid(it, deeplinkWithoutGetParams) }
                         }
                         else -> {
-                            DeeplinkValidationError(DeprecatedDeeplink)
+                            DeeplinkParamsInvalid(DeprecatedDeeplink)
                         }
                     }
                 }
             }
-        } catch (e: Exception) {
-            DeeplinkValidationError(DeeplinkException(e))
-        }
+        }.toFlow()
+    }
+
+    private fun String?.urlClearGetParams(): String? {
+        return this?.split("?")?.first()
     }
 
     companion object {
@@ -99,8 +105,4 @@ class ValidateDeeplinkUseCase(
         const val DEEPLINK_KEY_PHONE = "phone_number"
         const val DEEPLINK_KEY_METADATA = "metadata"
     }
-}
-
-private fun String?.urlClearGetParams(): String? {
-    return this?.split("?")?.first()
 }

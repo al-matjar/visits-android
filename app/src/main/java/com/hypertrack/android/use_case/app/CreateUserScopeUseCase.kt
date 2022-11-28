@@ -84,9 +84,10 @@ class CreateUserScopeUseCase(
             hyperTrackSdk,
             appScope.crashReportsProvider
         )
+        val appCoroutineScope = appScope.effectsScope.value
         val deviceLocationProvider = FusedDeviceLocationProvider(
             appInteractor,
-            appScope.appCoroutineScope,
+            appCoroutineScope,
             appScope.appContext,
             hyperTrackService,
             crashReportsProvider,
@@ -120,7 +121,7 @@ class CreateUserScopeUseCase(
             integrationsRepository,
             osUtilsProvider,
             appScope.geofenceNameDelegate,
-            appScope.appCoroutineScope
+            appCoroutineScope
         )
 
         val photoUploadQueueInteractor = PhotoUploadQueueInteractorImpl(
@@ -142,7 +143,7 @@ class CreateUserScopeUseCase(
         val tripsRepository = TripsRepositoryImpl(
             apiClient,
             appScope.myPreferences,
-            appScope.appCoroutineScope,
+            appCoroutineScope,
             crashReportsProvider,
             appScope.orderAddressDelegate
         )
@@ -156,7 +157,7 @@ class CreateUserScopeUseCase(
             osUtilsProvider,
             crashReportsProvider,
             Dispatchers.IO,
-            appScope.appCoroutineScope
+            appCoroutineScope
         )
 
         val feedbackInteractor = FeedbackInteractor(

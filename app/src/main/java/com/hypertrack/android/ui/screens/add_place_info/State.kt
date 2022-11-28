@@ -21,8 +21,11 @@ data class Initialized(
         get() = mapUiState.map
 }
 
+data class CheckingForAdjacentGeofence(val previousState: Initialized) : State()
+
 data class CreatingGeofence(val previousState: Initialized) : State()
 
 data class ErrorState(
+    val previousState: State,
     val error: DisplayableError
 ) : State()

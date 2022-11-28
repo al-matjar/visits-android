@@ -31,7 +31,7 @@ class LoginWithPublishableKeyUseCase(
         userData: UserData,
         publishableKey: RealPublishableKey,
         deeplinkWithoutGetParams: String?
-    ): Flow<Result<LoggedIn>> {
+    ): Flow<Result<out LoggedIn>> {
         return refreshUserAccessTokenUseCase.execute(
             publishableKey,
             DeviceId(hypertrackSdk.deviceID)

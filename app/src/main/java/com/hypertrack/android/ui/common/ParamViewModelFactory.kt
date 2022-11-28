@@ -39,9 +39,11 @@ class ParamViewModelFactory<T>(
             appInteractor,
             appScope.osUtilsProvider,
             appScope.osUtilsProvider,
-            appScope.crashReportsProvider
+            appScope.crashReportsProvider,
+            appScope.actionsScope,
+            appScope.effectsScope
         )
-        val userLoggedInFlow = appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+        val userLoggedInFlow = appInteractor.appStateFlow.mapState(appScope.actionsScope) {
             AppStateOptics.getUserLoggedIn(it)
         }
         val mapUiReducer = MapUiReducer()
@@ -77,7 +79,7 @@ class ParamViewModelFactory<T>(
                     initialAddress = destinationData.address,
                     _name = destinationData.name,
                     baseDependencies,
-                    appInteractor.appStateFlow.mapState(appScope.appCoroutineScope) {
+                    appInteractor.appStateFlow.mapState(appScope.actionsScope) {
                         AppStateOptics.getUserLoggedIn(it)
                     },
                     userScope.placesInteractor,

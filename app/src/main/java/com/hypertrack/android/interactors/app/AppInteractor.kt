@@ -15,7 +15,7 @@ import com.hypertrack.android.interactors.app.effect.navigation.NavigateToSignIn
 import com.hypertrack.android.interactors.app.effect.navigation.NavigationEffectHandler
 import com.hypertrack.android.interactors.app.reducer.deeplink.DeeplinkReducer
 import com.hypertrack.android.interactors.app.reducer.deeplink.DeeplinkReducer.Companion.DEEPLINK_CHECK_TIMEOUT
-import com.hypertrack.android.interactors.app.reducer.GeofencesForMapReducer
+import com.hypertrack.android.interactors.app.reducer.geofences_for_map.GeofencesForMapReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryReducer
 import com.hypertrack.android.interactors.app.reducer.HistoryViewReducer
 import com.hypertrack.android.interactors.app.reducer.ScreensReducer
@@ -29,14 +29,17 @@ import com.hypertrack.android.ui.base.toConsumable
 import com.hypertrack.android.ui.common.util.updateConsumableAsFlow
 import com.hypertrack.android.use_case.app.InitAppUseCase
 import com.hypertrack.android.use_case.app.UseCases
+import com.hypertrack.android.use_case.app.threading.ActionsScope
 import com.hypertrack.android.utils.AbstractFailure
 import com.hypertrack.android.utils.AbstractSuccess
+import com.hypertrack.android.utils.CrashReportsProvider
 import com.hypertrack.android.utils.Failure
 import com.hypertrack.android.utils.MyApplication
 import com.hypertrack.android.utils.StateMachine
 import com.hypertrack.android.utils.Success
 import com.hypertrack.android.utils.emitAsFlow
 import com.hypertrack.android.utils.flatMapSuccess
+import com.hypertrack.android.utils.state_machine.ReducerResult
 import com.hypertrack.android.utils.toFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -68,16 +71,12 @@ class AppInteractor(
     )
 
     private val appReducer = createAppReducer()
-    private val appStateMachine = object : StateMachine<AppAction, AppState, AppEffect>(
-        "AppState",
-        appScope.crashReportsProvider,
+    private val appStateMachine = createAppStateMachine(
         initialState,
-        appScope.appCoroutineScope,
-        appScope.stateMachineContext,
-        appReducer::reduce,
-        this::applyEffects,
-        this::stateChangeEffects
-    ) {}
+        appScope.actionsScope,
+        appScope.crashReportsProvider,
+        appReducer::reduce
+    )
 
     private val _appState = MutableLiveData<AppState>(initialState)
     val appState: LiveData<AppState> = _appState
@@ -116,7 +115,7 @@ class AppInteractor(
 
     private fun applyEffects(effects: Set<AppEffect>) {
         effects.forEach { effect ->
-            appScope.appCoroutineScope.launch {
+            appScope.effectsScope.value.launch {
                 getEffectFlow(effect)
                     .catch { e ->
                         if (e is Exception) {
@@ -156,17 +155,25 @@ class AppInteractor(
             }
             is LoginWithDeeplinkEffect -> {
                 useCases.loginWithDeeplinkParamsUseCase.execute(effect.deeplinkParams)
-                    .map {
-                        when (it) {
-                            is AbstractSuccess -> {
-                                LoginAppAction(it.success)
-                            }
-                            is AbstractFailure -> {
-                                it.failure.failure.toException().let {
-                                    LoginAppAction(LoginErrorAction(it))
+                    .map { result ->
+                        when (result) {
+                            is Success -> {
+                                when (val loginResult = result.data) {
+                                    is AbstractSuccess -> {
+                                        LoginAppAction(loginResult.success)
+                                    }
+                                    is AbstractFailure -> {
+                                        loginResult.failure.failure.toException().let {
+                                            LoginAppAction(LoginErrorAction(it))
+                                        }
+                                    }
                                 }
                             }
+                            is Failure -> {
+                                LoginAppAction(LoginErrorAction(result.exception))
+                            }
                         }
+
                     }
             }
             is LoginWithPublishableKey -> {
@@ -263,7 +270,7 @@ class AppInteractor(
             }
             is StartTimer -> {
                 suspend {
-                    appScope.appCoroutineScope.launch {
+                    appScope.effectsScope.value.launch {
                         delay(
                             when (effect.timer) {
                                 DeeplinkCheckTimeoutTimer -> DEEPLINK_CHECK_TIMEOUT
@@ -314,12 +321,29 @@ class AppInteractor(
         )
     }
 
+    private fun createAppStateMachine(
+        initialState: AppState,
+        actionsScope: ActionsScope,
+        crashReportsProvider: CrashReportsProvider,
+        reducer: (state: AppState, action: AppAction) -> ReducerResult<out AppState, out AppEffect>
+    ): StateMachine<AppAction, AppState, AppEffect> {
+        return object : StateMachine<AppAction, AppState, AppEffect>(
+            "AppState",
+            crashReportsProvider,
+            initialState,
+            actionsScope,
+            reducer,
+            this::applyEffects,
+            this::stateChangeEffects
+        ) {}
+    }
+
+    override fun toString(): String = javaClass.simpleName
+
     companion object {
         const val CHANNEL_ID = "default_notification_channel"
         const val IMPORTANT_CHANNEL_ID = "important_notification_channel"
     }
-
-    override fun toString(): String = javaClass.simpleName
 }
 
 // don't use .map { null } on arbitrary typed Flow to avoid bugs
