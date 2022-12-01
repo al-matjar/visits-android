@@ -1,5 +1,23 @@
 # Changelog
 
+# [1.0.8] - 2022-12-01
+
+### Added
+
+- Retry button to Add place info screen
+- More comprehensive error message for adjacent geofences check timeout
+- Proper error message for the case when we unable to get the deeplink from Branch params
+
+### Fixed
+
+- Error on deeplink login
+- Geofences not showing on the map
+- Error on Add place screen that was causing timeout
+
+### Removed
+
+- Logging in with login token
+
 # [1.0.7] - 2022-11-16
 
 ### Fixed
